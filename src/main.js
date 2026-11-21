@@ -1,6 +1,11 @@
 // FRUTO Legacy — Fase 1 (base e movimento). Liga motor, ilha, personagem, controles,
-// câmera, HUD, menu e salvamento.
+// câmera, HUD, menus e salvamento.
 
+import '@fontsource/cinzel/700.css';
+import '@fontsource/cinzel/900.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/inter/800.css';
 import './ui/style.css';
 import * as THREE from 'three';
 import DATA from '../data/fruto-catalog.json';
@@ -17,40 +22,52 @@ import { CharacterController } from './movement/characterController.js';
 import { Input } from './controls/input.js';
 import { Hud } from './ui/hud.js';
 import { PauseMenu } from './ui/menu.js';
+import { Minimap, renderIslandImage } from './ui/islandMap.js';
+import { MapScreen } from './ui/mapScreen.js';
+import { renderPortrait } from './ui/portrait.js';
+import { applyIcons, ICONS, EMBLEM } from './ui/icons.js';
+import { TRAINING, TrainingMission } from './quests/training.js';
 import { SaveSystem } from './saves/saveSystem.js';
 import { createFruitAudio } from './audio/fruto-audio.js';
 
 const $ = (id) => document.getElementById(id);
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
-const setLoading = async (text) => {
+const setLoading = async (text, pct) => {
   $('loading-text').textContent = text;
+  if (pct !== undefined) $('loading-bar').style.width = `${pct}%`;
   await nextFrame();
 };
 const isTouch = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const native = () => !!window.Capacitor?.isNativePlatform?.();
+const fmt = (n) => n.toLocaleString('pt-BR');
 
 async function boot() {
+  applyIcons();
+  $('emblem').innerHTML = EMBLEM;
   if (isTouch()) document.body.classList.add('touch');
   const saves = new SaveSystem();
   const [settings, save] = await Promise.all([saves.loadSettings(), saves.loadGame()]);
 
-  await setLoading('Preparando o motor…');
+  await setLoading('Preparando o motor…', 10);
   const renderer = new Renderer($('game'));
   const quality = new AutoQuality(renderer, settings.quality);
 
-  await setLoading('Carregando a física…');
+  await setLoading('Carregando a física…', 22);
   const physics = await Physics.create();
 
-  await setLoading('Erguendo a Ilha de Treino…');
+  // as placas desenham texto com a fonte do jogo: espera ela carregar
+  await Promise.race([document.fonts?.load('700 64px Cinzel'), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
+  await setLoading('Erguendo a Ilha de Treino…', 35);
   const island = buildTrainingIsland({ scene: renderer.scene, physics });
   physics.world.updateSceneQueries?.();
   physics.step();
 
+  await setLoading('Enchendo o mar…', 62);
   const sunDir = renderer.sunOffset.clone().normalize();
   const ocean = new Ocean({ scene: renderer.scene, field: island.field, level: ISLAND.waterLevel, sun: sunDir, sky: { top: new THREE.Color('#5aa7d6'), horizon: new THREE.Color('#cfe7e4') } });
   ocean.setDetail(renderer.quality.oceanDetail);
 
-  await setLoading('Montando o personagem…');
+  await setLoading('Montando o personagem…', 74);
   const audio = createFruitAudio();
   audio.setVolume(settings.volume);
   const player = createPlayer(renderer.scene, DATA, { profile: renderer.quality.pixelRatio < 1 ? 1 : 0 });
@@ -67,12 +84,27 @@ async function boot() {
 
   const hud = new Hud();
   const animator = new PlayerAnimator({ player, data: DATA, groundAt, audio });
+
+  // ===== Missão de treino =====
+  save.missions.treino ??= {};
+  const towerTopY = island.field.sample(30, -12) + 15.6;
+  const mission = new TrainingMission(save.missions.treino, {
+    onObjective: (obj, n, total) => {
+      hud.toast(`Objetivo concluído: ${obj.text} (${n}/${total})`, 'good');
+      audio.play('base', 'wing', 0.5);
+      refreshMission();
+      saveNow(true);
+    },
+    onComplete: () => hud.toast('Treino de movimento concluído! Receba a recompensa em Missões.', 'good'),
+  });
+
   const ctl = new CharacterController({
     physics,
     water: ocean,
     unlocks: save.unlocks,
     onEvent: (name, data) => {
       animator.onEvent(name, data);
+      mission.event(name);
       onMoveEvent(name, data);
     },
   });
@@ -110,11 +142,38 @@ async function boot() {
   const cam = new FollowCamera(renderer.camera, physics);
   cam.snap(ctl.pos, ctl.yaw);
 
+  await setLoading('Pintando o mapa…', 86);
+  const minimap = new Minimap($('minimap-canvas'), island.field, island.signs);
+  const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
+  const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
+  hud.setPortrait(renderPortrait(renderer.renderer, DATA));
+
+  const refreshProfile = () => hud.setProfile(save);
+  function refreshMission() {
+    const st = save.missions.treino;
+    const next = mission.next();
+    hud.setTracker({
+      visible: st.tracked && !st.claimed,
+      title: `${TRAINING.title} (${mission.count}/${mission.total})`,
+      step: mission.complete ? 'Concluída! Receba a recompensa em Missões.' : `Próximo: ${next.text}`,
+      reward: `${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas`,
+      done: mission.complete,
+    });
+    renderMissionList();
+  }
+
   // ===== Configurações =====
   const applySetting = (key, value) => {
     if (key === 'quality') {
       quality.apply(value);
       ocean.setDetail(renderer.quality.oceanDetail);
+    }
+    if (key === 'quality' || key === 'qualityChanged') {
+      // capim e flores só fora do perfil Leve
+      for (const name of ['capim', 'flor']) {
+        const mesh = island.nature.group.getObjectByName(name);
+        if (mesh) mesh.visible = renderer.qualityId !== 'leve';
+      }
     }
     if (key === 'sensitivity') cam.sensitivity = value;
     if (key === 'invertY') cam.invertY = value;
@@ -146,54 +205,161 @@ async function boot() {
 
   // ===== Salvamento =====
   let playTime = save.playTime || 0;
-  const saveNow = async (quiet = false) => {
+  async function saveNow(quiet = false) {
     save.player = ctl.snapshot();
     save.playTime = Math.round(playTime);
     const ok = await saves.saveGame(save);
     if (!quiet) hud.toast(ok ? 'Jogo salvo' : 'Não foi possível salvar', ok ? 'good' : 'bad');
     menu.setInfo(ok ? `Salvo às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Falha ao salvar');
     return ok;
-  };
+  }
 
-  // ===== Pausa =====
-  const setPaused = (on) => {
-    loop.paused = on;
-    input.enabled = !on;
-    input.releaseAll();
-    menu.setOpen(on);
-    if (on) saveNow(true);
+  // ===== Modo (menu inicial ou jogo) e janelas =====
+  let mode = 'title';
+  const modals = [];
+  const setGameActive = () => {
+    const active = mode === 'game' && modals.length === 0;
+    loop.paused = mode === 'game' && !active;
+    input.enabled = active;
+    if (!active) input.releaseAll();
   };
+  function openModal(id, opts = {}) {
+    if (modals.includes(id)) return;
+    modals.push(id);
+    if (id === 'pause') menu.setOpen(true, opts);
+    else $(id).classList.remove('hidden');
+    if (id === 'worldmap') mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
+    if (id === 'missions') renderMissionList();
+    if (id === 'pause' && mode === 'game') saveNow(true);
+    setGameActive();
+  }
+  function closeModal(id = modals[modals.length - 1]) {
+    if (!id) return;
+    const i = modals.indexOf(id);
+    if (i >= 0) modals.splice(i, 1);
+    if (id === 'pause') menu.setOpen(false);
+    else $(id).classList.add('hidden');
+    setGameActive();
+  }
+  for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModal(b.dataset.close));
+
   const menu = new PauseMenu({
     settings,
     onChange: (key, value) => {
       applySetting(key, value);
       saves.saveSettings(settings);
     },
-    onResume: () => setPaused(false),
+    onResume: () => closeModal('pause'),
     onSave: () => saveNow(false),
     onRestart: () => {
       spawn();
       cam.snap(ctl.pos, ctl.yaw);
-      setPaused(false);
+      closeModal('pause');
+    },
+    onTitle: () => {
+      saveNow(true);
+      closeModal('pause');
+      enterTitle();
     },
   });
   input.onPause = () => {
-    if (!started) return;
-    setPaused(!loop.paused);
+    if (modals.length) closeModal();
+    else if (mode === 'game') openModal('pause');
   };
+  $('btn-missions').addEventListener('click', () => openModal('missions'));
+  $('btn-map').addEventListener('click', () => openModal('worldmap'));
+  $('btn-untrack').addEventListener('click', () => {
+    save.missions.treino.tracked = false;
+    refreshMission();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (mode !== 'game' || e.repeat) return;
+    if (e.code === 'KeyM') modals.includes('worldmap') ? closeModal('worldmap') : !modals.length && openModal('worldmap');
+    if (e.code === 'KeyJ') modals.includes('missions') ? closeModal('missions') : !modals.length && openModal('missions');
+  });
+
+  // janela de missões
+  let missionTab = 'principais';
+  for (const b of document.querySelectorAll('[data-mtab]')) {
+    b.addEventListener('click', () => {
+      missionTab = b.dataset.mtab;
+      for (const o of document.querySelectorAll('[data-mtab]')) o.classList.toggle('active', o === b);
+      renderMissionList();
+    });
+  }
+  function renderMissionList() {
+    const list = $('mission-list');
+    if (missionTab !== 'principais') {
+      list.innerHTML = '<div class="empty">Nenhuma missão aqui ainda. Novas missões chegam com as próximas ilhas.</div>';
+      return;
+    }
+    const st = save.missions.treino;
+    const items = TRAINING.objectives.map((o) => `<li class="${mission.has(o.id) ? 'done' : ''}"><span class="box">${mission.has(o.id) ? ICONS.check : ''}</span>${o.text}</li>`).join('');
+    const action = st.claimed
+      ? `<button class="btn" disabled>${ICONS.check} Recompensa recebida</button>`
+      : mission.complete
+        ? `<button class="btn green" id="btn-claim">${ICONS.coin} Receber</button>`
+        : `<button class="btn gold" id="btn-track">${ICONS.flag} ${st.tracked ? 'Rastreando' : 'Rastrear'}</button>`;
+    list.innerHTML = `
+      <div class="mission">
+        <div>
+          <h3>${ICONS.flag} ${TRAINING.title}</h3>
+          <p class="sub">${TRAINING.sub}</p>
+          <h4>Objetivos (${mission.count}/${mission.total})</h4>
+          <ul class="objectives">${items}</ul>
+        </div>
+        <div class="side">
+          <img class="thumb" src="${thumb}" alt="Ilha de Treino" />
+          <h4>Recompensas</h4>
+          <div class="rewards"><span>${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas</span></div>
+          ${action}
+        </div>
+      </div>`;
+    $('btn-track')?.addEventListener('click', () => {
+      st.tracked = !st.tracked;
+      refreshMission();
+    });
+    $('btn-claim')?.addEventListener('click', () => {
+      const reward = mission.claim();
+      if (!reward) return;
+      save.coins += reward.coins;
+      refreshProfile();
+      refreshMission();
+      hud.toast(`+${fmt(reward.coins)} moedas`, 'good');
+      audio.play('base', 'wing', 1);
+      saveNow(true);
+    });
+  }
 
   // ===== Laço =====
   const prev = new THREE.Vector3().copy(ctl.pos);
   const view = new THREE.Vector3();
   let time = 0;
+  let clock = 0;
   let autosave = 0;
-  const fogDay = { color: renderer.scene.fog.color.clone(), near: renderer.scene.fog.near, far: renderer.scene.fog.far };
+  let minimapTimer = 0;
+  const fogDay = { color: renderer.scene.fog.color.clone() };
   const fogWater = new THREE.Color('#1d5866');
+  const titleIdle = { moveX: 0, moveY: 0, camYaw: 0, jump: false, crouch: false, jumpPressed: false, crouchPressed: false, dashPressed: false, sprint: false };
+
+  // câmera do menu inicial: personagem à direita, a ilha ao fundo
+  function titleCamera(t) {
+    const yaw = ctl.yaw;
+    const f = { x: Math.sin(yaw), z: Math.cos(yaw) };
+    const r = { x: -f.z, z: f.x }; // direita de quem olha na direção f
+    const side = 3.1 + Math.sin(t * 0.22) * 0.35; // câmera à esquerda: personagem à direita da tela
+    const back = 6.8;
+    const cam3 = renderer.camera;
+    cam3.position.set(view.x - f.x * back - r.x * side, view.y + 3.4, view.z - f.z * back - r.z * side);
+    cam3.lookAt(cam3.position.x + f.x * 10, view.y + 2.7, cam3.position.z + f.z * 10);
+  }
 
   const loop = new Loop({
     update(dt) {
+      if (mode !== 'game') return;
       prev.copy(ctl.pos);
       ctl.step(dt, input.consume(cam.yaw));
+      mission.check(ctl, { towerTopY });
       time += dt;
       playTime += dt;
       autosave += dt;
@@ -203,8 +369,10 @@ async function boot() {
       }
     },
     render(alpha, dt) {
+      clock += dt;
       const frame = input.frame(dt);
-      if (!loop.paused) {
+      const playing = mode === 'game' && !loop.paused;
+      if (playing) {
         cam.look(frame.look.x, frame.look.y);
         if (frame.zoom) cam.zoomBy(frame.zoom);
       }
@@ -212,20 +380,22 @@ async function boot() {
       const teleport = prev.distanceToSquared(ctl.pos) > 9;
       view.copy(teleport ? ctl.pos : prev).lerp(ctl.pos, teleport ? 1 : alpha);
       feetY = view.y;
-      const animDt = loop.paused ? 0 : dt;
+      const animDt = mode === 'title' ? dt : loop.paused ? 0 : dt;
+      if (mode === 'title') ctl.input = titleIdle;
       animator.update(animDt, ctl, view);
-      cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
+      if (mode === 'title') titleCamera(clock);
+      else cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);
         renderer.camera.lookAt(...dv.look);
       }
-      ocean.update(animDt, renderer.camera);
+      ocean.update(mode === 'title' ? dt : animDt, renderer.camera);
       renderer.follow(view);
 
       // embaixo d'água: neblina azul e perto
       const fog = renderer.scene.fog;
-      if (cam.underwater) {
+      if (mode === 'game' && cam.underwater) {
         fog.color.copy(fogWater);
         fog.near = 2;
         fog.far = 38;
@@ -238,58 +408,82 @@ async function boot() {
 
       renderer.render();
       quality.sample(dt);
-      if (ocean.detail !== renderer.quality.oceanDetail) ocean.setDetail(renderer.quality.oceanDetail);
+      if (ocean.detail !== renderer.quality.oceanDetail) {
+        ocean.setDetail(renderer.quality.oceanDetail);
+        applySetting('qualityChanged');
+      }
+      if (mode !== 'game') return;
       const info = renderer.renderer.info.render;
       hud.update(dt, {
         ctl, signs: island.signs, underwater: cam.underwater,
         stats: { fps: quality.fps, frameMs: quality.frameMs, quality: renderer.qualityId, scale: renderer.resolutionScale, calls: info.calls, triangles: info.triangles },
       });
+      minimapTimer -= dt;
+      if (minimapTimer <= 0) {
+        minimapTimer = 0.1;
+        minimap.draw(view, ctl.yaw);
+      }
     },
   });
 
-  // ===== Começar =====
-  let started = false;
-  await setLoading('Pronto!');
-  const startButton = $('btn-start');
-  startButton.classList.remove('hidden');
-  $('loading-text').textContent = save.savedAt ? 'Continuando de onde você parou.' : 'Explore as placas para testar cada movimento.';
-  const start = async () => {
-    if (started) return;
-    started = true;
+  // ===== Menu inicial =====
+  function enterTitle() {
+    mode = 'title';
+    $('btn-start').lastChild.textContent = save.savedAt ? 'Continuar' : 'Jogar';
+    document.body.classList.add('in-title');
+    setGameActive();
+    loop.paused = false;
+  }
+  async function startGame() {
+    if (mode === 'game') return;
+    mode = 'game';
+    document.body.classList.remove('in-title');
     audio.enable(true);
-    $('loading').classList.add('hidden');
+    cam.snap(ctl.pos, ctl.yaw);
+    prev.copy(ctl.pos);
+    setGameActive();
     if (!native() && isTouch()) {
       try {
         await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
         await screen.orientation?.lock?.('landscape');
       } catch { /* o navegador pode recusar: segue normal */ }
     }
-    loop.start();
-  };
-  startButton.addEventListener('click', start);
+  }
+  $('btn-start').addEventListener('click', startGame);
+  $('btn-title-config').addEventListener('click', () => openModal('pause', { fromTitle: true }));
+  $('btn-title-credits').addEventListener('click', () => openModal('credits'));
   window.addEventListener('keydown', (e) => {
-    if (!started && (e.code === 'Enter' || e.code === 'Space')) start();
+    if (mode === 'title' && !modals.length && (e.code === 'Enter' || e.code === 'Space')) startGame();
   });
-  // primeira imagem já aparece atrás da tela de início
-  loop.render(0, 0);
+
+  refreshProfile();
+  refreshMission();
+  await setLoading('Pronto!', 100);
+  $('title').classList.remove('loading');
+  enterTitle();
+  loop.start();
 
   // ===== Ciclo de vida (Android e navegador) =====
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && started) {
-      saveNow(true);
-      if (!loop.paused) setPaused(true);
+    if (document.hidden) {
+      if (mode === 'game') {
+        saveNow(true);
+        if (!modals.length) openModal('pause');
+      }
       audio.enable(false);
-    } else if (!document.hidden && started) audio.enable(true);
+    } else if (mode === 'game') audio.enable(true);
   });
   if (native()) {
     try {
       const { App } = await import('@capacitor/app');
       App.addListener('pause', () => {
+        if (mode !== 'game') return;
         saveNow(true);
-        if (started && !loop.paused) setPaused(true);
+        if (!modals.length) openModal('pause');
       });
       App.addListener('backButton', () => {
-        if (started) setPaused(!loop.paused);
+        if (modals.length) closeModal();
+        else if (mode === 'game') openModal('pause');
       });
     } catch { /* plugin ausente */ }
   }
@@ -297,10 +491,13 @@ async function boot() {
   // ganchos para os testes automáticos
   window.__game = {
     get time() { return time; },
-    get started() { return started; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves,
-    start,
+    get mode() { return mode; },
+    get started() { return mode === 'game'; },
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission,
+    start: startGame,
     saveNow,
+    openModal,
+    closeModal,
     teleport(x, z, y) {
       const h = y ?? island.field.sample(x, z) + 0.5;
       ctl.spawn(x, h, z, ctl.yaw);

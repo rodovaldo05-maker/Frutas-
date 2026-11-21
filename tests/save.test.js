@@ -15,6 +15,14 @@ describe('salvamento', () => {
     expect(s.unlocks.glide).toBe(true);
   });
 
+  it('migra salvo da versão 1 com moedas iniciais e missões vazias', () => {
+    const s = migrate({ version: 1, player: { x: 5, y: 1, z: 2 }, unlocks: {} });
+    expect(s.version).toBe(2);
+    expect(s.coins).toBe(200);
+    expect(s.missions).toEqual({});
+    expect(s.player.x).toBe(5);
+  });
+
   it('completa desbloqueios que faltam', () => {
     const s = migrate({ version: 1, unlocks: { glide: false } });
     expect(s.unlocks.glide).toBe(false);

@@ -12,7 +12,15 @@ Movimentos: andar, correr, agachar, deslizar, pular (com tolerância de borda e 
 salto duplo, esquiva (no chão e no ar), escalar paredes de pedra e troncos, agarrar e
 subir bordas, salto na parede, corrida na parede, planar, rolamento contra dano de queda,
 nadar, mergulhar (com ar limitado) e escorregar em rampas íngremes.
-Cada área da ilha tem uma placa com a dica do movimento.
+Cada área da ilha tem uma placa com a dica do movimento, e a missão "Treino de
+movimento" (11 objetivos, 1.000 moedas) acompanha o aprendizado.
+
+Interfaces no estilo dourado do jogo (doc 10): menu inicial com logo e o personagem ao
+vivo, HUD com retrato, vida, fôlego, moedas, fragmentos, minimapa com bússola e
+rastreador de missão, botões de ação com ícones, janelas de Pausa, Missões, Mapa da
+Ilha (pergaminho, com zoom) e Créditos. A ilha tem árvores em blocos, pinheiros,
+coqueiros, arbustos, capim, flores, pedras com musgo (colisão no formato real) e
+construções com desenho de pedra, tijolo e tábua.
 
 ## Rodar
 
@@ -43,7 +51,8 @@ npm run apk        # build + sync + gradle assembleDebug
 | Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
 | Esquiva | Esquiva | Shift | B / ◯ |
 | Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
-| Menu | ☰ | Esc | Start |
+| Mapa · Missões | Ícones no alto | M · J | — |
+| Pausa | Engrenagem | Esc | Start |
 
 ## Estrutura
 
@@ -54,12 +63,13 @@ src/physics     Rapier (colisores com etiquetas: escalável, material)
 src/terrain     campo de alturas e malha do relevo em pedaços
 src/ocean       mar com ondas Gerstner (a mesma onda na GPU e na física)
 src/islands     Ilha de Treino
-src/world       construções em blocos e placas
 src/characters  corpo do laboratório, rosto, planador
 src/animation   animação do laboratório + poses novas (escalar, pendurar, planar...)
 src/movement    controlador do personagem, regras e números
 src/controls    toque, teclado, mouse e controle
-src/ui          HUD, menu de pausa, estilos
+src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
+src/quests      missão de treino
+src/world       construções, placas e natureza (árvores, pedras)
 src/saves       salvamento local (IndexedDB) com versão e migração
 src/optimization qualidade automática
 data/           catálogo do laboratório (segmentos do corpo, frutas)

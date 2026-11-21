@@ -5,7 +5,9 @@ import * as THREE from 'three';
 
 // as placas desenham texto num canvas; no Node basta um canvas de mentira
 if (!globalThis.document) {
-  const ctx = new Proxy({}, { get: () => () => ({ width: 0 }), set: () => true });
+  // qualquer método devolve um objeto que também aceita qualquer método
+  const any = new Proxy({}, { get: (t, k) => (k === 'width' ? 0 : () => any), set: () => true });
+  const ctx = any;
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) };
 }
 

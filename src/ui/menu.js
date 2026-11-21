@@ -4,7 +4,7 @@
 const $ = (id) => document.getElementById(id);
 
 export class PauseMenu {
-  constructor({ settings, onChange, onResume, onSave, onRestart }) {
+  constructor({ settings, onChange, onResume, onSave, onRestart, onTitle }) {
     this.settings = settings;
     this.onChange = onChange;
     this.root = $('pause');
@@ -12,6 +12,7 @@ export class PauseMenu {
     $('btn-resume').addEventListener('click', () => onResume());
     $('btn-save').addEventListener('click', () => onSave());
     $('btn-restart').addEventListener('click', () => onRestart());
+    $('btn-title').addEventListener('click', () => onTitle());
     for (const tab of this.root.querySelectorAll('[data-tab]')) {
       tab.addEventListener('click', () => this.showTab(tab.dataset.tab));
     }
@@ -56,10 +57,14 @@ export class PauseMenu {
     for (const page of this.root.querySelectorAll('[data-page]')) page.classList.toggle('hidden', page.dataset.page !== id);
   }
 
-  setOpen(open) {
+  // fromTitle: aberto pelo menu inicial (só configurações e controles)
+  setOpen(open, { fromTitle = false, tab = fromTitle ? 'config' : 'jogo' } = {}) {
     this.open = open;
     this.root.classList.toggle('hidden', !open);
-    if (open) this.showTab('jogo');
+    if (!open) return;
+    this.root.querySelector('[data-tab="jogo"]').classList.toggle('hidden', fromTitle);
+    $('pause-title').textContent = fromTitle ? 'Configurações' : 'Pausa';
+    this.showTab(tab);
   }
 
   setInfo(text) {

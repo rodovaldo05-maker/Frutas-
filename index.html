@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#101516" />
+    <meta name="theme-color" content="#15112a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>FRUTO Legacy</title>
   </head>
-  <body>
+  <body class="in-title">
     <canvas id="game"></canvas>
     <div id="water-overlay"></div>
     <div id="damage-overlay"></div>
@@ -18,86 +18,177 @@
       <div id="stick" class="stick"><div class="knob"></div></div>
     </div>
 
+    <!-- ===== HUD ===== -->
     <div id="hud">
-      <div class="status">
-        <div class="name">FRUTO <b>Legacy</b><span>Ilha de Treino</span></div>
-        <div class="bar health"><i id="bar-health"></i><em id="txt-health">100/100</em></div>
-        <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em>Fôlego</em></div>
-        <div class="bar air" id="box-air"><i id="bar-air"></i><em>Ar</em></div>
+      <div class="player-card">
+        <div class="portrait"><img id="portrait" alt="" /><span class="level" id="txt-level">Nv. 1</span></div>
+        <div class="player-bars">
+          <div class="player-title"><b id="txt-name">Aprendiz</b><span>Ilha de Treino</span></div>
+          <div class="bar health"><i id="bar-health"></i><em data-icon="heart"><span id="txt-health">Vida: 100 / 100</span></em></div>
+          <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego: 100 / 100</span></em></div>
+          <div class="bar air" id="box-air"><i id="bar-air"></i><em data-icon="bubble"><span>Ar</span></em></div>
+          <div class="wallet"><span data-icon="coin"><b id="txt-coins">200</b></span><span data-icon="gem"><b id="txt-frags">0</b></span></div>
+        </div>
       </div>
-      <div id="hint" class="hint"><b id="hint-title"></b><span id="hint-text"></span></div>
+
+      <div class="top-actions">
+        <button data-btn id="btn-missions" class="icon-btn" data-icon="scroll" aria-label="Missões"></button>
+        <button data-btn id="btn-map" class="icon-btn" data-icon="map" aria-label="Mapa"></button>
+        <button data-btn id="btn-menu" class="icon-btn" data-icon="gear" aria-label="Pausa e configurações"></button>
+      </div>
+
+      <div class="minimap" id="minimap">
+        <canvas id="minimap-canvas" width="240" height="240"></canvas>
+        <span class="dir n">N</span><span class="dir e">L</span><span class="dir s">S</span><span class="dir w">O</span>
+      </div>
+
+      <div id="tracker" class="tracker frame small">
+        <div class="frame-title" data-icon="flag">Missão</div>
+        <button data-btn class="close" id="btn-untrack" data-icon="close" aria-label="Parar de rastrear"></button>
+        <div class="tracker-body">
+          <b id="tracker-title">Treino de movimento</b>
+          <span id="tracker-step"></span>
+          <span class="reward" id="tracker-reward"></span>
+        </div>
+      </div>
+
+      <div id="hint" class="hint frame small"><b id="hint-title"></b><span id="hint-text"></span></div>
       <div id="toasts" class="toasts"></div>
-      <div id="state" class="state">Parado</div>
       <pre id="stats" class="stats"></pre>
-      <button data-btn id="btn-menu" class="round menu" aria-label="Menu">☰</button>
+      <div id="state" class="state">Parado</div>
+
+      <div class="hotbar">
+        <div class="slot"><i>1</i></div><div class="slot"><i>2</i></div><div class="slot"><i>3</i></div><div class="slot"><i>4</i></div><div class="slot"><i>5</i></div>
+      </div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Shift esquiva · C agachar · Ctrl correr · M mapa · J missões · Esc pausa</div>
+
       <div class="pad">
-        <button data-btn id="btn-sprint" class="round sprint">Correr</button>
-        <button data-btn id="btn-crouch" class="round crouch">Agachar</button>
-        <button data-btn id="btn-dash" class="round dash">Esquiva</button>
-        <button data-btn id="btn-jump" class="round jump">Pular</button>
+        <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
+        <button data-btn id="btn-crouch" class="act crouch" data-icon="crouch" aria-label="Agachar"></button>
+        <button data-btn id="btn-dash" class="act dash" data-icon="dash" aria-label="Esquiva"></button>
+        <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
       </div>
-      <div class="keys">WASD mover · Espaço pular (segure para planar) · Shift esquiva · C agachar · Ctrl correr · arraste para girar a câmera · Esc menu</div>
     </div>
 
+    <!-- ===== Pausa e configurações ===== -->
     <div id="pause" class="overlay hidden">
-      <div class="panel">
-        <header>
-          <h2>Pausa</h2>
-          <nav>
-            <button data-tab="jogo" class="active">Jogo</button>
-            <button data-tab="config">Configurações</button>
-            <button data-tab="controles">Controles</button>
+      <div class="frame window">
+        <div class="frame-title" data-icon="gear"><span id="pause-title">Pausa</span></div>
+        <button class="close" data-close="pause" data-icon="close" aria-label="Fechar"></button>
+        <div class="window-body">
+          <nav class="side-tabs">
+            <button data-tab="jogo" class="active" data-icon="home">Jogo</button>
+            <button data-tab="config" data-icon="gear">Configurações</button>
+            <button data-tab="controles" data-icon="pad">Controles</button>
           </nav>
-        </header>
-        <section data-page="jogo">
-          <button id="btn-resume" class="primary">Continuar</button>
-          <button id="btn-save">Salvar agora</button>
-          <button id="btn-restart">Voltar ao início da ilha</button>
-          <p id="pause-info" class="muted"></p>
-        </section>
-        <section data-page="config" class="hidden">
-          <label>Qualidade</label>
-          <div class="choice" data-choice="quality">
-            <button data-value="auto">Auto</button><button data-value="leve">Leve</button><button data-value="media">Média</button><button data-value="alta">Alta</button>
+          <div class="pages">
+            <section data-page="jogo" class="game-page">
+              <button id="btn-resume" class="btn gold" data-icon="play">Continuar</button>
+              <button id="btn-save" class="btn" data-icon="save">Salvar agora</button>
+              <button id="btn-restart" class="btn" data-icon="flag">Voltar ao início da ilha</button>
+              <button id="btn-title" class="btn" data-icon="home">Menu inicial</button>
+              <p id="pause-info" class="muted"></p>
+            </section>
+            <section data-page="config" class="hidden">
+              <div class="row"><label>Qualidade</label>
+                <div class="choice" data-choice="quality"><button data-value="auto">Auto</button><button data-value="leve">Leve</button><button data-value="media">Média</button><button data-value="alta">Alta</button></div>
+              </div>
+              <div class="row"><label>Sensibilidade da câmera <output data-out="sensitivity"></output></label><input type="range" min="0.4" max="2" step="0.1" data-key="sensitivity" /></div>
+              <div class="row"><label>Volume <output data-out="volume"></output></label><input type="range" min="0" max="1" step="0.05" data-key="volume" data-format="pct" /></div>
+              <label class="check"><input type="checkbox" data-key="invertY" /> Inverter eixo vertical</label>
+              <label class="check"><input type="checkbox" data-key="reduceMotion" /> Reduzir movimento da câmera</label>
+              <label class="check"><input type="checkbox" data-key="showStats" /> Mostrar desempenho</label>
+              <div class="row"><label>Botões de toque</label>
+                <div class="choice" data-choice="layout"><button data-value="padrao">Padrão</button><button data-value="canhoto">Canhoto</button></div>
+              </div>
+              <div class="row"><label>Tamanho dos botões <output data-out="buttonScale"></output></label><input type="range" min="0.75" max="1.3" step="0.05" data-key="buttonScale" data-format="pct" /></div>
+            </section>
+            <section data-page="controles" class="hidden">
+              <table>
+                <tr><th>Ação</th><th>Celular</th><th>PC</th><th>Controle</th></tr>
+                <tr><td>Mover</td><td>Joystick (lado esquerdo)</td><td>WASD</td><td>Analógico esquerdo</td></tr>
+                <tr><td>Câmera</td><td>Arrastar a tela</td><td>Arrastar o mouse</td><td>Analógico direito</td></tr>
+                <tr><td>Correr (alterna)</td><td>Botão do corredor</td><td>Ctrl</td><td>Apertar analógico esquerdo</td></tr>
+                <tr><td>Pular · salto duplo · planar</td><td>Seta grande (segure caindo)</td><td>Espaço</td><td>A / ✕</td></tr>
+                <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
+                <tr><td>Agachar · deslizar · mergulhar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
+                <tr><td>Mapa · Missões</td><td>Ícones no alto</td><td>M · J</td><td>—</td></tr>
+                <tr><td>Escalar</td><td colspan="3">Ir contra pedra escura, troncos ou barrancos</td></tr>
+                <tr><td>Agarrar borda</td><td colspan="3">Automático ao pular perto de uma borda</td></tr>
+                <tr><td>Rolamento</td><td colspan="3">Agachar logo antes de tocar o chão numa queda alta</td></tr>
+              </table>
+            </section>
           </div>
-          <label>Sensibilidade da câmera <output data-out="sensitivity"></output></label>
-          <input type="range" min="0.4" max="2" step="0.1" data-key="sensitivity" />
-          <label>Volume <output data-out="volume"></output></label>
-          <input type="range" min="0" max="1" step="0.05" data-key="volume" data-format="pct" />
-          <label class="check"><input type="checkbox" data-key="invertY" /> Inverter eixo vertical</label>
-          <label class="check"><input type="checkbox" data-key="reduceMotion" /> Reduzir movimento da câmera</label>
-          <label class="check"><input type="checkbox" data-key="showStats" /> Mostrar desempenho</label>
-          <label>Botões de toque</label>
-          <div class="choice" data-choice="layout">
-            <button data-value="padrao">Padrão</button><button data-value="canhoto">Canhoto</button>
-          </div>
-          <label>Tamanho dos botões <output data-out="buttonScale"></output></label>
-          <input type="range" min="0.75" max="1.3" step="0.05" data-key="buttonScale" data-format="pct" />
-        </section>
-        <section data-page="controles" class="hidden">
-          <table>
-            <tr><th>Ação</th><th>Celular</th><th>PC</th><th>Controle</th></tr>
-            <tr><td>Mover</td><td>Joystick (lado esquerdo)</td><td>WASD</td><td>Analógico esquerdo</td></tr>
-            <tr><td>Câmera</td><td>Arrastar a tela</td><td>Arrastar o mouse</td><td>Analógico direito</td></tr>
-            <tr><td>Correr (alterna)</td><td>Correr</td><td>Ctrl</td><td>Apertar analógico esquerdo</td></tr>
-            <tr><td>Pular · salto duplo · planar</td><td>Pular (segurar caindo plana)</td><td>Espaço</td><td>A / ✕</td></tr>
-            <tr><td>Esquiva</td><td>Esquiva</td><td>Shift</td><td>B / ◯</td></tr>
-            <tr><td>Agachar · deslizar · mergulhar · soltar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
-            <tr><td>Escalar</td><td colspan="3">Ir contra parede de pedra escura ou tronco</td></tr>
-            <tr><td>Agarrar borda</td><td colspan="3">Automático ao pular perto de uma borda</td></tr>
-            <tr><td>Rolamento</td><td colspan="3">Agachar logo antes de tocar o chão numa queda alta</td></tr>
-          </table>
-        </section>
+        </div>
       </div>
     </div>
 
-    <div id="loading" class="overlay">
-      <div class="title">FRUTO <b>Legacy</b></div>
-      <div id="loading-text" class="muted">Carregando…</div>
-      <button id="btn-start" class="primary hidden">Tocar para começar</button>
-      <p class="muted small">Fase 1 · Base e movimento</p>
+    <!-- ===== Missões ===== -->
+    <div id="missions" class="overlay hidden">
+      <div class="frame window">
+        <div class="frame-title" data-icon="scroll">Missões</div>
+        <button class="close" data-close="missions" data-icon="close" aria-label="Fechar"></button>
+        <div class="top-tabs" id="mission-tabs">
+          <button data-mtab="principais" class="active">Principais</button><button data-mtab="secundarias">Secundárias</button><button data-mtab="diarias">Diárias</button><button data-mtab="faccao">De Facção</button>
+        </div>
+        <div id="mission-list" class="mission-list"></div>
+      </div>
     </div>
-    <div id="rotate" class="overlay"><div>Gire o aparelho para jogar na horizontal</div></div>
+
+    <!-- ===== Mapa ===== -->
+    <div id="worldmap" class="overlay hidden">
+      <div class="frame window map-window">
+        <div class="frame-title" data-icon="map">Mapa da Ilha</div>
+        <button class="close" data-close="worldmap" data-icon="close" aria-label="Fechar"></button>
+        <div class="parchment">
+          <canvas id="map-canvas"></canvas>
+          <div class="map-zoom"><button id="map-in" data-icon="plus" aria-label="Aproximar"></button><button id="map-out" data-icon="minus" aria-label="Afastar"></button></div>
+          <div class="map-compass">N</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Créditos ===== -->
+    <div id="credits" class="overlay hidden">
+      <div class="frame window narrow">
+        <div class="frame-title" data-icon="credits">Créditos</div>
+        <button class="close" data-close="credits" data-icon="close" aria-label="Fechar"></button>
+        <div class="credits-body">
+          <h3>FRUTO Legacy</h3>
+          <p>Um jogo de ilhas, frutas de poder e estilos de luta.</p>
+          <h4>Corpo, animações e frutas</h4>
+          <p>FRUTO Laboratório Voxel, Edição 18</p>
+          <h4>Tecnologia</h4>
+          <p>Three.js (MIT) · Rapier (Apache 2.0) · Capacitor (MIT) · Vite (MIT)</p>
+          <h4>Fontes</h4>
+          <p>Cinzel e Inter (SIL Open Font License)</p>
+          <p class="muted">Fase 1 · Base e movimento</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Abertura e menu inicial ===== -->
+    <div id="title" class="title-screen loading">
+      <div class="title-left">
+        <div class="logo">
+          <div class="emblem" id="emblem"></div>
+          <div class="logo-text"><span class="l1">FRUTO</span><span class="l2">LEGACY</span><span class="ribbon">Ilha de Treino</span></div>
+        </div>
+        <div class="title-menu">
+          <button id="btn-start" class="menu-btn primary" data-icon="play">Jogar</button>
+          <button class="menu-btn" disabled data-icon="swords">Modo PvP <small>em breve</small></button>
+          <button class="menu-btn" disabled data-icon="server">Servidores <small>em breve</small></button>
+          <button id="btn-title-config" class="menu-btn" data-icon="gear">Configurações</button>
+          <button id="btn-title-credits" class="menu-btn" data-icon="credits">Créditos</button>
+        </div>
+        <div class="loading-box">
+          <div class="progress"><i id="loading-bar"></i></div>
+          <div id="loading-text" class="muted">Carregando…</div>
+        </div>
+      </div>
+      <div class="version">Fase 1 · Base e movimento</div>
+    </div>
+    <div id="rotate" class="overlay rotate"><div>Gire o aparelho para jogar na horizontal</div></div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

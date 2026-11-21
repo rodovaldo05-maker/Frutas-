@@ -1,7 +1,7 @@
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 const DB = 'fruto-legacy';
 const STORE = 'saves';
 const FALLBACK = 'fruto-legacy:';
@@ -26,12 +26,18 @@ export function newSave() {
     player: null,
     unlocks: { doubleJump: true, airDash: true, wallRun: true, glide: true },
     visited: [],
+    level: 1,
+    title: 'Aprendiz',
+    coins: 200, // jogador novo começa com um giro da roleta (doc 09)
+    fragments: 0,
+    missions: {},
   };
 }
 
 // Migrações: cada versão sabe subir para a próxima
 const MIGRATIONS = {
   0: (s) => ({ ...newSave(), ...s, version: 1, visited: Array.isArray(s.visited) ? s.visited : [] }),
+  1: (s) => ({ ...s, version: 2, level: 1, title: 'Aprendiz', coins: 200, fragments: 0, missions: {} }),
 };
 
 export function migrate(save) {
@@ -45,7 +51,10 @@ export function migrate(save) {
     v = s.version;
   }
   const base = newSave();
-  return { ...base, ...s, unlocks: { ...base.unlocks, ...(s.unlocks || {}) } };
+  const out = { ...base, ...s, unlocks: { ...base.unlocks, ...(s.unlocks || {}) } };
+  if (!out.missions || typeof out.missions !== 'object') out.missions = {};
+  for (const k of ['coins', 'fragments', 'level']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  return out;
 }
 
 function openDB() {

@@ -62,6 +62,25 @@ export class Physics {
     return this.tag(this.world.createCollider(desc, this.fixedBody), tags);
   }
 
+  // Casca convexa (pedras irregulares); se não der para montar, vira uma caixa envolvente
+  addConvexHull(points, tags = {}) {
+    let desc = RAPIER.ColliderDesc.convexHull(points);
+    if (!desc) {
+      let min = [Infinity, Infinity, Infinity];
+      let max = [-Infinity, -Infinity, -Infinity];
+      for (let i = 0; i < points.length; i += 3) {
+        for (let k = 0; k < 3; k++) {
+          min[k] = Math.min(min[k], points[i + k]);
+          max[k] = Math.max(max[k], points[i + k]);
+        }
+      }
+      desc = RAPIER.ColliderDesc.cuboid((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2)
+        .setTranslation((max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2);
+    }
+    desc.setCollisionGroups(groups(GROUP_WORLD, 0xffff));
+    return this.tag(this.world.createCollider(desc, this.fixedBody), tags);
+  }
+
   // Raio contra o mundo estático (ignora o jogador). Retorna ponto, normal, distância e etiquetas.
   raycast(origin, dir, maxDist) {
     const ray = new RAPIER.Ray(origin, dir);

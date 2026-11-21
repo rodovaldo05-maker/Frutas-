@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Heightfield } from '../terrain/heightfield.js';
 import { buildTerrain, tropicalColor } from '../terrain/terrainMesh.js';
 import { StructureBuilder } from '../world/structures.js';
+import { buildNature } from '../world/nature.js';
 import { smooth, valueNoise2D, mulberry32 } from '../core/math.js';
 
 export const ISLAND = {
@@ -15,6 +16,12 @@ export const ISLAND = {
   waterLevel: 0,
   spawn: { x: 0, z: 71, yaw: Math.PI },
 };
+
+// Áreas dos desafios que ficam livres de árvores e pedras (x, z, raio)
+const KEEP_CLEAR = [
+  [0, 66, 14], [10, 20, 16], [30, -12, 9], [46, -6, 9], [14, -20, 10], [25, 37, 18], [-10, 36, 9],
+  [58, 28, 16], [-50, 16, 20], [-28, 44, 12], [0, -50, 12], [-46, -26, 6], [-4, -58, 6], [2, -46, 5],
+];
 
 const noise = valueNoise2D(7);
 const noise2 = valueNoise2D(19);
@@ -144,8 +151,8 @@ export function buildTrainingIsland({ scene, physics }) {
   // ===== Praia: ponto de partida =====
   sb.sign({ x: 4.5, y: ground(4.5, 66), z: 66, rotY: Math.PI, title: 'Ilha de Treino', hint: 'Bem-vindo! Explore as placas para testar cada movimento.' });
 
-  // ===== Árvores e pedras (decoração com tronco sólido) =====
-  addVegetation({ scene, physics, field, sb });
+  // ===== Natureza: árvores, coqueiros, pinheiros, arbustos, pedras, capim =====
+  const nature = buildNature({ scene, physics, field, rand: mulberry32(42), keepClear: KEEP_CLEAR });
 
   sb.finish();
 
@@ -155,118 +162,5 @@ export function buildTrainingIsland({ scene, physics }) {
     physics.addBox({ x, y: 0, z }, { x: w / 2, y: 60, z: d / 2 }, 0, { climbable: false, material: 'limite', invisible: true });
   }
 
-  return { field, signs: sb.signs, triangles: terrain.triangles };
-}
-
-function addVegetation({ scene, physics, field, sb }) {
-  const rand = mulberry32(42);
-  const keepClear = [
-    [0, 64, 14], [10, 20, 16], [30, -12, 9], [46, -6, 9], [14, -20, 10], [25, 37, 18], [-10, 36, 9],
-    [58, 28, 16], [-50, 16, 20], [-28, 44, 12], [0, -50, 12], [-46, -26, 6],
-  ];
-  const clear = (x, z) => !keepClear.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r);
-  const trees = [];
-  const palms = [];
-  // bosques em lugares definidos + algumas árvores soltas
-  const groves = [[-62, -10, 15, 9], [-22, -24, 10, 5], [58, -34, 13, 7], [-64, 44, 9, 4], [40, 60, 11, 5], [-30, 68, 8, 3], [66, 8, 8, 4]];
-  const tryTree = (x, z) => {
-    const y = field.sample(x, z);
-    if (y < 1.4 || field.normal(x, z).y < 0.9 || !clear(x, z)) return;
-    if (trees.some((t) => Math.hypot(t.x - x, t.z - z) < 4.2)) return;
-    trees.push({ x, y, z, h: 3.2 + rand() * 2.2, s: 2.4 + rand() * 1.1, r: rand() });
-  };
-  for (const [cx, cz, r, n] of groves) {
-    for (let k = 0; k < n * 3 && trees.length < 90; k++) {
-      const a = rand() * Math.PI * 2;
-      const d = Math.sqrt(rand()) * r;
-      tryTree(cx + Math.cos(a) * d, cz + Math.sin(a) * d);
-    }
-  }
-  for (let k = 0; k < 30; k++) tryTree((rand() * 2 - 1) * 78, (rand() * 2 - 1) * 74);
-  // coqueiros na faixa de areia
-  for (let k = 0; k < 120 && palms.length < 22; k++) {
-    const a = rand() * Math.PI * 2;
-    const x = Math.cos(a) * 84;
-    const z = Math.sin(a) * 84 / 1.12;
-    let px = x, pz = z;
-    // procura a areia andando para dentro
-    for (let step = 0; step < 20; step++) {
-      const y = field.sample(px, pz);
-      if (y > 0.9 && y < 2.2) break;
-      px *= 0.97;
-      pz *= 0.97;
-    }
-    const y = field.sample(px, pz);
-    if (y < 0.9 || y > 2.4 || !clear(px, pz) || palms.some((p) => Math.hypot(p.x - px, p.z - pz) < 7)) continue;
-    palms.push({ x: px, y, z: pz, h: 5 + rand() * 1.8, lean: 0.12 + rand() * 0.16, dir: Math.atan2(-pz, -px) + Math.PI + (rand() - 0.5), r: rand() });
-  }
-
-  const box = new THREE.BoxGeometry(1, 1, 1);
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88, flatShading: true });
-  const make = (count, material) => {
-    const mesh = new THREE.InstancedMesh(box, material, Math.max(1, count));
-    mesh.count = count;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    return mesh;
-  };
-  const trunkMesh = make(trees.length + palms.length * 3, mat('#7a5233'));
-  const leafMesh = make(trees.length * 2 + palms.length * 5, mat('#ffffff'));
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
-  const e = new THREE.Euler();
-  const c = new THREE.Color();
-  const v = (x, y, z) => new THREE.Vector3(x, y, z);
-  let ti = 0;
-  let li = 0;
-  const leafColors = ['#3f7a3e', '#4d8b45', '#5f9a4e', '#386b3a'];
-  for (const t of trees) {
-    q.setFromAxisAngle(v(0, 1, 0), t.r * Math.PI);
-    trunkMesh.setMatrixAt(ti++, m.compose(v(t.x, t.y + t.h / 2, t.z), q, v(0.62, t.h, 0.62)));
-    const col = leafColors[Math.floor(t.r * 4)];
-    leafMesh.setMatrixAt(li, m.compose(v(t.x, t.y + t.h + t.s * 0.22, t.z), q, v(t.s, t.s * 0.72, t.s)));
-    leafMesh.setColorAt(li++, c.set(col));
-    leafMesh.setMatrixAt(li, m.compose(v(t.x + 0.15, t.y + t.h + t.s * 0.82, t.z - 0.1), q, v(t.s * 0.62, t.s * 0.5, t.s * 0.62)));
-    leafMesh.setColorAt(li++, c.set(col).offsetHSL(0.01, 0, 0.06));
-    physics.addCylinder({ x: t.x, y: t.y + t.h / 2, z: t.z }, t.h / 2, 0.34, { climbable: true, material: 'madeira' });
-  }
-  for (const p of palms) {
-    // tronco inclinado em três gomos
-    const dx = Math.cos(p.dir) * p.lean;
-    const dz = Math.sin(p.dir) * p.lean;
-    const seg = p.h / 3;
-    for (let k = 0; k < 3; k++) {
-      const bend = (k + 0.5) / 3;
-      e.set(dz * (1 + k * 0.6), 0, -dx * (1 + k * 0.6));
-      q.setFromEuler(e);
-      trunkMesh.setMatrixAt(ti++, m.compose(v(p.x + dx * p.h * bend * bend * 1.6, p.y + seg * (k + 0.5), p.z + dz * p.h * bend * bend * 1.6), q, v(0.5 - k * 0.06, seg * 1.04, 0.5 - k * 0.06)));
-    }
-    const top = v(p.x + dx * p.h * 1.6, p.y + p.h, p.z + dz * p.h * 1.6);
-    for (let k = 0; k < 5; k++) {
-      const a = p.r * 6 + (k / 5) * Math.PI * 2;
-      e.set(0, a, 0.42, 'YXZ');
-      e.x = 0.38;
-      q.setFromEuler(e);
-      const off = v(Math.sin(a) * 1.25, -0.28, Math.cos(a) * 1.25);
-      leafMesh.setMatrixAt(li, m.compose(top.clone().add(off), q, v(0.75, 0.12, 2.6)));
-      leafMesh.setColorAt(li++, c.set(k % 2 ? '#5d9a4a' : '#4c8a3f'));
-    }
-    physics.addCylinder({ x: p.x + dx * p.h * 0.8, y: p.y + p.h / 2, z: p.z + dz * p.h * 0.8 }, p.h / 2, 0.3, { climbable: true, material: 'madeira' });
-  }
-  trunkMesh.count = ti;
-  leafMesh.count = li;
-  trunkMesh.instanceMatrix.needsUpdate = true;
-  leafMesh.instanceMatrix.needsUpdate = true;
-  if (leafMesh.instanceColor) leafMesh.instanceColor.needsUpdate = true;
-
-  // pedras soltas (poucas)
-  for (let k = 0; k < 18; k++) {
-    const x = (rand() * 2 - 1) * 78;
-    const z = (rand() * 2 - 1) * 72;
-    const y = field.sample(x, z);
-    if (y < 0.8 || !clear(x, z)) continue;
-    const s = 0.7 + rand() * 1.2;
-    sb.block({ x, y: y - 0.35, z, w: s * 1.4, h: s, d: s * 1.1, rotY: rand() * 3, style: 'pedra' });
-  }
+  return { field, signs: sb.signs, triangles: terrain.triangles, nature };
 }

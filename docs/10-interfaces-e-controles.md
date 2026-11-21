@@ -2,32 +2,45 @@
 
 ## 1. Linguagem visual
 
-A interface herda a identidade do FRUTO Laboratório Voxel.
+Estilo definido pela folha de referência enviada na Fase 1: painéis escuros em
+roxo-noite com moldura dourada dupla e pontos nos cantos, faixa de título em madeira
+escura com o ícone num círculo dourado, botões dourados para a ação principal e
+escuros com borda dourada para as demais, barras de vida verde e de fôlego azul, retrato
+redondo com selo de nível, minimapa com bússola e rastreador de missão. Só o estilo vem da
+referência: personagens, logos e nomes são do FRUTO Legacy.
 
 | Token | Valor | Uso |
 |---|---|---|
-| Fundo | `#101516` | Fundo de telas cheias |
-| Painel | `#191f20` (92% opaco sobre o jogo) | Cartões, painéis, barras |
-| Linha | `#303a3c` | Bordas e divisórias |
-| Texto | `#edf0e9` | Texto principal |
-| Texto secundário | `#8e9d9c` | Rótulos, descrições |
-| Destaque | `#ff9b79` (coral) | Botões principais, seleção, títulos de seção |
-| Cor da fruta | Cor própria de cada fruta | Bordas de habilidades, aura dos botões, dossiê |
+| Tinta (fundo) | `#0e0b1c` | Telas cheias, fundo das barras |
+| Painel | gradiente `#2e214c` → `#15112a` (97%) | Janelas, cartões, rastreador |
+| Ouro | `#d9a64a` (claro `#ffe7a3`, escuro `#8a5a1c`) | Molduras, ícones, títulos |
+| Madeira | `#45301a` → `#20160b` | Faixas de título, botões secundários |
+| Texto | `#f6ecd7` | Texto principal |
+| Texto secundário | `#b8a888` | Rótulos, descrições |
+| Botão principal | gradiente `#ffe38f` → `#b5761f`, texto `#2b1805` | Jogar, Continuar, Rastrear, aba ativa |
+| Confirmar / Cancelar | verde `#9cf07f` → `#1f7f2e` / vermelho `#7a2a20` → `#3d120c` | Receber, Aceitar / fechar (X) |
+| Vida | `#7be86a` → `#1f8f35` | Barra de vida |
+| Fôlego (energia) | `#64b4ff` → `#2453cf` | Barra de fôlego |
+| Ar | `#8be4f5` → `#2a93b3` (vermelho quando acaba) | Barra de ar embaixo d'água |
+| Destaque | `#ff9b79` (coral do laboratório) | Seta do jogador, ícone de missão, fruta do emblema |
 | Comum / Épico / Lendário | `#8fd16a` / `#b57bff` / `#ffc93c` | Selos de nível, bordas de cartões |
-| Perigo | `#e5484d` | Vida, avisos, água para usuários de fruta |
-| Energia | `#5cc9e8` | Barra de energia |
-| Fôlego | `#e8e2c4` | Arco de fôlego ao lado do personagem |
-| Vontade | `#c78bff` | Barra de Vontade |
 
 | Regra | Valor |
 |---|---|
-| Fonte | Inter (embutida no app); números tabulares nas barras |
-| Raio dos cantos | 16 px em painéis, 999 px em pílulas, 50% em botões de ação |
-| Alvo mínimo de toque | 48 × 48 dp; botões de habilidade 64 dp; ataque 88 dp |
+| Fontes | Cinzel (títulos, logo, menus) e Inter (textos, números); embutidas no app |
+| Logo | "FRUTO LEGACY" em Cinzel 900 com gradiente dourado e contorno; emblema de timão com a fruta mascote |
+| Raio dos cantos | 16 px em janelas, 10–12 px em botões e abas, 50% em botões de ação |
+| Alvo mínimo de toque | 48 × 48 dp; ação 60 dp; Pular 86 dp (ajustável de 75% a 130%) |
 | Áreas seguras | Toda a interface respeita os recortes de câmera e bordas |
 | Rótulos | Sentenças curtas, verbos no imperativo, sem jargão técnico |
-| Ícones | Desenho voxel de linha grossa; sempre acompanhados de texto em menus |
+| Ícones | SVG de traço grosso em dourado (`src/ui/icons.js`); botões de ação só com ícone |
 | Animações | 120–250 ms; desligadas com "Reduzir movimento" |
+
+Componentes prontos em `src/ui/style.css`: `.frame` (moldura), `.frame-title` (faixa),
+`.close` (X vermelho), `.btn` / `.btn.gold` / `.btn.green`, `.side-tabs` e `.top-tabs`,
+`.bar` (barras), `.slot` (espaço de item), `.menu-btn` (menu inicial), `.icon-btn` (ícones
+redondos do alto). As próximas telas (Mochila, Status, Fruta, Estilos, Loja, Troca) usam
+os mesmos componentes.
 
 ### 1.1 Estados de um botão de habilidade
 

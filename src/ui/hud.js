@@ -29,17 +29,40 @@ export class Hud {
   constructor() {
     this.el = {
       health: $('bar-health'), healthText: $('txt-health'),
-      stamina: $('bar-stamina'), staminaBox: $('box-stamina'),
+      stamina: $('bar-stamina'), staminaText: $('txt-stamina'),
       air: $('bar-air'), airBox: $('box-air'),
+      level: $('txt-level'), name: $('txt-name'), coins: $('txt-coins'), frags: $('txt-frags'), portrait: $('portrait'),
       state: $('state'), hint: $('hint'), hintTitle: $('hint-title'), hintText: $('hint-text'),
       toasts: $('toasts'), stats: $('stats'), sprint: $('btn-sprint'), water: $('water-overlay'),
-      vignette: $('damage-overlay'),
+      vignette: $('damage-overlay'), keys: $('keys'),
+      tracker: $('tracker'), trackerTitle: $('tracker-title'), trackerStep: $('tracker-step'), trackerReward: $('tracker-reward'),
     };
     this.timer = 0;
     this.lastHint = null;
     this.showStats = false;
-    this.staminaVisible = 0;
     this.flash = 0;
+    this.keysTimer = 25;
+  }
+
+  setPortrait(url) {
+    this.el.portrait.src = url;
+  }
+
+  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0 }) {
+    this.el.level.textContent = `Nv. ${level}`;
+    this.el.name.textContent = title;
+    this.el.coins.textContent = coins.toLocaleString('pt-BR');
+    this.el.frags.textContent = fragments.toLocaleString('pt-BR');
+  }
+
+  setTracker({ visible, title, step, reward, done }) {
+    const t = this.el.tracker;
+    t.classList.toggle('hidden', !visible);
+    t.classList.toggle('done', !!done);
+    if (!visible) return;
+    this.el.trackerTitle.textContent = title;
+    this.el.trackerStep.textContent = step;
+    this.el.trackerReward.innerHTML = reward;
   }
 
   setSprint(on) {
@@ -67,8 +90,6 @@ export class Hud {
     const st = ctl.stamina.value / 100;
     el.stamina.style.transform = `scaleX(${st})`;
     el.stamina.classList.toggle('tired', ctl.stamina.exhausted);
-    this.staminaVisible = st < 0.995 ? 1 : Math.max(0, this.staminaVisible - dt * 0.8);
-    el.staminaBox.style.opacity = this.staminaVisible.toFixed(2);
     const breath = ctl.breath / MOVE.breath;
     el.airBox.style.opacity = ctl.state === 'dive' || breath < 0.999 ? '1' : '0';
     el.air.style.transform = `scaleX(${breath})`;
@@ -76,11 +97,16 @@ export class Hud {
     el.water.classList.toggle('on', underwater);
     this.flash = Math.max(0, this.flash - dt * 2.5);
     el.vignette.style.opacity = this.flash.toFixed(2);
+    if (this.keysTimer > 0) {
+      this.keysTimer -= dt;
+      if (this.keysTimer <= 0) el.keys.classList.add('fade');
+    }
 
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.1;
-    el.healthText.textContent = `${Math.ceil(ctl.health)}/${ctl.maxHealth}`;
+    el.healthText.textContent = `Vida: ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
+    el.staminaText.textContent = `Fôlego: ${Math.round(ctl.stamina.value)} / 100`;
     el.state.textContent = stateLabel(ctl);
 
     // placa mais próxima

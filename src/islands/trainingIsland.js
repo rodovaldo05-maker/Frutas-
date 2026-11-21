@@ -21,6 +21,7 @@ export const ISLAND = {
 const KEEP_CLEAR = [
   [0, 66, 14], [10, 20, 16], [30, -12, 9], [46, -6, 9], [14, -20, 10], [25, 37, 18], [-10, 36, 9],
   [58, 28, 16], [-50, 16, 20], [-28, 44, 12], [0, -50, 12], [-46, -26, 6], [-4, -58, 6], [2, -46, 5],
+  [-16, -10, 18], // arena de combate (combat/enemies.js)
 ];
 
 const noise = valueNoise2D(7);
@@ -150,6 +151,13 @@ export function buildTrainingIsland({ scene, physics }) {
 
   // ===== Praia: ponto de partida =====
   sb.sign({ x: 4.5, y: ground(4.5, 66), z: 66, rotY: Math.PI, title: 'Ilha de Treino', hint: 'Bem-vindo! Explore as placas para testar cada movimento.' });
+
+  // Arena de combate: bonecos a leste, acampamento dos Recrutas a oeste
+  sb.sign({ x: -14, y: ground(-14, 4), z: 4, rotY: Math.PI, title: 'Arena de combate', hint: 'Bonecos: pratique o combo com Atacar. Recrutas revidam: segure Defender de frente ou esquive no tempo certo.' });
+  for (const [x, z, r] of [[-30, -13, 0.3], [-29.5, -6, -0.5], [-26, -18, 1.1]]) {
+    sb.block({ x, y: ground(x, z) - 0.2, z, w: 2.2, h: 0.7, d: 0.7, rotY: r, style: 'madeira' });
+  }
+  sb.block({ x: -31.5, y: ground(-31.5, -9.5) - 0.2, z: -9.5, w: 1.4, h: 1.3, d: 1.4, rotY: 0.3, style: 'madeira' });
 
   // ===== Natureza: árvores, coqueiros, pinheiros, arbustos, pedras, capim =====
   const nature = buildNature({ scene, physics, field, rand: mulberry32(42), keepClear: KEEP_CLEAR });

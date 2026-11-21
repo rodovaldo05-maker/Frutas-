@@ -203,7 +203,7 @@ export class PlayerAnimator {
     if (grounded && !ctl.dash) {
       this.balance.apply(body, {
         dt, ground: this.groundAt, root: body.root, grounded: true, velocity: ctl.vel, acceleration: this.acceleration,
-        landing: ctl.landing, gait: this.stride, phase: this.walkPhase, gravity: 19.6, attacking: false, stance: 'humana', species: null, flying: false,
+        landing: ctl.landing, gait: this.stride, phase: this.walkPhase, gravity: 19.6, attacking: !!ctl.action, stance: 'humana', species: null, flying: false,
       });
     } else this.balance.reset();
 
@@ -226,10 +226,35 @@ export class PlayerAnimator {
     const body = this.body;
     const dash = ctl.dash;
     const eating = this.eat;
+    const action = !eating && !dash ? ctl.action : null; // golpe do laboratório (Jab, Direto, Gancho)
     motion.apply(THREE, body, this.data, {
-      id: eating ? 'comer' : dash ? dash.clip : 'idle', t: eating ? eating.t : dash ? dash.t : t, clock: t, phase: this.walkPhase,
-      gait: eating || dash ? 0 : this.stride, runBlend: this.runBlend, swimBlend: 0, air: 0, landing: ctl.landing, dashDirection: dash?.relative,
+      id: eating ? 'comer' : action ? action.clip : dash ? dash.clip : 'idle', t: eating ? eating.t : action ? action.t : dash ? dash.t : t, clock: t, phase: this.walkPhase,
+      gait: eating || dash || action ? 0 : this.stride, runBlend: this.runBlend, swimBlend: 0, air: 0, landing: ctl.landing, dashDirection: dash?.relative,
     });
+    // defesa: antebraços na frente do rosto, tronco encolhido
+    this.guardBlend = lerp(this.guardBlend ?? 0, ctl.guarding && !action ? 1 : 0, damp(16, dt));
+    const gb = this.guardBlend;
+    if (gb > 0.01) {
+      const jj = body.joints;
+      jj.tronco.rotation.x += 0.16 * gb;
+      jj.cabeca.rotation.x -= 0.12 * gb;
+      for (const [side, sign] of SIDES) {
+        jj['braco_' + side].rotation.x = lerp(jj['braco_' + side].rotation.x, -1.25, gb);
+        jj['braco_' + side].rotation.z = lerp(jj['braco_' + side].rotation.z, sign * -0.35, gb);
+        jj['antebraco_' + side].rotation.x = lerp(jj['antebraco_' + side].rotation.x, -1.75, gb);
+        jj['antebraco_' + side].rotation.y = lerp(jj['antebraco_' + side].rotation.y, sign * 0.5, gb);
+      }
+    }
+    // apanhou: o tronco vai para trás; atordoado: cambaleia
+    const hit = this.hurt > 0 ? Math.sin((this.hurt / 0.5) * Math.PI) : 0;
+    if (hit > 0.01) {
+      body.joints.tronco.rotation.x -= 0.35 * hit;
+      body.joints.cabeca.rotation.x -= 0.25 * hit;
+    }
+    if (ctl.stunned > 0) {
+      body.joints.tronco.rotation.z += Math.sin(t * 7) * 0.12;
+      body.joints.cabeca.rotation.x += 0.2;
+    }
     // segurando uma fruta parado: o antebraço sobe para mostrá-la
     if (this.player.heldFruit && !eating && !dash) {
       const show = clamp(1 - ctl.speed / 1.2) * (1 - ctl.crouchBlend);

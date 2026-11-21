@@ -35,10 +35,13 @@ Treino (nível 1 a 100, curva `arredondar(100 + 18·L + 1,5·L²)`):
 | Atributo | Como treina | Bônus (com teto) |
 |---|---|---|
 | Fôlego | Andar (+2 XP a cada 100 m), correr (+4), subidas até +30% | +3% de fôlego máximo e +2% de recuperação a cada 10 níveis (até +30% / +20%) |
-| Força | Escalar, subir bordas, desafios físicos; em combate, acertar golpes | **+1 de fôlego máximo por nível** |
+| Força | Escalar, subir bordas, desafios físicos; acertar golpes (inimigo +2, boneco +1, Gancho +1; teto de 12 por oponente) | **+1 de fôlego máximo por nível** |
 | Agilidade | Transpor obstáculos, salto e corrida na parede, deslize, rolamento, aterrissagens | +2% de aceleração e controle no ar a cada 10 níveis (até +20%) |
 | Natação | Nadar (+3 XP a cada 50 m), mergulho rende mais | +2% de velocidade na água e de ar a cada 10 níveis (até +20%) |
-| Resistência Física, Reflexos, Defesa, Resistência Elemental | Em combate (atualização 2, doc 13) | Mitigação, esquiva e bloqueio com tetos |
+| Resistência Física | Apanhar de inimigos de verdade (teto de 10 XP por oponente) | −1,5% de dano físico a cada 10 níveis (até −15%) |
+| Reflexos | Esquivar de golpe que ia acertar (+3); defesa perfeita (+1) | +1% de tempo de esquiva e +5 ms na janela da defesa perfeita a cada 10 níveis (até +10% / +50 ms) |
+| Defesa | Defender golpe de inimigo (+2; perfeita +4) | +1% de bloqueio e −2% de postura gasta a cada 10 níveis (até +10% / −20%) |
+| Resistência Elemental | Com inimigos elementais (atualização 6) | Bônus por elemento, com teto |
 | Voo | Só com voo de raça, fruta, forma ou item | Controle aéreo |
 
 Força e Defesa aparecem nas duas camadas: na tela de Status, cada uma mostra ao lado o nível
@@ -50,8 +53,8 @@ de treino do mesmo atributo, e os dois somam.
 - Salvos antigos: quem estava na versão 4 (sem pontos) recebe os pontos do nível para
   distribuir; os pontos nunca ficam abaixo de 3 × (nível − 1).
 
-Na Ilha de Treino a experiência de aventureiro vem de cada objetivo da missão de treino
-(60), da recompensa da missão (500 e 1.000 moedas) e de cada área descoberta (25). Os
+Na Ilha de Treino a experiência de aventureiro vem de cada Recruta derrotado (45 e 12
+moedas), de cada objetivo da missão de treino (60), da recompensa da missão (500 e 1.000 moedas) e de cada área descoberta (25). Os
 objetivos também contam como desafios físicos (+15 no atributo ligado a cada um).
 
 ## 2. Moedas e itens

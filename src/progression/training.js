@@ -38,22 +38,22 @@ export const ATTRS = {
     bonus: (L) => `+${Math.min(20, 2 * steps10(L))}% de velocidade na água · +${Math.min(20, 2 * steps10(L))}% de ar`,
   },
   resistencia: {
-    nome: 'Resistência Física', icone: 'shield', ativo: false,
-    treino: 'Receba golpes de inimigos de verdade (chega com o combate).',
+    nome: 'Resistência Física', icone: 'shield', ativo: true,
+    treino: 'Aguente golpes de inimigos de verdade (bonecos, aliados e quedas não contam).',
     marcos: { 20: 'Postura Firme', 40: 'Recuperação Consistente', 60: 'Menos Empurrão', 80: 'Proteção contra Interrupções', 100: 'Corpo Temperado' },
     bonus: (L) => `+${Math.min(15, 1.5 * steps10(L)).toLocaleString('pt-BR')}% de mitigação física`,
   },
   reflexos: {
-    nome: 'Reflexos', icone: 'dash', ativo: false,
-    treino: 'Esquive de ataques que iam acertar (chega com o combate).',
+    nome: 'Reflexos', icone: 'dash', ativo: true,
+    treino: 'Esquive de golpes que iam acertar e faça defesas perfeitas. Esquivar no vazio não conta.',
     marcos: { 15: 'Leitura de Intenção', 35: 'Passo Responsivo', 55: 'Contra-ataque', 75: 'Cancelamento', 100: 'Instinto de Combate' },
-    bonus: (L) => `+${Math.min(10, steps10(L))}% de eficiência de esquiva`,
+    bonus: (L) => `+${Math.min(10, steps10(L))}% de tempo de esquiva · janela de defesa perfeita +${Math.min(50, 5 * steps10(L))} ms`,
   },
   defesa: {
-    nome: 'Defesa', icone: 'shield', ativo: false,
-    treino: 'Bloqueie e apare golpes (chega com o combate).',
+    nome: 'Defesa', icone: 'shield', ativo: true,
+    treino: 'Segure Defender de frente para o golpe de um inimigo; a defesa perfeita rende mais.',
     marcos: { 20: 'Guarda Firme', 50: 'Aparo', 100: 'Muralha' },
-    bonus: () => 'Bônus modestos de bloqueio, com limite',
+    bonus: (L) => `+${Math.min(10, steps10(L))}% de bloqueio · −${Math.min(20, 2 * steps10(L))}% de postura gasta`,
   },
   elemental: {
     nome: 'Resistência Elemental', icone: 'fruit', ativo: false,
@@ -106,6 +106,12 @@ export function bonuses(t, staminaBase = 100) {
     breath: 1 + Math.min(0.2, 0.02 * s('natacao')),
     response: 1 + Math.min(0.2, 0.02 * s('agilidade')),
     airControl: 1 + Math.min(0.2, 0.02 * s('agilidade')),
+    // combate
+    mitigation: Math.min(0.15, 0.015 * s('resistencia')),
+    dodgeTime: 1 + Math.min(0.1, 0.01 * s('reflexos')),
+    perfectWindow: 0.15 + Math.min(0.05, 0.005 * s('reflexos')),
+    blockReduce: 0.7 + Math.min(0.1, 0.01 * s('defesa')),
+    postureMult: 1 - Math.min(0.2, 0.02 * s('defesa')),
   };
 }
 
@@ -171,6 +177,7 @@ export class TrainingTracker {
     this.acc = { folego: 0, natacao: 0, forca: 0, agilidade: 0 };
     this.trail = []; // posições a cada 1 s (área percorrida)
     this.trailTimer = 0;
+    this.opponents = new Map(); // XP já dada por oponente (teto por encontro)
   }
 
   // Quanto o jogador realmente saiu do lugar nos últimos 20 s (0..1); vaivém curto rende pouco
@@ -257,6 +264,44 @@ export class TrainingTracker {
       case 'land':
         // aterrissagem correta de altura (sem dano e sem rolar)
         if (!data.hard && data.fall > 3 * METER) this.grant('agilidade', 2, 'aterrissagem', p);
+        break;
+      default:
+    }
+  }
+
+  // Combate (atualização 2). Contra inimigos hostis há um teto por oponente; contra bonecos,
+  // o mesmo golpe no mesmo boneco rende cada vez menos (variar o combo ajuda).
+  combat(name, data, pos) {
+    const foe = data.target ?? data.source ?? 'alvo';
+    const budget = (attr, xp, cap) => {
+      if (!data.hostile) return xp;
+      const key = `${foe}:${data.life ?? 0}:${attr}`;
+      const used = this.opponents.get(key) || 0;
+      const give = Math.max(0, Math.min(xp, cap - used));
+      this.opponents.set(key, used + give);
+      if (this.opponents.size > 200) this.opponents.delete(this.opponents.keys().next().value);
+      return give;
+    };
+    switch (name) {
+      case 'acerto': {
+        const base = (data.hostile ? 2 : 1) + (data.heavy ? 1 : 0);
+        const xp = budget('forca', base, 12);
+        if (xp > 0) this.grant('forca', xp, `golpe:${foe}:${data.attack}`, pos, { repeat: !data.hostile });
+        break;
+      }
+      case 'apanhar': {
+        if (!data.hostile) break;
+        const xp = budget('resistencia', 1 + (data.amount || 0) / 8, 10);
+        if (xp > 0) this.grant('resistencia', xp, `apanhar:${foe}`, pos, { repeat: false });
+        break;
+      }
+      case 'defesa':
+        if (!data.hostile) break;
+        this.grant('defesa', data.perfect ? 4 : 2, `defesa:${foe}`, pos);
+        if (data.perfect) this.grant('reflexos', 1, `perfeita:${foe}`, pos);
+        break;
+      case 'esquiva':
+        if (data.hostile) this.grant('reflexos', 3, `esquiva:${foe}`, pos);
         break;
       default:
     }

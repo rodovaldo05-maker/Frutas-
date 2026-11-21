@@ -204,11 +204,12 @@ describe('antifarm', () => {
     expect(f.softCap('agilidade', 1, 5, 200)).toBe(1);
   });
 
-  it('atributos que dependem de combate não ganham XP ainda', () => {
+  it('atributos que ainda não têm como treinar (Elemental, Voo) não ganham XP', () => {
     const t = newTraining();
     const tr = new TrainingTracker(t);
-    expect(tr.grant('resistencia', 10, 'x', { x: 0, z: 0 })).toBe(0);
-    expect(t.attrs.resistencia.xp).toBe(0);
+    expect(tr.grant('elemental', 10, 'x', { x: 0, z: 0 })).toBe(0);
+    expect(tr.grant('voo', 10, 'x', { x: 0, z: 0 })).toBe(0);
+    expect(t.attrs.elemental.xp).toBe(0);
   });
 });
 

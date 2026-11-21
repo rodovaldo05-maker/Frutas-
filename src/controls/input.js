@@ -11,8 +11,9 @@ export class Input {
     this.move = { x: 0, y: 0 };
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
-    this.held = { jump: false, crouch: false };
-    this.pressed = { jump: false, crouch: false, dash: false };
+    this.held = { jump: false, crouch: false, block: false };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false };
+    this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = false;
     this.stillTime = 0;
     this.touchMove = { x: 0, y: 0, active: false };
@@ -46,6 +47,8 @@ export class Input {
       if (c === 'ControlLeft' || c === 'ControlRight') this.toggleSprint();
       if (c === 'Escape') this.onPause();
       if (c === 'KeyU') this.onToggleGlider();
+      if (c === 'KeyJ' || c === 'KeyF') this.pressed.attack = true;
+      if (c === 'KeyK' || c === 'KeyQ') this.setBlock('key', true);
       if (c === 'F3') {
         e.preventDefault();
         this.onToggleDebug();
@@ -56,11 +59,21 @@ export class Input {
       this.keys.delete(c);
       if (c === 'Space') this.held.jump = false;
       if (c === 'KeyC') this.held.crouch = false;
+      if (c === 'KeyK' || c === 'KeyQ') this.setBlock('key', false);
     });
     window.addEventListener('blur', () => {
       this.keys.clear();
       this.held.jump = this.held.crouch = false;
+      this.blockSources.clear();
+      this.held.block = false;
     });
+  }
+
+  // Defender fica segurado enquanto qualquer fonte segura
+  setBlock(source, on) {
+    if (on && this.enabled) this.blockSources.add(source);
+    else this.blockSources.delete(source);
+    this.held.block = this.blockSources.size > 0;
   }
 
   press(name) {
@@ -87,13 +100,19 @@ export class Input {
       if (!this.enabled || e.target.closest('[data-btn]')) return;
       root.setPointerCapture?.(e.pointerId);
       const leftSide = e.clientX < window.innerWidth * 0.42;
+      // mouse: botão direito defende; clique esquerdo sem arrastar ataca
+      if (e.pointerType === 'mouse' && e.button === 2) {
+        pointers.set(e.pointerId, { kind: 'block' });
+        this.setBlock('mouse', true);
+        return;
+      }
       if (e.pointerType !== 'mouse' && leftSide && ![...pointers.values()].some((p) => p.kind === 'stick')) {
         pointers.set(e.pointerId, { kind: 'stick', ox: e.clientX, oy: e.clientY });
         showStick(e.clientX, e.clientY);
         this.touchMove.active = true;
         this.usingTouch = true;
       } else {
-        pointers.set(e.pointerId, { kind: 'look', x: e.clientX, y: e.clientY });
+        pointers.set(e.pointerId, { kind: 'look', x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, at: performance.now(), mouse: e.pointerType === 'mouse' });
       }
     });
     root.addEventListener('pointermove', (e) => {
@@ -128,6 +147,10 @@ export class Input {
       const p = pointers.get(e.pointerId);
       if (!p) return;
       pointers.delete(e.pointerId);
+      if (p.kind === 'block') this.setBlock('mouse', false);
+      if (p.kind === 'look' && p.mouse && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 6 && performance.now() - p.at < 350) {
+        this.pressed.attack = true;
+      }
       if (p.kind === 'stick') {
         this.touchMove.x = this.touchMove.y = 0;
         this.touchMove.active = false;
@@ -165,6 +188,8 @@ export class Input {
     hold(buttons.sprint, () => this.toggleSprint());
     hold(buttons.menu, () => this.onPause());
     if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
+    if (buttons.attack) hold(buttons.attack, () => (this.pressed.attack = true));
+    if (buttons.block) hold(buttons.block, () => this.setBlock('touch', true), () => this.setBlock('touch', false));
   }
 
   // ===== Controle =====
@@ -190,7 +215,9 @@ export class Input {
       if (edge(1)) this.pressed.dash = true;
       if (edge(11)) this.press('crouch');
       if (edge(10)) this.toggleSprint();
+      if (edge(2) || edge(7)) this.pressed.attack = true;
     }
+    this.setBlock('pad', this.enabled && (btn(5) || btn(6)));
     if (edge(9)) this.onPause();
     if (!btn(0) && this.padPrev[0]) this.held.jump = false;
     if (!btn(11) && this.padPrev[11]) this.held.crouch = false;
@@ -249,16 +276,20 @@ export class Input {
       jumpPressed: this.pressed.jump,
       crouchPressed: this.pressed.crouch,
       dashPressed: this.pressed.dash,
+      attackPressed: this.pressed.attack,
+      block: this.held.block,
       sprint: this.sprint,
     };
-    this.pressed.jump = this.pressed.crouch = this.pressed.dash = false;
+    this.pressed.jump = this.pressed.crouch = this.pressed.dash = this.pressed.attack = false;
     return out;
   }
 
   releaseAll() {
     this.keys.clear();
     this.held.jump = this.held.crouch = false;
-    this.pressed.jump = this.pressed.crouch = this.pressed.dash = false;
+    this.pressed.jump = this.pressed.crouch = this.pressed.dash = this.pressed.attack = false;
+    this.blockSources.clear();
+    this.held.block = false;
     this.touchMove.x = this.touchMove.y = 0;
   }
 }

@@ -162,3 +162,27 @@ em 30% (acumula até 3 vezes; zera após 8 s).
 | Duração de controles | 100% | 50%, com imunidade de 2 s após um controle |
 | Cura | 100% | 60% |
 | Nível da fruta | Afeta dano e recarga | Afeta só a recarga (dano igual entre níveis) |
+
+## 10. Situação no jogo (atualização 2 — combate base)
+
+Já funciona na Arena de combate da Ilha de Treino (centro-oeste, placa "Arena de combate"):
+
+| Parte | Como ficou |
+|---|---|
+| Atacar | Combo Jab → Direto → Gancho com os golpes do laboratório; o contato acontece no quadro do clipe (Jab 0,10 s, Direto 0,14 s, Gancho 0,21 s); apertar depois do contato emenda o próximo golpe; vira sozinho para o alvo mais perto à frente e avança um pouco |
+| Dano | `base × (1 + 3% por ponto de Força) × 100/(100 + defesa) × (1 − mitigação)`; Jab 10, Direto 12, Gancho 16 |
+| Defender | Segurar: −70% do dano de frente, gasta Postura (100; volta 22/s depois de 1,2 s); zerou: guarda quebrada (1,2 s atordoado); defendendo, vira de frente para o inimigo mais perto |
+| Defesa perfeita | Começar a defender até 0,15 s antes do golpe: dano zero e o atacante fica atordoado 0,6 s |
+| Esquiva | A esquiva cancela a recuperação do golpe; com a invulnerabilidade da esquiva, o golpe que ia acertar vira "Esquiva!" |
+| Hitstop e reações | Pausa curta no contato (0,06–0,1 s), tremor de câmera, recuo, inclinação de dor e números de dano |
+| Bonecos de treino | Três bonecos que balançam e contam os golpes; não revidam |
+| Recrutas (Nv. 2) | Corpo e golpes do laboratório; percebem o jogador só no acampamento; um ataca por vez; preparo de 0,5 s antes de bater (aviso); defendem às vezes depois de apanhar seguido; derrotados dão 45 exp e 12 moedas e voltam em 18 s |
+| Controles | Celular: botões Punho (atacar) e Escudo (segurar para defender). PC: clique ou J / botão direito ou K. Controle: X/▢ ou RT / RB ou LT |
+| Treino | Acertar: Força (teto por oponente; no boneco o mesmo golpe rende cada vez menos). Apanhar de inimigo: Resistência Física. Defender: Defesa; defesa perfeita também dá Reflexos. Esquiva de golpe real: Reflexos |
+
+Falta (próximas atualizações, doc 13): golpe pesado e carregado, ataque aéreo, agarrão,
+finalizador, estados (queimadura, congelamento, choque), chefes, mira travada, golpes das
+frutas e das armas, Vontade e estilos de luta.
+
+Código: `src/combat/rules.js`, `src/combat/playerCombat.js`, `src/combat/enemies.js`,
+`src/combat/floatText.js`; testes em `tests/combat.test.js`.

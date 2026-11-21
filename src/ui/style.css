@@ -306,9 +306,15 @@ body.touch .keys { display: none; }
 .act.crouch { right: calc(108px * var(--btn) + 4px + var(--safe-r)); bottom: calc(96px * var(--btn) + 14px + var(--safe-b)); }
 .act.sprint { right: calc(36px + var(--safe-r)); bottom: calc(124px * var(--btn) + 14px + var(--safe-b)); }
 .act.sprint.active { background: radial-gradient(circle at 40% 30%, #9be7ff, #2453cf 80%); }
-.act.glider { width: calc(46px * var(--btn)); height: calc(46px * var(--btn)); right: calc(196px * var(--btn) + 4px + var(--safe-r)); bottom: calc(96px * var(--btn) + 16px + var(--safe-b)); opacity: 0.6; }
+.act.glider { width: calc(46px * var(--btn)); height: calc(46px * var(--btn)); right: calc(286px * var(--btn) + 8px + var(--safe-r)); bottom: calc(104px * var(--btn) + 16px + var(--safe-b)); opacity: 0.6; }
+.act.attack { width: calc(76px * var(--btn)); height: calc(76px * var(--btn)); right: calc(196px * var(--btn) + 10px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); background: radial-gradient(circle at 40% 30%, #ff8a6a, #9c2f1f 80%); }
+.act.attack.down { background: radial-gradient(circle at 40% 30%, #ffe38f, #c2491f 80%); }
+.act.block { width: calc(58px * var(--btn)); height: calc(58px * var(--btn)); right: calc(204px * var(--btn) + 10px + var(--safe-r)); bottom: calc(96px * var(--btn) + 16px + var(--safe-b)); background: radial-gradient(circle at 40% 30%, #9fb7d6, #2c3f66 80%); }
+.act.attack svg { width: 46%; height: 46%; }
+body.lefty .act.attack { right: auto; left: calc(196px * var(--btn) + 10px + var(--safe-l)); }
+body.lefty .act.block { right: auto; left: calc(204px * var(--btn) + 10px + var(--safe-l)); }
 .act.glider.on { opacity: 1; background: radial-gradient(circle at 40% 30%, #ffb38f, #b5552f 80%); }
-body.lefty .act.glider { right: auto; left: calc(196px * var(--btn) + 4px + var(--safe-l)); }
+body.lefty .act.glider { right: auto; left: calc(286px * var(--btn) + 8px + var(--safe-l)); }
 body.lefty .act.jump { right: auto; left: calc(22px + var(--safe-l)); }
 body.lefty .act.dash { right: auto; left: calc(118px * var(--btn) + 6px + var(--safe-l)); }
 body.lefty .act.crouch { right: auto; left: calc(108px * var(--btn) + 4px + var(--safe-l)); }
@@ -772,3 +778,16 @@ body.reduce-fx .fcard, body.reduce-fx .fcard.win, body.reduce-fx .fcard.rank-in,
 .status-head #btn-respec { min-height: 0; height: 30px; padding: 0 12px; font-size: 12.5px; gap: 6px; }
 .status-head #btn-respec svg { width: 16px; height: 16px; }
 .status-head > span { display: flex; align-items: baseline; gap: 10px; }
+
+/* ===== Combate: números de dano e avisos ===== */
+#float-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
+.float-text {
+  position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity;
+  font: 800 20px var(--body-font); color: #fff7e0; text-shadow: 0 2px 0 #3b1a08, 0 0 6px rgba(0, 0, 0, 0.8);
+}
+.float-text.strong { font-size: 26px; color: #ffd45e; }
+.float-text.player { color: #ff6b5a; }
+.float-text.block { font-size: 15px; color: #c9d4e6; }
+.float-text.gold { font-size: 18px; color: #ffe38f; text-shadow: 0 0 8px rgba(255, 190, 60, 0.9), 0 2px 0 #3b1a08; }
+.float-text.cyan { font-size: 18px; color: #9be7ff; text-shadow: 0 0 8px rgba(80, 200, 255, 0.8), 0 2px 0 #08223b; }
+.float-text.info { font-size: 14px; color: #b9f2a8; }

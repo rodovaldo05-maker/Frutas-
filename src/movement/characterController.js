@@ -109,6 +109,13 @@ export class CharacterController {
     this.hangHold = 0;
     this.speed = 0;
     this.busyT = 0; // ocupado (comendo): sem movimento
+    // combate (atualização 2): golpe em andamento, defesa e empurrões
+    this.attackLock = 0; // golpeando: sem andar nem pular (a esquiva pode cancelar)
+    this.action = null; // { clip, t } para a animação
+    this.guarding = false; // segurando Defender
+    this.stunned = 0; // atordoado (guarda quebrada)
+    this.shoveV = new THREE.Vector3();
+    this.shoveT = 0;
     this.sinkTime = 0;
     this.sinkTick = 0;
   }
@@ -258,11 +265,22 @@ export class CharacterController {
     }
   }
 
+  // Empurrão horizontal (investida do golpe, recuo ao apanhar)
+  shove(x, z, duration = 0.18) {
+    this.shoveV.set(x, 0, z);
+    this.shoveT = duration;
+  }
+
   // ===== Passo =====
   step(dt, input) {
     if (this.busyT > 0) {
       this.busyT -= dt;
       input = { ...input, moveX: 0, moveY: 0, jump: false, jumpPressed: false, crouch: false, crouchPressed: false, dashPressed: false };
+    }
+    this.stunned = Math.max(0, this.stunned - dt);
+    if (this.attackLock > 0 || this.stunned > 0) {
+      this.attackLock = Math.max(0, this.attackLock - dt);
+      input = { ...input, moveX: 0, moveY: 0, jump: false, jumpPressed: false, crouch: false, crouchPressed: false, sprint: false, dashPressed: this.stunned > 0 ? false : input.dashPressed };
     }
     const camF = { x: Math.sin(input.camYaw), z: Math.cos(input.camYaw) };
     const camR = { x: -camF.z, z: camF.x };
@@ -398,7 +416,7 @@ export class CharacterController {
     const clip = dashClip(dir, this.yaw);
     this.dash = { t: 0, dir, clip: clip.id, relative: clip.relative, speed: MOVE.dashDistance / MOVE.dashTime, air: inAir };
     this.dashCooldown = MOVE.dashCooldown;
-    this.invulnerable = MOVE.dashInvulnerable;
+    this.invulnerable = MOVE.dashInvulnerable * (this.mods.dodgeTime ?? 1); // Reflexos alongam a esquiva
     if (inAir) {
       this.airDashUsed = true;
       this.vel.y = Math.max(this.vel.y, 0);
@@ -482,11 +500,18 @@ export class CharacterController {
     let target = groundSpeed(w.mag, { sprinting, crouched: this.crouched });
     if (this.inWater) target *= clamp(1 - this.feetDepth * 0.12, 0.55, 1); // água rasa
     if (this.lockT > 0) target *= 0.25;
+    if (this.guarding) target = Math.min(target, MOVE.walk * 0.45); // defendendo: passos curtos
     // subida íngreme cansa um pouco (até 30% mais devagar)
     const gn = this.groundNormal;
     const uphill = Math.max(0, -(gn.x * w.x + gn.z * w.z));
     target *= 1 - 0.3 * Math.min(1, uphill / 0.72);
-    if (!this.applyDash(dt)) {
+    if (this.shoveT > 0) {
+      // investida do golpe ou recuo de quem apanhou
+      this.shoveT -= dt;
+      this.vel.x = this.shoveV.x;
+      this.vel.z = this.shoveV.z;
+      this.shoveV.multiplyScalar(Math.max(0, 1 - 9 * dt));
+    } else if (!this.applyDash(dt)) {
       const cur = Math.hypot(this.vel.x, this.vel.z);
       const rate = (target > cur ? MOVE.drive : MOVE.brake) * this.mods.response;
       this.vel.x = lerp(this.vel.x, w.x * target, damp(rate, dt));

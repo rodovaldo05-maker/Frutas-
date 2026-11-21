@@ -18,7 +18,13 @@ Duas camadas de evolução que somam: cada nível de aventureiro dá 3 pontos de
 você distribui (Força, Defesa, Fruta, Espada, Vitalidade; cada ponto de Força soma 1 de
 fôlego), e o treino pela prática (documento mestre 4.0) sobe Fôlego, Força, Agilidade e
 Natação sozinho com o que o personagem realmente faz, com antifarm e marcos, sem poder ser
-distribuído. O Correr dobra a velocidade de andar. O que falta e a ordem das próximas
+distribuído. O Correr dobra a velocidade de andar.
+
+Combate base (atualização 2): Atacar com o combo Jab → Direto → Gancho do laboratório,
+Defender (segurar) com defesa perfeita e Postura, esquiva que cancela o golpe, hitstop e
+números de dano. Na Arena de combate há bonecos de treino e Recrutas que avisam antes de
+bater, defendem às vezes e dão experiência e moedas. Lutar treina Força, Resistência
+Física, Reflexos e Defesa. O que falta e a ordem das próximas
 atualizações estão em [docs/13-atualizacoes.md](docs/13-atualizacoes.md).
 
 Frutas com tipo (Essência, Elemento, Fera) e raridade própria em 6 ranks (Comum 45%,
@@ -65,6 +71,8 @@ npm run apk        # build + sync + gradle assembleDebug
 | Correr (alterna) | Correr | Ctrl | Apertar analógico esquerdo |
 | Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
 | Esquiva | Esquiva | Shift | B / ◯ |
+| Atacar (combo) | Punho | Clique ou J | X / ▢ ou RT |
+| Defender (segurar) | Escudo | Botão direito ou K | RB / R1 ou LT |
 | Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
 | Status · Mochila · Missões · Mapa | Ícones no alto | P · B · L · M | — |
 | Falar (Mercador, Trocador) | Botão Falar | E | Y / △ |
@@ -85,6 +93,7 @@ src/animation   animação do laboratório + poses novas (escalar, pendurar, pla
 src/movement    controlador do personagem, regras e números
 src/controls    toque, teclado, mouse e controle
 src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
+src/combat      regras do combate, combate do jogador, bonecos e Recrutas
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática

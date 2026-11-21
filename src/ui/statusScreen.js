@@ -117,7 +117,7 @@ export class StatusScreen {
       const list = [...t.history].reverse();
       $('train-history').innerHTML = list.length
         ? list.map((h) => `<div><span>${ATTRS[h.attr]?.nome ?? h.attr} · ${this.reason(h.key)}</span><i>+${String(h.xp).replace('.', ',')} exp</i></div>`).join('')
-        : '<p class="muted">Ainda não há ganhos. Ande, nade, escale e salte pela ilha.</p>';
+        : '<p class="muted">Ainda não há ganhos. Ande, nade, escale, salte e lute na arena.</p>';
     }
   }
 
@@ -125,6 +125,11 @@ export class StatusScreen {
     const k = String(key || '');
     if (k.endsWith(':distancia')) return k.startsWith('natacao') ? 'distância nadada' : k.startsWith('folego') ? 'caminho percorrido' : 'escalada';
     if (k.startsWith('desafio:')) return 'desafio da missão';
+    if (k.startsWith('golpe:')) return k.includes('boneco') ? 'golpe no boneco' : 'golpe em inimigo';
+    if (k.startsWith('apanhar:')) return 'golpe recebido';
+    if (k.startsWith('defesa:')) return 'defesa';
+    if (k.startsWith('perfeita:')) return 'defesa perfeita';
+    if (k.startsWith('esquiva:')) return 'esquiva de golpe';
     return { subirBorda: 'subir borda', transpor: 'transpor obstáculo', saltoParede: 'salto na parede', corridaParede: 'corrida na parede', deslize: 'deslize', rolamento: 'rolamento', aterrissagem: 'aterrissagem' }[k] || k;
   }
 }

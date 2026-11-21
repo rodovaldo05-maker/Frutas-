@@ -35,7 +35,10 @@ import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
-import { maxStamina, maxHealth, POINTS_PER_LEVEL } from './progression/status.js';
+import { maxStamina, maxHealth, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
+import { buildArena } from './combat/enemies.js';
+import { PlayerCombat } from './combat/playerCombat.js';
+import { FloatText } from './combat/floatText.js';
 import { TrainingTracker, bonuses, ATTRS } from './progression/training.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
@@ -72,6 +75,7 @@ async function boot() {
   const island = buildTrainingIsland({ scene: renderer.scene, physics });
   const market = buildMarket({ scene: renderer.scene, physics, field: island.field, data: DATA });
   island.signs.push(...market.signs);
+  const arena = buildArena({ scene: renderer.scene, physics, field: island.field, data: DATA });
   physics.world.updateSceneQueries?.();
   physics.step();
 
@@ -138,7 +142,10 @@ async function boot() {
       case 'grab': audio.play('base', 'step', 0.5); break;
       case 'mantle': audio.play('base', 'step', 0.6); break;
       case 'glideStart': audio.play('base', 'wing', 0.6); break;
-      case 'damage': hud.damageFlash(); hud.toast(`−${Math.round(data.amount)} vida (${data.reason})`, 'bad'); break;
+      case 'damage':
+        hud.damageFlash();
+        if (data.reason !== 'golpe') hud.toast(`−${Math.round(data.amount)} vida (${data.reason})`, 'bad');
+        break;
       case 'faint': hud.toast('Você desmaiou…', 'bad'); audio.play('base', 'death', 0.8); break;
       case 'respawn': cam.snap(ctl.pos, ctl.yaw); break;
       default:
@@ -151,12 +158,83 @@ async function boot() {
     const b = bonuses(save.training);
     ctl.stamina.setMax(maxStamina(save.status, save.training));
     ctl.stamina.regenMult = b.staminaRegen;
-    ctl.mods = { response: b.response, airControl: b.airControl, swimSpeed: b.swimSpeed, breath: b.breath };
+    ctl.mods = { response: b.response, airControl: b.airControl, swimSpeed: b.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime };
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = maxHealth(save.status);
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
   };
   applyStatus();
+
+  // ===== Combate (atualização 2): golpes, defesa, inimigos da arena e treino =====
+  const floats = new FloatText($('float-layer'));
+  let shake = 0;
+  const combat = new PlayerCombat({
+    ctl,
+    stats: () => {
+      const b = bonuses(save.training);
+      const m = damageMultipliers(save.status);
+      return { melee: m.melee, defense: m.defense, mitigation: b.mitigation, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+    },
+    onEvent: (name, d) => {
+      const p = ctl.pos;
+      const head = { x: p.x, y: p.y + 2.4, z: p.z };
+      switch (name) {
+        case 'swing': audio.play('base', 'swing', 0.55 + d.step * 0.2); break;
+        case 'hit': {
+          const t = d.target;
+          const at = { x: t.pos.x, y: t.pos.y + 3.2, z: t.pos.z };
+          if (d.result === 'block') {
+            floats.add(at, 'Defendeu', 'bloqueio');
+            audio.play('base', 'land', 0.4);
+            break;
+          }
+          floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
+          audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
+          shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
+          tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
+          if (d.result === 'break') floats.add({ ...at, y: at.y + 0.8 }, 'Guarda quebrada!', 'perfeita');
+          break;
+        }
+        case 'dodge':
+          floats.add(head, 'Esquiva!', 'esquiva');
+          tracker.combat('esquiva', { source: d.source, life: d.life, hostile: true }, p);
+          break;
+        case 'perfect':
+          floats.add(head, 'Defesa perfeita!', 'perfeita');
+          audio.play('base', 'wing', 1);
+          shake = Math.max(shake, 0.15);
+          tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: true }, p);
+          break;
+        case 'block':
+          floats.add(head, d.damage > 0 ? `Defendeu −${d.damage}` : 'Defendeu', 'bloqueio');
+          audio.play('base', 'land', 0.5);
+          tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: false }, p);
+          break;
+        case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
+        case 'hurt':
+          floats.add(head, `−${d.damage}`, 'jogador');
+          audio.play('impacto', 'acerto', 0.5);
+          shake = Math.max(shake, 0.18);
+          tracker.combat('apanhar', { source: d.source, life: d.life, hostile: true, amount: d.damage }, p);
+          break;
+        default:
+      }
+    },
+  });
+  arena.hitPlayer = (enemy, attack, damage) => combat.receive({
+    attacker: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z, yaw: enemy.yaw }, attack, damage, source: enemy.id, life: enemy.life,
+  });
+  for (const r of arena.recrutas) {
+    r.onDefeated = (foe) => {
+      save.coins += foe.def.coins;
+      floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
+      hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
+      audio.play('base', 'death', 0.6);
+      grantXp(foe.def.xp);
+      saveNow(true);
+    };
+  }
+  const playerProxy = { pos: ctl.pos, get yaw() { return ctl.yaw; }, alive: true };
 
   // evolução pela prática: deslocamento real e eventos do controlador viram experiência
   let diminishedAt = -99;
@@ -335,7 +413,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider') },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -543,7 +621,11 @@ async function boot() {
     update(dt) {
       if (mode !== 'game') return;
       prev.copy(ctl.pos);
-      ctl.step(dt, input.consume(cam.yaw));
+      const inp = input.consume(cam.yaw);
+      combat.update(dt, inp, arena.targets);
+      ctl.step(dt, inp);
+      playerProxy.alive = ctl.faint <= 0;
+      arena.update(dt, playerProxy);
       tracker.step(dt, ctl);
       mission.check(ctl, { towerTopY });
       discoverTimer -= dt;
@@ -576,8 +658,15 @@ async function boot() {
       animator.update(animDt, ctl, view);
       dust.update(animDt);
       market.update(mode === 'title' ? dt : animDt, view);
+      arena.render(animDt, view);
       if (mode === 'title') titleCamera(clock);
       else cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
+      // tremor da câmera nos golpes (some rápido; desligado com movimento reduzido)
+      if (shake > 0 && animDt > 0) {
+        shake = Math.max(0, shake - animDt * 1.6);
+        if (!settings.reduceMotion) renderer.camera.position.add(new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake));
+      }
+      floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);
@@ -693,7 +782,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena,
     start: startGame,
     saveNow,
     openModal,

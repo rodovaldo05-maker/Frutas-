@@ -14,8 +14,9 @@ subir bordas, salto na parede, corrida na parede, planar, rolamento contra dano 
 nadar, mergulhar (com ar limitado) e escorregar em rampas íngremes.
 Cada área da ilha tem uma placa com a dica do movimento, e a missão "Treino de
 movimento" (11 objetivos, 1.000 moedas e 500 de experiência) acompanha o aprendizado.
-Experiência, níveis (3 pontos de status por nível) e a tela de Status: cada ponto de
-Força soma 1 de fôlego, cada ponto de Defesa soma 6 de vida. O Correr dobra a
+Evolução pela prática (documento mestre 4.0): Fôlego, Força, Agilidade e Natação sobem
+com o que o personagem realmente faz, com antifarm e marcos; cada nível de Força soma 1 de
+fôlego. Nível de aventureiro por missões e exploração. O Correr dobra a
 velocidade de andar.
 
 Frutas com tipo (Essência, Elemento, Fera) e raridade própria em 6 ranks (Comum 45%,

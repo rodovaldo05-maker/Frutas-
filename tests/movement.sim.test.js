@@ -193,3 +193,47 @@ describe('movimento na Ilha de Treino', () => {
     expect(top - y0).toBeGreaterThan(5);
   });
 });
+
+describe('treino pela prática na ilha (testes de aceitação do documento 4.0)', () => {
+  const tracker = async () => {
+    const { TrainingTracker, newTraining } = await import('../src/progression/training.js');
+    const t = newTraining();
+    return { t, tr: new TrainingTracker(t) };
+  };
+  const run = (tr, secs, input) => sim.run(secs, input, (c) => {
+    tr.step(1 / 60, c);
+    return false;
+  });
+
+  it('andar e correr de verdade acumulam Fôlego; correr contra a parede não', async () => {
+    const { t, tr } = await tracker();
+    sim.place(0, 71, N);
+    run(tr, 14, () => ({ moveY: 1, camYaw: N, sprint: true })); // ~48 m correndo
+    expect(t.attrs.folego.xp + tr.acc.folego).toBeGreaterThan(1);
+    const before = t.attrs.folego.xp + tr.acc.folego;
+    sim.place(30, -8.4, N); // encostado na torre
+    run(tr, 8, () => ({ moveY: 1, camYaw: N, sprint: true }));
+    expect(t.attrs.folego.xp + tr.acc.folego - before).toBeLessThan(0.05);
+  });
+
+  it('nadar acumula Natação; boiar parado não', async () => {
+    const { t, tr } = await tracker();
+    sim.place(-44, 16, N);
+    sim.ctl.waterCursed = false;
+    sim.ctl.pos.set(-50, 1.5, 16);
+    sim.ctl.syncCollider();
+    sim.ctl.setState('air');
+    run(tr, 8, () => ({}));
+    expect(t.attrs.natacao.xp + tr.acc.natacao).toBe(0);
+    run(tr, 6, () => ({ moveY: 1, camYaw: N }));
+    expect(t.attrs.natacao.xp + tr.acc.natacao).toBeGreaterThan(0);
+  });
+
+  it('escalar a torre treina Força e Agilidade', async () => {
+    const { t, tr } = await tracker();
+    sim.place(30, -5.5, N);
+    run(tr, 8, () => ({ moveY: 1, camYaw: N }));
+    expect(t.attrs.forca.xp + tr.acc.forca).toBeGreaterThan(0.5);
+    expect(t.attrs.agilidade.xp + tr.acc.agilidade).toBeGreaterThan(0.2);
+  });
+});

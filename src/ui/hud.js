@@ -73,6 +73,20 @@ export class Hud {
     this.el.trackerReward.innerHTML = reward;
   }
 
+  // ganho de experiência de treino perto das barras (some sozinho)
+  xpGain(name, xp, p) {
+    const feed = $('xp-feed');
+    const now = performance.now();
+    if (this.feedName === name && now - this.feedAt < 2500) this.feedXp += xp;
+    else this.feedXp = xp;
+    this.feedName = name;
+    this.feedAt = now;
+    feed.innerHTML = `<i>+${(Math.round(this.feedXp * 10) / 10).toLocaleString('pt-BR')}</i> ${name} · ${Math.floor(p * 100)}%`;
+    feed.classList.add('on');
+    clearTimeout(this.feedTimer);
+    this.feedTimer = setTimeout(() => feed.classList.remove('on'), 2600);
+  }
+
   levelUp() {
     const p = this.el.portrait.parentElement;
     p.classList.remove('level-up');
@@ -115,7 +129,7 @@ export class Hud {
     const st = ctl.stamina.value / ctl.stamina.max;
     el.stamina.style.transform = `scaleX(${st})`;
     el.stamina.classList.toggle('tired', ctl.stamina.exhausted);
-    const breath = ctl.breath / MOVE.breath;
+    const breath = ctl.breath / ctl.breathMax;
     el.airBox.style.opacity = ctl.state === 'dive' || breath < 0.999 ? '1' : '0';
     el.air.style.transform = `scaleX(${breath})`;
     el.air.classList.toggle('low', breath < 0.3);

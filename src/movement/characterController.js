@@ -53,6 +53,8 @@ export class CharacterController {
     this.health = 100;
     this.maxHealth = 100;
     this.breath = MOVE.breath;
+    // bônus do treino (Agilidade, Natação), aplicados com teto pelo serviço de progressão
+    this.mods = { response: 1, airControl: 1, swimSpeed: 1, breath: 1 };
     this.reset();
   }
 
@@ -116,7 +118,7 @@ export class CharacterController {
     this.yaw = yaw;
     this.reset();
     this.health = this.maxHealth;
-    this.breath = MOVE.breath;
+    this.breath = this.breathMax;
     this.setCrouched(false, true);
     this.syncCollider();
     // assenta no chão
@@ -324,7 +326,7 @@ export class CharacterController {
           this.damageCooldown = 1;
         }
       }
-    } else this.breath = Math.min(MOVE.breath, this.breath + dt * 6);
+    } else this.breath = Math.min(this.breathMax, this.breath + dt * 6);
 
     // vida volta devagar fora de perigo
     if (this.lastDamage > 5 && this.health < this.maxHealth && this.state !== 'faint') this.health = Math.min(this.maxHealth, this.health + 4 * dt);
@@ -343,6 +345,10 @@ export class CharacterController {
     this.crouchBlend = lerp(this.crouchBlend, targetCrouch, damp(12, dt));
     this.speed = Math.hypot(this.vel.x, this.vel.z);
     if (this.dash) this.updateDashAnim(dt);
+  }
+
+  get breathMax() {
+    return MOVE.breath * (this.mods?.breath ?? 1);
   }
 
   respawn() {
@@ -482,7 +488,7 @@ export class CharacterController {
     target *= 1 - 0.3 * Math.min(1, uphill / 0.72);
     if (!this.applyDash(dt)) {
       const cur = Math.hypot(this.vel.x, this.vel.z);
-      const rate = target > cur ? MOVE.drive : MOVE.brake;
+      const rate = (target > cur ? MOVE.drive : MOVE.brake) * this.mods.response;
       this.vel.x = lerp(this.vel.x, w.x * target, damp(rate, dt));
       this.vel.z = lerp(this.vel.z, w.z * target, damp(rate, dt));
       if (w.mag > 0.1) this.turnToward(w.x, w.z, MOVE.turnRate, dt);
@@ -665,7 +671,7 @@ export class CharacterController {
     if (!this.applyDash(dt)) {
       if (w.mag > 0.1 && this.wallJumpLock <= 0) {
         const top = Math.max(this.airSpeed ?? MOVE.run, w.mag * MOVE.run);
-        const k = damp(MOVE.airControl * w.mag, dt);
+        const k = damp(MOVE.airControl * this.mods.airControl * w.mag, dt);
         this.vel.x = lerp(this.vel.x, w.x * top, k);
         this.vel.z = lerp(this.vel.z, w.z * top, k);
         this.turnToward(w.x, w.z, MOVE.turnRate * 0.6, dt);
@@ -1025,7 +1031,7 @@ export class CharacterController {
 
     const sprint = input.sprint && this.stamina.available;
     if (sprint && w.mag > 0.3) this.stamina.drain(STAMINA.swimSprint, dt);
-    const top = (sprint ? MOVE.swimSprint : MOVE.swim) * w.mag;
+    const top = (sprint ? MOVE.swimSprint : MOVE.swim) * this.mods.swimSpeed * w.mag;
     const k = damp(MOVE.waterResponse, dt);
     this.vel.x = lerp(this.vel.x, w.x * top, k);
     this.vel.z = lerp(this.vel.z, w.z * top, k);
@@ -1048,7 +1054,7 @@ export class CharacterController {
     }
     const sprint = input.sprint && this.stamina.available;
     if (sprint && w.mag > 0.3) this.stamina.drain(STAMINA.swimSprint, dt);
-    const top = MOVE.dive * (sprint ? MOVE.diveSprint : 1) * w.mag;
+    const top = MOVE.dive * (sprint ? MOVE.diveSprint : 1) * this.mods.swimSpeed * w.mag;
     const k = damp(MOVE.waterResponse * 0.8, dt);
     this.vel.x = lerp(this.vel.x, w.x * top, k);
     this.vel.z = lerp(this.vel.z, w.z * top, k);

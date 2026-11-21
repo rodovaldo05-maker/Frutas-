@@ -60,7 +60,8 @@ Cápsula física (raio 0,45 m, altura 1,8 m na escala do mundo) controlada por c
 
 ### 1.4 Fôlego
 
-Barra de 100 pontos na base, mais 1 por ponto de Força e 4 por ponto de Vitalidade (doc 09).
+Barra de 100 pontos na base, mais 1 por nível de Força treinada e até +30% pelo treino de
+Fôlego (docs 09 e 12).
 Sprint, escalada, salto duplo e mergulho gastam; regenera 25/s após 1 s sem gastar. Fôlego
 zerado: o personagem cai da parede e não corre até recuperar 30% do máximo.
 

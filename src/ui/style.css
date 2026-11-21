@@ -707,3 +707,39 @@ body.reduce-fx .fcard, body.reduce-fx .fcard.win, body.reduce-fx .fcard.rank-in,
   .detail-body { grid-template-columns: 200px 1fr; }
   .catalog-grid .fcard { height: 128px; }
 }
+
+/* ===== Treinamento ===== */
+.wallet-row { display: flex; align-items: center; gap: 8px; min-height: 26px; }
+.xp-feed {
+  font: 800 11px var(--body-font); color: #ffe9b3; text-shadow: 0 1px 2px #000, 0 0 4px #000; white-space: nowrap;
+  opacity: 0; transform: translateY(4px); transition: opacity 0.25s, transform 0.25s;
+}
+.xp-feed.on { opacity: 1; transform: none; }
+.xp-feed i { font-style: normal; color: #b9f2a8; }
+.train-intro { margin: 2px 0 6px; }
+.train-rows { display: grid; gap: 6px; overflow: auto; min-height: 0; }
+.train-row {
+  display: grid; grid-template-columns: 26px 1fr 120px; gap: 4px 10px; align-items: center; padding: 6px 10px; border-radius: 10px;
+  background: linear-gradient(180deg, rgba(64, 46, 26, 0.5), rgba(28, 20, 12, 0.5)); border: 1px solid rgba(217, 166, 74, 0.45);
+}
+.train-row svg { width: 22px; height: 22px; color: var(--gold-hi); grid-row: span 2; }
+.train-row .head { display: flex; gap: 8px; align-items: baseline; }
+.train-row .head b { font-size: 14px; }
+.train-row .head .lvl { font: 800 12px var(--body-font); color: var(--gold-hi); }
+.train-row .meter { grid-column: 3; grid-row: 1; }
+.train-row .meter .bar { height: 12px; border-width: 1px; }
+.train-row .meter .bar i { background: linear-gradient(180deg, #9cf07f, #2f8f3a); }
+.train-row .meter .bar em { font-size: 9px; }
+.train-row .info { grid-column: 2 / 4; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.train-row .info b { color: var(--text); font-weight: 700; }
+.train-row.off { opacity: 0.55; }
+.train-row.off .meter .bar i { background: #4b4766; }
+.train-history { display: grid; gap: 4px; overflow: auto; min-height: 0; font-size: 12.5px; }
+.train-history div { display: flex; justify-content: space-between; padding: 4px 10px; border-radius: 8px; background: rgba(14, 11, 28, 0.55); }
+.train-history i { font-style: normal; color: #b9f2a8; font-weight: 800; }
+.status-list { min-height: 0; display: flex; flex-direction: column; }
+.status-list .top-tabs { margin: 0 40px 4px 0; }
+@media (max-height: 450px) {
+  .train-row { grid-template-columns: 22px 1fr 96px; padding: 4px 8px; }
+  .train-row .info { font-size: 10.5px; }
+}

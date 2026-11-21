@@ -9,25 +9,27 @@
 | Pontos por nível | 3 pontos de status |
 | Fontes de experiência | Inimigos, chefes, missões, exploração (tesouros, segredos), combate naval |
 
-### 1.1 Status
+### 1.1 Atributos treinados pela prática (documento mestre 4.0)
 
-| Status | Efeito por ponto |
-|---|---|
-| Força | +3% de dano corpo a corpo e de estilos; +1 de fôlego máximo |
-| Defesa | +6 de vida máxima e +0,5 de defesa |
-| Fruta | +3% de dano das habilidades de fruta |
-| Espada | +3% de dano com armas (sistema de armas é futuro) |
-| Vitalidade | +4 de energia e fôlego máximos |
+O nível de aventureiro (missões e exploração) não dá mais pontos para distribuir. Os
+atributos evoluem pelo que o personagem pratica, de 1 a 100, com a curva
+`arredondar(100 + 18·L + 1,5·L²)` — ver doc 12. Regras principais:
 
-Fôlego máximo = 100 + 1 × Força + 4 × Vitalidade (ex.: 300 pontos em Força → 400 de fôlego).
-Vida máxima = 100 + 6 × Defesa.
+| Atributo | Como treina | Bônus (com teto) |
+|---|---|---|
+| Fôlego | Andar (+2 XP a cada 100 m), correr (+4), subidas até +30% | +3% de fôlego máximo e +2% de recuperação a cada 10 níveis (até +30% / +20%) |
+| Força | Escalar, subir bordas, desafios físicos; em combate, acertar golpes | **+1 de fôlego máximo por nível** |
+| Agilidade | Transpor obstáculos, salto e corrida na parede, deslize, rolamento, aterrissagens | +2% de aceleração e controle no ar a cada 10 níveis (até +20%) |
+| Natação | Nadar (+3 XP a cada 50 m), mergulho rende mais | +2% de velocidade na água e de ar a cada 10 níveis (até +20%) |
+| Resistência Física, Reflexos, Defesa, Resistência Elemental | Em combate (próxima fase) | Mitigação, esquiva e bloqueio com tetos |
+| Voo | Só com voo de raça, fruta, forma ou item | Controle aéreo |
 
-Na Ilha de Treino (Fase 1) a experiência vem de: cada objetivo da missão de treino (60),
-recompensa da missão (500 e 1.000 moedas) e cada área descoberta ao chegar perto da placa
-(25). Tudo somado leva o jogador ao nível 6 com 15 pontos de status. A tela de Status tem
-+1, +10 e Máx; Redistribuir é grátis uma vez.
+Fôlego máximo = (100 + nível de Força − 1) × (1 + bônus de Fôlego). Vida máxima: 100 (raças e
+equipamentos entram depois).
 
-Redistribuir pontos: custa moedas no Mestre de Missões (grátis uma vez a cada mar).
+Na Ilha de Treino a experiência de aventureiro vem de cada objetivo da missão de treino
+(60), da recompensa da missão (500 e 1.000 moedas) e de cada área descoberta (25). Os
+objetivos também contam como desafios físicos (+15 no atributo ligado a cada um).
 
 ## 2. Moedas e itens
 

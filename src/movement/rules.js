@@ -40,6 +40,7 @@ export class JumpGate {
 export class Stamina {
   constructor(max = STAMINA.max) {
     this.max = max;
+    this.regenMult = 1; // bônus de recuperação (treino de Fôlego)
     this.value = max;
     this.idle = 0;
     this.exhausted = false;
@@ -75,7 +76,7 @@ export class Stamina {
 
   update(dt) {
     this.idle += dt;
-    if (this.idle >= STAMINA.regenDelay) this.value = Math.min(this.max, this.value + STAMINA.regen * dt);
+    if (this.idle >= STAMINA.regenDelay) this.value = Math.min(this.max, this.value + STAMINA.regen * this.regenMult * dt);
     if (this.exhausted && this.value >= this.max * (STAMINA.exhaustedRecover / 100)) this.exhausted = false;
   }
 }

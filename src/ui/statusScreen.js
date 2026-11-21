@@ -1,28 +1,25 @@
-// Tela de Status (doc 10, seção 5.1): nível, experiência, pontos livres e os 5 status
-// com +1 / +10 / Máx e o efeito de cada um. Redistribuir é grátis uma vez.
+// Personagem › Treinamento (documento mestre 4.0, seção 32): atributos treinados pela
+// prática com nível, barra de progresso em %, bônus atuais, próximo marco, como treinar e
+// histórico de ganhos. Atributos que dependem de combate ou voo aparecem como "em breve".
 
-import { STATUS_KEYS, STATUS_INFO, allocate, resetStatus, maxHealth, maxStamina, normalizeStatus } from '../progression/status.js';
+import { ATTRS, ATTR_KEYS, progress, nextMilestone, xpToNext as attrXpToNext } from '../progression/training.js';
 import { xpToNext, MAX_LEVEL } from '../progression/level.js';
+import { maxHealth, maxStamina } from '../progression/status.js';
 import { ICONS } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
-const ICON = { forca: 'fist', defesa: 'shield', fruta: 'fruit', espada: 'sword', vitalidade: 'vital' };
 const fmt = (n) => n.toLocaleString('pt-BR');
 
 export class StatusScreen {
-  constructor({ save, onChange }) {
+  constructor({ save }) {
     this.save = save;
-    this.onChange = onChange;
-    $('btn-respec').addEventListener('click', () => {
-      if (!this.save.freeRespec) return;
-      if (resetStatus(this.save) > 0) this.save.freeRespec = false;
-      this.changed();
-    });
-    $('status-rows').addEventListener('click', (e) => {
-      const b = e.target.closest('button[data-key]');
+    this.tab = 'atributos';
+    $('train-tabs').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-ttab]');
       if (!b) return;
-      const amount = b.dataset.amount === 'max' ? this.save.statusPoints : Number(b.dataset.amount);
-      if (allocate(this.save, b.dataset.key, amount)) this.changed();
+      this.tab = b.dataset.ttab;
+      for (const o of $('train-tabs').querySelectorAll('button')) o.classList.toggle('active', o === b);
+      this.render();
     });
   }
 
@@ -30,41 +27,43 @@ export class StatusScreen {
     $('status-figure').src = url;
   }
 
-  changed() {
-    this.render();
-    this.onChange();
-  }
-
   render() {
     const s = this.save;
-    const status = normalizeStatus(s.status);
-    const points = s.statusPoints || 0;
+    const t = s.training;
     const need = xpToNext(s.level);
     $('status-name').textContent = s.title || 'Aprendiz';
-    $('status-level').textContent = s.level >= MAX_LEVEL ? `Nível ${s.level} (Máx)` : `Nível ${s.level}`;
+    $('status-level').textContent = s.level >= MAX_LEVEL ? `Nível ${s.level} (Máx)` : `Nível de aventureiro ${s.level}`;
     $('status-xp-bar').style.transform = `scaleX(${s.level >= MAX_LEVEL ? 1 : Math.min(1, (s.xp || 0) / need)})`;
-    $('status-xp-text').textContent = s.level >= MAX_LEVEL ? 'Nível máximo' : `${fmt(s.xp || 0)} / ${fmt(need)} exp`;
-    $('status-points').textContent = fmt(points);
-    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status))}</b></span>`;
-    $('status-rows').innerHTML = STATUS_KEYS.map((k) => {
-      const info = STATUS_INFO[k];
-      const v = status[k];
-      const dis = points < 1 ? 'disabled' : '';
-      const dis10 = points < 10 ? 'disabled' : '';
-      return `<div class="stat-row ${k}">
-        ${ICONS[ICON[k]]}
-        <span class="name"><b>${info.name}</b><small>${info.effect(v)}</small></span>
-        <span class="val">${fmt(v)}</span>
-        <span class="plus">
-          <button data-key="${k}" data-amount="1" ${dis} aria-label="Mais 1 em ${info.name}">+1</button>
-          <button data-key="${k}" data-amount="10" ${dis10} aria-label="Mais 10 em ${info.name}">+10</button>
-          <button data-key="${k}" data-amount="max" ${dis} aria-label="Todos os pontos em ${info.name}">Máx</button>
-        </span>
-      </div>`;
-    }).join('');
-    const total = STATUS_KEYS.reduce((sum, k) => sum + status[k], 0);
-    const respec = $('btn-respec');
-    respec.disabled = !s.freeRespec || total === 0;
-    respec.lastChild.textContent = s.freeRespec ? 'Redistribuir (grátis uma vez)' : 'Redistribuir: no Mestre de Missões (em breve)';
+    $('status-xp-text').textContent = s.level >= MAX_LEVEL ? 'Nível máximo' : `${fmt(Math.floor(s.xp || 0))} / ${fmt(need)} exp`;
+    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth())}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(t))}</b></span><span>Tipo corporal <b>Humano</b></span>`;
+    $('train-rows').classList.toggle('hidden', this.tab !== 'atributos');
+    $('train-history').classList.toggle('hidden', this.tab !== 'historico');
+    if (this.tab === 'atributos') {
+      const order = [...ATTR_KEYS].sort((a, b) => Number(ATTRS[b].ativo) - Number(ATTRS[a].ativo));
+      $('train-rows').innerHTML = order.map((k) => {
+        const d = ATTRS[k];
+        const a = t.attrs[k];
+        const p = progress(a);
+        const next = nextMilestone(k, a.level);
+        return `<div class="train-row ${d.ativo ? '' : 'off'}">
+          ${ICONS[d.icone] || ICONS.flag}
+          <div class="head"><b>${d.nome}</b><span class="lvl">Nv. ${a.level}</span></div>
+          <div class="meter"><div class="bar"><i style="transform:scaleX(${p})"></i><em><span>${Math.floor(p * 100)}% · ${fmt(Math.floor(a.xp))}/${fmt(attrXpToNext(a.level))}</span></em></div></div>
+          <div class="info">${d.ativo ? `Bônus: <b>${d.bonus(a.level)}</b>` : '<b>Em breve</b>'}${next ? ` · Próximo marco: <b>Nv. ${next.level} ${next.nome}</b>` : ''}<br />${d.treino}</div>
+        </div>`;
+      }).join('');
+    } else {
+      const list = [...t.history].reverse();
+      $('train-history').innerHTML = list.length
+        ? list.map((h) => `<div><span>${ATTRS[h.attr]?.nome ?? h.attr} · ${this.reason(h.key)}</span><i>+${String(h.xp).replace('.', ',')} exp</i></div>`).join('')
+        : '<p class="muted">Ainda não há ganhos. Ande, nade, escale e salte pela ilha.</p>';
+    }
+  }
+
+  reason(key) {
+    const k = String(key || '');
+    if (k.endsWith(':distancia')) return k.startsWith('natacao') ? 'distância nadada' : k.startsWith('folego') ? 'caminho percorrido' : 'escalada';
+    if (k.startsWith('desafio:')) return 'desafio da missão';
+    return { subirBorda: 'subir borda', transpor: 'transpor obstáculo', saltoParede: 'salto na parede', corridaParede: 'corrida na parede', deslize: 'deslize', rolamento: 'rolamento', aterrissagem: 'aterrissagem' }[k] || k;
   }
 }

@@ -36,6 +36,7 @@ import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roul
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
 import { maxStamina, maxHealth } from './progression/status.js';
+import { TrainingTracker, bonuses, ATTRS } from './progression/training.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
 import { createFruitAudio } from './audio/fruto-audio.js';
@@ -106,6 +107,7 @@ async function boot() {
       hud.toast(`Objetivo concluído: ${obj.text} (${n}/${total}) · +${TRAINING.objectiveXp} exp`, 'good');
       audio.play('base', 'wing', 0.5);
       grantXp(TRAINING.objectiveXp);
+      tracker.challenge(obj.id, ctl);
       refreshMission();
       saveNow(true);
     },
@@ -119,6 +121,7 @@ async function boot() {
     onEvent: (name, data) => {
       animator.onEvent(name, data);
       mission.event(name);
+      tracker.event(name, data, ctl);
       onMoveEvent(name, data);
     },
   });
@@ -142,20 +145,42 @@ async function boot() {
     }
   }
 
-  // vida e fôlego máximos vêm dos status (cada ponto de Força soma 1 de fôlego)
+  // vida, fôlego e bônus de movimento vêm do treino (Força: +1 de fôlego por nível)
   const applyStatus = () => {
-    ctl.stamina.setMax(maxStamina(save.status));
+    const b = bonuses(save.training);
+    ctl.stamina.setMax(maxStamina(save.training));
+    ctl.stamina.regenMult = b.staminaRegen;
+    ctl.mods = { response: b.response, airControl: b.airControl, swimSpeed: b.swimSpeed, breath: b.breath };
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
-    ctl.maxHealth = maxHealth(save.status);
+    ctl.maxHealth = maxHealth();
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
   };
   applyStatus();
+
+  // evolução pela prática: deslocamento real e eventos do controlador viram experiência
+  let diminishedAt = -99;
+  const tracker = new TrainingTracker(save.training, {
+    onGain: (attr, xp, p) => hud.xpGain(ATTRS[attr].nome, xp, p),
+    onLevel: (attr, level, marcos) => {
+      const m = marcos.length ? ` · ${marcos[marcos.length - 1].nome}` : '';
+      hud.toast(`${ATTRS[attr].nome} nível ${level}${m}`, marcos.length ? 'gold' : 'good');
+      audio.play('base', 'wing', marcos.length ? 1 : 0.6);
+      applyStatus();
+      if (modals.includes('status')) statusScreen.render();
+      saveNow(true);
+    },
+    onDiminished: () => {
+      if (time - diminishedAt < 45) return;
+      diminishedAt = time;
+      hud.toast('Treino repetido rende menos: varie as atividades e os lugares.');
+    },
+  });
 
   // experiência: objetivos, recompensa de missão e áreas descobertas
   function grantXp(amount) {
     const levels = addXp(save, amount);
     if (levels > 0) {
-      hud.toast(`Nível ${save.level}! +${levels * 3} pontos de status`, 'gold');
+      hud.toast(`Nível de aventureiro ${save.level}!`, 'gold');
       hud.levelUp();
       audio.play('base', 'wing', 1);
       statusScreen.render();
@@ -182,14 +207,7 @@ async function boot() {
   const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
-  const statusScreen = new StatusScreen({
-    save,
-    onChange: () => {
-      applyStatus();
-      refreshProfile();
-      saveNow(true);
-    },
-  });
+  const statusScreen = new StatusScreen({ save });
   statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true }));
   let thumbList = null;
   const thumbs = () => (thumbList ??= fruitThumbs(renderer.renderer, DATA.fruits));
@@ -518,6 +536,7 @@ async function boot() {
       if (mode !== 'game') return;
       prev.copy(ctl.pos);
       ctl.step(dt, input.consume(cam.yaw));
+      tracker.step(dt, ctl);
       mission.check(ctl, { towerTopY });
       discoverTimer -= dt;
       if (discoverTimer <= 0) {
@@ -666,7 +685,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker,
     start: startGame,
     saveNow,
     openModal,

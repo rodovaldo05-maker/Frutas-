@@ -3,7 +3,7 @@ import { newStatus, normalizeStatus } from '../progression/status.js';
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 const DB = 'fruto-legacy';
 const STORE = 'saves';
 const FALLBACK = 'fruto-legacy:';
@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = {
   layout: 'padrao',
   buttonScale: 1,
   gliderOn: true, // asa-delta: segurar Pular caindo abre a asa
+  reduceFx: false, // efeitos reduzidos (molduras, partículas e flashes)
 };
 
 export function newSave() {
@@ -38,7 +39,8 @@ export function newSave() {
     freeRespec: true, // redistribuir é grátis uma vez (doc 09)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,
-    pity: 0, // giros seguidos sem Lendário
+    pity: 0, // giros seguidos sem atingir a garantia da roleta
+    history: [], // histórico de obtenção (últimos 200)
     nextUid: 1,
     held: null, // fruta na mão (uid)
     eaten: null, // fruta comida { fruit, rarity }
@@ -52,6 +54,15 @@ export function newSave() {
 const MIGRATIONS = {
   0: (s) => ({ ...newSave(), ...s, version: 1, visited: Array.isArray(s.visited) ? s.visited : [] }),
   1: (s) => ({ ...s, version: 2, level: 1, title: 'Aprendiz', coins: 200, fragments: 0, missions: {} }),
+  // raridade passa a ser da fruta (catálogo), não da cópia; a garantia recomeça
+  2: (s) => ({
+    ...s,
+    version: 3,
+    bag: Array.isArray(s.bag) ? s.bag.map(({ rarity, ...it }) => it) : [],
+    eaten: s.eaten ? { fruit: s.eaten.fruit, at: s.eaten.at } : null,
+    pity: 0,
+    history: [],
+  }),
 };
 
 export function migrate(save) {

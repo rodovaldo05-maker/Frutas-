@@ -273,6 +273,16 @@ ações Segurar/Guardar, Comer (com confirmação), Trocar, Favoritar e Jogar fo
 na mão fica viva (balança e respira); comer usa a animação do laboratório, com mordidas.
 O HUD mostra a fruta comida num selo no retrato e no título.
 
+### 5.2.1 Catálogo e ficha (Fase 1 da especificação de frutas)
+
+Catálogo com busca por nome e filtros por raridade, tipo e posse (na mochila, comida, não
+obtida), ordenação por raridade, nome ou domínio. Cada cartão mostra miniatura 3D, nome,
+tipo, selo e cor da raridade, chance na roleta e estado de posse. A ficha tem a fruta em 3D
+girando (arrastar gira), descrição, habilidades com custo, recarga e dano, transformações,
+despertar, efeitos, restrições, preço de referência, valor de troca, chance, origem,
+domínio e posse. Obtenção: a roleta revela primeiro a silhueta, depois o rank e por fim a
+fruta, com botão Pular; a opção "Efeitos reduzidos" tira partículas, brilhos e flashes.
+
 ### 5.3 Frutas (dossiê)
 
 ```

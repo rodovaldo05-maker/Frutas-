@@ -1,92 +1,125 @@
 import { describe, it, expect } from 'vitest';
-import DATA from '../data/fruto-catalog.json';
+import { RANKS, RANK, FRUITS, TABLES, chances, draw, validate, eligible } from '../src/fruits/catalog.js';
 import {
-  spin, spinBlock, rollFruit, rollRarity, trade, makeKeys, eat, discard, toggleFav, hold, sortBag, bulkCandidates,
-  BAG_SIZE, SPIN_COST, PITY, isWaterCursed,
+  spin, spinBlock, trade, makeKeys, eat, discard, toggleFav, hold, sortBag, bulkCandidates, rarityOf, pityLeft,
+  BAG_SIZE, SPIN_COST, isWaterCursed,
 } from '../src/fruits/roulette.js';
 import { mulberry32 } from '../src/core/math.js';
-import { newSave } from '../src/saves/saveSystem.js';
+import { newSave, migrate } from '../src/saves/saveSystem.js';
 
-const fruits = DATA.fruits;
 const fresh = (over = {}) => ({ ...newSave(), ...over });
 
-describe('roleta de frutas', () => {
-  it('níveis saem perto de 70% / 25% / 5%', () => {
-    const rand = mulberry32(3);
-    const count = { comum: 0, epico: 0, lendario: 0 };
-    for (let i = 0; i < 20000; i++) count[rollRarity(rand)] += 1;
-    expect(count.comum / 20000).toBeCloseTo(0.7, 1);
-    expect(count.epico / 20000).toBeCloseTo(0.25, 1);
-    expect(count.lendario / 20000).toBeGreaterThan(0.04);
-    expect(count.lendario / 20000).toBeLessThan(0.06);
+describe('catálogo e raridades', () => {
+  it('os dados são válidos (campos da ficha, ranks, tabelas)', () => {
+    expect(validate()).toEqual([]);
+    expect(FRUITS).toHaveLength(16);
   });
 
-  it('frutas Míticas saem com metade da chance', () => {
-    const rand = mulberry32(9);
-    const hits = new Array(fruits.length).fill(0);
-    for (let i = 0; i < 40000; i++) hits[rollFruit(fruits, rand)] += 1;
-    const normal = hits[0];
-    const mythic = hits[fruits.findIndex((f) => f.category === 'Mítica')];
-    expect(mythic / normal).toBeGreaterThan(0.4);
-    expect(mythic / normal).toBeLessThan(0.6);
+  it('seis ranks com pesos 45/28/16/7/3/1 que somam 100', () => {
+    expect(RANKS.map((r) => r.id)).toEqual(['comum', 'incomum', 'rara', 'epica', 'lendaria', 'mitica']);
+    expect(RANKS.map((r) => r.peso)).toEqual([45, 28, 16, 7, 3, 1]);
+    expect(RANK.mitica.cor).toBe('#FF526B');
   });
 
-  it('giro ×1 custa 200 moedas e vai para a mochila', () => {
+  it('Besta, Fênix e os dois Dragões são Míticas', () => {
+    expect(eligible('roleta', 'mitica').map((f) => f.id).sort()).toEqual(['besta', 'fenix', 'ocidental', 'oriental']);
+  });
+
+  it('as chances reais de cada tabela somam 100%', () => {
+    for (const id of Object.keys(TABLES)) {
+      const c = chances(id);
+      const soma = Object.values(c.porFruta).reduce((a, b) => a + b, 0);
+      expect(soma).toBeCloseTo(1, 9);
+    }
+    expect(chances('roleta').porRank.comum).toBeCloseTo(0.45, 9);
+    expect(chances('roleta').porFruta.besta).toBeCloseTo(0.0025, 9);
+  });
+
+  it('rank sem frutas: peso redistribuído de forma explícita, sem sortear fruta inexistente', () => {
+    const semLendaria = FRUITS.filter((f) => f.raridade !== 'lendaria');
+    const c = chances('roleta', semLendaria);
+    expect(c.redistribuidos).toEqual(['lendaria']);
+    expect(c.porRank.lendaria).toBe(0);
+    expect(Object.values(c.porFruta).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9);
+    const rand = mulberry32(5);
+    for (let i = 0; i < 2000; i++) {
+      const r = draw('roleta', rand, { fruits: semLendaria });
+      expect(r.rarity).not.toBe('lendaria');
+      expect(semLendaria.some((f) => f.id === r.fruit)).toBe(true);
+    }
+  });
+
+  it('distribuição estatística do sorteio segue os pesos', () => {
+    const rand = mulberry32(11);
+    const n = 60000;
+    const count = Object.fromEntries(RANKS.map((r) => [r.id, 0]));
+    for (let i = 0; i < n; i++) count[draw('roleta', rand).rarity] += 1;
+    for (const r of RANKS) expect(count[r.id] / n).toBeCloseTo(r.peso / 100, 2);
+  });
+
+  it('o sorteio é reproduzível com a mesma semente', () => {
+    const a = Array.from({ length: 30 }, ((rand) => () => draw('roleta', rand).fruit)(mulberry32(42)));
+    const b = Array.from({ length: 30 }, ((rand) => () => draw('roleta', rand).fruit)(mulberry32(42)));
+    expect(a).toEqual(b);
+  });
+});
+
+describe('roleta', () => {
+  it('giro ×1 custa 200 moedas, vai para a mochila e fica no histórico', () => {
     const s = fresh();
-    expect(s.coins).toBe(200);
-    const r = spin(s, fruits, 1, { rand: mulberry32(1) });
+    const r = spin(s, 1, { rand: mulberry32(1) });
     expect(r.ok).toBe(true);
     expect(s.coins).toBe(0);
     expect(s.bag).toHaveLength(1);
-    expect(spin(s, fruits, 1).reason).toBe('Faltam 200 moedas');
+    expect(s.history[0]).toMatchObject({ tabela: 'roleta', fruta: r.results[0].fruit, pago: 'moedas' });
+    expect(spin(s, 1).reason).toBe('Faltam 200 moedas');
   });
 
   it('giro ×10 com chaves; sem chaves suficientes não cobra', () => {
     const s = fresh({ keys: 9 });
-    const r = spin(s, fruits, 10, { useKeys: true });
+    const r = spin(s, 10, { useKeys: true });
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('Faltam 1 chave(s)');
     expect(s.keys).toBe(9);
     s.keys = 10;
-    expect(spin(s, fruits, 10, { useKeys: true }).results).toHaveLength(10);
+    expect(spin(s, 10, { useKeys: true }).results).toHaveLength(10);
     expect(s.keys).toBe(0);
   });
 
   it('mochila cheia bloqueia o giro sem cobrar', () => {
     const s = fresh({ coins: SPIN_COST * 100 });
-    spin(s, fruits, 10);
-    s.bag = Array.from({ length: BAG_SIZE - 5 }, (_, i) => ({ uid: 1000 + i, fruit: 'brasa', rarity: 'comum', fav: false, at: i }));
+    s.bag = Array.from({ length: BAG_SIZE - 5 }, (_, i) => ({ uid: 1000 + i, fruit: 'brasa', fav: false, at: i }));
     const before = s.coins;
     expect(spinBlock(s, 10, false)).toMatch(/Mochila cheia/);
-    expect(spin(s, fruits, 10).ok).toBe(false);
+    expect(spin(s, 10).ok).toBe(false);
     expect(s.coins).toBe(before);
-    expect(spin(s, fruits, 5).ok).toBe(true);
+    expect(spin(s, 5).ok).toBe(true);
   });
 
-  it('garantia: depois de 49 giros sem Lendário, o próximo é Lendário', () => {
-    expect(rollRarity(() => 0.99, PITY - 1)).toBe('lendario');
+  it('garantia exibida: Lendária ou Mítica em até 50 giros', () => {
     const s = fresh({ coins: 1e9 });
-    spin(s, fruits, 60, { rand: () => 0.99 }); // nunca sorteia Lendário por sorte
-    const legend = s.bag.filter((it) => it.rarity === 'lendario').length;
-    expect(legend).toBe(1);
-    expect(s.bag[PITY - 1].rarity).toBe('lendario');
+    expect(pityLeft(s)).toBe(50);
+    spin(s, 60, { rand: () => 0.001 }); // sorte mínima: sempre o rank mais comum
+    const top = s.bag.filter((it) => ['lendaria', 'mitica'].includes(rarityOf(it)));
+    expect(top).toHaveLength(1);
+    expect(['lendaria', 'mitica']).toContain(rarityOf(s.bag[49]));
+    expect(s.history[49].garantia).toBe(true);
   });
 });
 
 describe('trocador e mochila', () => {
   const bag = () => [
-    { uid: 1, fruit: 'brasa', rarity: 'comum', fav: false, at: 1 },
-    { uid: 2, fruit: 'geada', rarity: 'epico', fav: false, at: 2 },
-    { uid: 3, fruit: 'lobo', rarity: 'lendario', fav: false, at: 3 },
-    { uid: 4, fruit: 'duna', rarity: 'comum', fav: true, at: 4 },
-    { uid: 5, fruit: 'eco', rarity: 'comum', fav: false, at: 5 },
+    { uid: 1, fruit: 'impacto', fav: false, at: 1 }, // comum
+    { uid: 2, fruit: 'lobo', fav: false, at: 2 }, // épica
+    { uid: 3, fruit: 'eclipse', fav: false, at: 3 }, // lendária
+    { uid: 4, fruit: 'duna', fav: true, at: 4 }, // comum
+    { uid: 5, fruit: 'eco', fav: false, at: 5 }, // comum
+    { uid: 6, fruit: 'fenix', fav: false, at: 6 }, // mítica
   ];
 
-  it('Comum vale 1, Épico 3, Lendário 5; 10 fragmentos = 1 chave', () => {
-    const s = fresh({ bag: bag(), nextUid: 6 });
-    expect(trade(s, [1, 2, 3])).toBe(9);
-    expect(s.fragments).toBe(9);
-    expect(makeKeys(s)).toBe(0);
+  it('valor de troca vem da ficha: Comum 1, Épica 3, Lendária 5, Mítica 10; 10 fragmentos = 1 chave', () => {
+    const s = fresh({ bag: bag(), nextUid: 7 });
+    expect(trade(s, [1, 2, 3, 6])).toBe(19);
     s.fragments = 27;
     expect(makeKeys(s, 5)).toBe(2);
     expect(s.keys).toBe(2);
@@ -94,29 +127,36 @@ describe('trocador e mochila', () => {
   });
 
   it('troca em massa deixa de fora favoritas e a fruta na mão', () => {
-    const s = fresh({ bag: bag(), nextUid: 6 });
+    const s = fresh({ bag: bag(), nextUid: 7 });
     hold(s, 5);
     expect(bulkCandidates(s, 'comum').map((it) => it.uid)).toEqual([1]);
   });
 
   it('comer substitui a fruta atual e tira da mochila', () => {
-    const s = fresh({ bag: bag(), nextUid: 6 });
+    const s = fresh({ bag: bag(), nextUid: 7 });
     hold(s, 2);
     eat(s, 2);
-    expect(s.eaten.fruit).toBe('geada');
+    expect(s.eaten.fruit).toBe('lobo');
     expect(s.held).toBe(null);
     const r = eat(s, 3);
-    expect(r.previous.fruit).toBe('geada');
-    expect(s.eaten).toMatchObject({ fruit: 'lobo', rarity: 'lendario' });
-    expect(s.bag.map((it) => it.uid)).toEqual([1, 4, 5]);
+    expect(r.previous.fruit).toBe('lobo');
+    expect(s.bag.map((it) => it.uid)).toEqual([1, 4, 5, 6]);
   });
 
-  it('favoritar, jogar fora e ordenar', () => {
-    const s = fresh({ bag: bag(), nextUid: 6 });
+  it('favoritar, jogar fora e ordenar por raridade', () => {
+    const s = fresh({ bag: bag(), nextUid: 7 });
     expect(toggleFav(s, 1)).toBe(true);
     expect(discard(s, 5)).toBe(true);
-    expect(sortBag(s.bag, 'nivel', fruits).map((it) => it.rarity)).toEqual(['lendario', 'epico', 'comum', 'comum']);
-    expect(sortBag(s.bag, 'data', fruits)[0].uid).toBe(4);
+    expect(sortBag(s.bag, 'nivel').map(rarityOf)).toEqual(['mitica', 'lendaria', 'epica', 'comum', 'comum']);
+    expect(sortBag(s.bag, 'data')[0].uid).toBe(6);
+  });
+
+  it('salvo antigo com nível por cópia migra para a raridade do catálogo', () => {
+    const s = migrate({ version: 2, bag: [{ uid: 1, fruit: 'brasa', rarity: 'lendario', fav: false, at: 1 }], eaten: { fruit: 'besta', rarity: 'epico' }, pity: 33 });
+    expect(s.bag[0].rarity).toBeUndefined();
+    expect(rarityOf(s.bag[0])).toBe('incomum');
+    expect(s.eaten).toEqual({ fruit: 'besta', at: undefined });
+    expect(s.pity).toBe(0);
   });
 
   it('Maré e Geada são imunes à água; as outras não', () => {

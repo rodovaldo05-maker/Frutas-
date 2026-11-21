@@ -609,3 +609,101 @@ body.touch .interact kbd { display: none; }
   .interact { bottom: calc(90px + var(--safe-b)); }
 }
 .btn.blocked { opacity: 0.55; filter: grayscale(0.5); }
+
+/* ===== Raridades (6 ranks) ===== */
+.chip[class*='r-'] { border-color: var(--r); }
+.chip[class*='r-'] b { color: var(--r); filter: brightness(1.25); }
+.rarity-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.rarity-chips .chip { padding: 3px 8px; font-size: 11px; }
+.pity { margin: 0; font-size: 11.5px; color: var(--gold-hi); }
+.stage { position: relative; }
+.btn.skip { position: absolute; top: 8px; right: 8px; z-index: 5; min-height: 30px; font-size: 12px; padding: 0 12px; }
+.small-btn { min-height: 34px !important; font-size: 12.5px !important; padding: 0 12px !important; }
+.fcard { isolation: isolate; overflow: visible; }
+.fcard .mask { display: none; }
+.fcard.sil .real { display: none; }
+.fcard.sil .mask { display: inline; }
+.fcard.sil img { filter: brightness(0) drop-shadow(0 0 2px rgba(255, 255, 255, 0.35)); }
+.fcard.hidden-rank { --r: #5a5670 !important; }
+.fcard.hidden-rank small { visibility: hidden; }
+.fcard.pending { opacity: 0.25; }
+.fcard.sil-soft img { filter: grayscale(1) brightness(0.55); }
+.fcard.rank-in { animation: rankin 0.55s ease-out; }
+@keyframes rankin { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); box-shadow: 0 0 0 1px #000, 0 0 26px 6px var(--r); } 100% { transform: scale(1); } }
+/* incomum: brilho discreto */
+.fcard.r-incomum { box-shadow: 0 0 0 1px #000, 0 0 8px rgba(65, 201, 120, 0.35); }
+/* rara: brilho azul e partículas flutuantes */
+.fcard.r-rara { box-shadow: 0 0 0 1px #000, 0 0 12px rgba(62, 158, 255, 0.5); }
+.fcard.r-rara::after {
+  content: ''; position: absolute; inset: 4px; z-index: -1; border-radius: 9px; pointer-events: none;
+  background: radial-gradient(circle, rgba(140, 200, 255, 0.9) 0 1.5px, transparent 2.5px) 0 0 / 22px 26px;
+  animation: floatup 3.2s linear infinite; opacity: 0.55;
+}
+@keyframes floatup { from { background-position: 0 0; } to { background-position: 0 -52px; } }
+/* épica: moldura ornamentada e energia circulando em volta */
+.fcard.r-epica { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.45), 0 0 14px rgba(181, 107, 255, 0.55); animation: epicglow 2.4s linear infinite; }
+@keyframes epicglow {
+  0% { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.5), -5px -5px 14px rgba(200, 140, 255, 0.75); }
+  25% { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.5), 5px -5px 14px rgba(200, 140, 255, 0.75); }
+  50% { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.5), 5px 5px 14px rgba(200, 140, 255, 0.75); }
+  75% { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.5), -5px 5px 14px rgba(200, 140, 255, 0.75); }
+  100% { box-shadow: 0 0 0 1px #000, inset 0 0 0 2px rgba(181, 107, 255, 0.5), -5px -5px 14px rgba(200, 140, 255, 0.75); }
+}
+/* lendária: moldura dourada detalhada com reflexo passando */
+.fcard.r-lendaria { border-width: 3px; box-shadow: 0 0 0 1px #3b250b, inset 0 0 0 2px rgba(255, 231, 163, 0.6), 0 0 16px rgba(255, 184, 61, 0.6); }
+.fcard.r-lendaria::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; border-radius: 9px; pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 245, 210, 0.45) 50%, transparent 60%) -150% 0 / 250% 100% no-repeat;
+  animation: gleamsweep 2.8s ease-in-out infinite;
+}
+@keyframes gleamsweep { 0% { background-position: -150% 0; } 60%, 100% { background-position: 150% 0; } }
+/* mítica: carmesim com ornamento dourado e aura pulsando */
+.fcard.r-mitica { border-color: #FF526B; box-shadow: 0 0 0 1px #3b0a12, inset 0 0 0 2px #e0a83a, 0 0 18px rgba(255, 82, 107, 0.7); animation: aura 1.8s ease-in-out infinite; }
+.fcard.r-mitica::before {
+  content: '◆'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); z-index: 3;
+  color: #ffd36b; font-size: 13px; text-shadow: 0 0 6px rgba(255, 82, 107, 0.9);
+}
+@keyframes aura { 50% { box-shadow: 0 0 0 1px #3b0a12, inset 0 0 0 2px #ffd36b, 0 0 30px 6px rgba(255, 82, 107, 0.75); } }
+.fcard.sil.r-rara::after, .fcard.sil.r-lendaria::after, .fcard.hidden-rank::before, .fcard.hidden-rank::after { display: none; }
+.fcard.hidden-rank { animation: none !important; box-shadow: 0 0 0 1px #000 !important; }
+#r-pool img { border-color: var(--r); cursor: pointer; }
+/* efeitos reduzidos: sem partículas, giros, reflexos ou flashes */
+body.reduce-fx .fcard::before, body.reduce-fx .fcard::after { display: none !important; }
+body.reduce-fx .fcard, body.reduce-fx .fcard.win, body.reduce-fx .fcard.rank-in, body.reduce-fx .interact { animation: none !important; }
+
+/* ===== Catálogo e ficha ===== */
+.catalog-filters { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 4px 40px 8px 0; }
+.catalog-filters input {
+  min-width: 170px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(217, 166, 74, 0.7); background: #120d1f; color: var(--text); font: inherit; font-size: 13px;
+}
+.catalog-filters .choice button { padding: 5px 11px; font-size: 12px; }
+#cat-rank button[style] { border-color: var(--r); }
+#cat-rank button.active[style] { background: var(--r); color: #1b1020; }
+.catalog-grid .fcard { height: 150px; padding: 0 4px; }
+.catalog-grid .fcard img { width: 58px; height: 58px; }
+.catalog-grid .fcard b { font-size: 12px; line-height: 1.1; }
+.fcard em.type { font-style: normal; font-size: 9.5px; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fcard .tag.eaten { background: #b5552f; }
+.fcard .tag.none { background: #4b4766; }
+.fcard .value.chance { color: var(--gold-hi); }
+.detail-body { position: relative; z-index: 1; display: grid; grid-template-columns: 300px 1fr; gap: 16px; min-height: 0; flex: 1 1 auto; overflow: hidden; }
+.viewer { display: grid; gap: 4px; justify-items: center; align-content: start; }
+.viewer canvas {
+  width: 100%; aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--gold); touch-action: none;
+  background: radial-gradient(circle at 50% 40%, #3a2d62, #120e22 75%);
+}
+.detail-info { overflow: auto; padding-right: 6px; font-size: 13px; line-height: 1.45; }
+.detail-info p { margin: 4px 0 8px; }
+.detail-info h4 { margin: 10px 0 2px; font: 700 13px var(--title-font); color: var(--gold-hi); letter-spacing: 0.04em; }
+.seal-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seal { padding: 3px 12px; border-radius: 6px; font: 800 12px var(--body-font); text-transform: uppercase; letter-spacing: 0.08em; color: #1b1020; background: var(--r); box-shadow: 0 0 10px var(--r); }
+.seal.r-mitica { box-shadow: 0 0 0 2px #e0a83a, 0 0 14px var(--r); }
+.type-tag { font-size: 12px; color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; padding: 8px 10px; border-radius: 10px; background: rgba(14, 11, 28, 0.6); border: 1px solid rgba(217, 166, 74, 0.4); font-size: 12px; color: var(--muted); }
+.facts b { color: var(--text); }
+.moves { margin: 2px 0; padding-left: 18px; }
+.moves li { margin: 2px 0; }
+@media (max-height: 450px) {
+  .detail-body { grid-template-columns: 200px 1fr; }
+  .catalog-grid .fcard { height: 128px; }
+}

@@ -1,0 +1,97 @@
+{
+  "versao": 1,
+  "tabelas": {
+    "roleta": {
+      "nome": "Roleta do Mercador de Frutas",
+      "pesos": {
+        "comum": 45,
+        "incomum": 28,
+        "rara": 16,
+        "epica": 7,
+        "lendaria": 3,
+        "mitica": 1
+      },
+      "regiao": "ilha-de-treino",
+      "garantia": {
+        "ativa": true,
+        "giros": 50,
+        "minimo": "lendaria"
+      }
+    },
+    "bau": {
+      "nome": "Baús",
+      "pesos": {
+        "comum": 55,
+        "incomum": 28,
+        "rara": 12,
+        "epica": 4,
+        "lendaria": 1,
+        "mitica": 0
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    },
+    "npc": {
+      "nome": "Recompensas de NPC",
+      "pesos": {
+        "comum": 50,
+        "incomum": 30,
+        "rara": 14,
+        "epica": 5,
+        "lendaria": 1,
+        "mitica": 0
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    },
+    "evento": {
+      "nome": "Eventos",
+      "pesos": {
+        "comum": 30,
+        "incomum": 30,
+        "rara": 20,
+        "epica": 12,
+        "lendaria": 6,
+        "mitica": 2
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    },
+    "recompensa": {
+      "nome": "Recompensas de missão",
+      "pesos": {
+        "comum": 40,
+        "incomum": 30,
+        "rara": 18,
+        "epica": 8,
+        "lendaria": 3,
+        "mitica": 1
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    },
+    "mundo": {
+      "nome": "Frutas no mundo aberto",
+      "pesos": {
+        "comum": 60,
+        "incomum": 25,
+        "rara": 10,
+        "epica": 4,
+        "lendaria": 1,
+        "mitica": 0
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    }
+  }
+}

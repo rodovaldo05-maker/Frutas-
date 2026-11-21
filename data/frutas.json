@@ -1,0 +1,2187 @@
+{
+  "versao": 1,
+  "frutas": [
+    {
+      "id": "impacto",
+      "nome": "Impacto",
+      "tipo": "essencia",
+      "subtipo": "Cinética",
+      "raridade": "comum",
+      "corRaridade": "#A5ADB5",
+      "descricao": "Firme os pés, feche o punho e solte a força de uma vez. O punho abre espaço, o ombro encurta a distância e a Ruptura de Pistão parte o chão em linha reta.",
+      "icone": "miniatura:impacto",
+      "modelo3D": "FRUTOModels.fruit:0",
+      "precoBase": 5000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Punho de Recuo",
+          "descricao": "Um pistão curto sai do punho e empurra o primeiro alvo que ele alcança.",
+          "custoEnergia": 12,
+          "recarga": 1.8,
+          "dano": 24
+        },
+        {
+          "nome": "Ombro de Aríete",
+          "descricao": "Arranque de ombro. Cada alvo no caminho recebe um único tranco para a frente.",
+          "custoEnergia": 18,
+          "recarga": 4,
+          "dano": 32
+        },
+        {
+          "nome": "Ruptura de Pistão",
+          "descricao": "Finque o punho no chão. Uma faixa de 4,6 m se rompe de uma vez e arremessa quem estiver sobre ela.",
+          "custoEnergia": 32,
+          "recarga": 9,
+          "dano": 48
+        },
+        {
+          "nome": "Martelo Sísmico",
+          "descricao": "Bata no solo e lance para cima os alvos próximos.",
+          "custoEnergia": 19,
+          "recarga": 4.5,
+          "dano": 27
+        },
+        {
+          "nome": "Contrachoque",
+          "descricao": "Apare o próximo disparo por 1,2 s e devolva o impacto ao atacante.",
+          "custoEnergia": 22,
+          "recarga": 7.8,
+          "dano": 34
+        }
+      ],
+      "efeitos": [
+        "Arremesso",
+        "Contra-ataque",
+        "resistência a recuo",
+        "armazena 10% do dano recebido para o próximo golpe"
+      ],
+      "sons": [
+        "fruto-audio:impacto"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Domínio Cinético",
+        "descricao": "golpes acumulam energia, criam ondas secundárias e aumentam o alcance dos impactos."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 20.6,
+        "maximo": 32
+      },
+      "recargas": [
+        1.8,
+        4,
+        9,
+        4.5,
+        7.8
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "O soco tem alcance curto. A faixa da Ruptura fica marcada durante a preparação e dá tempo de escapar pela lateral.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#5B87F5",
+      "versao": 1
+    },
+    {
+      "id": "brasa",
+      "nome": "Brasa",
+      "tipo": "elemento",
+      "subtipo": "Fogo",
+      "raridade": "incomum",
+      "corRaridade": "#41C978",
+      "descricao": "Concentre calor em chamas cúbicas. Lance brasas e transforme o chão em uma zona de combustão.",
+      "icone": "miniatura:brasa",
+      "modelo3D": "FRUTOModels.fruit:1",
+      "precoBase": 15000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Brasa Comprimida",
+          "descricao": "Projétil de fogo que explode ao acertar.",
+          "custoEnergia": 14,
+          "recarga": 2,
+          "dano": 30
+        },
+        {
+          "nome": "Rastro Ardente",
+          "descricao": "Avanço deixando fogo por onde passa.",
+          "custoEnergia": 20,
+          "recarga": 5,
+          "dano": 12
+        },
+        {
+          "nome": "Forno Ascendente",
+          "descricao": "Pilares de fogo sob os alvos próximos.",
+          "custoEnergia": 35,
+          "recarga": 10,
+          "dano": 42
+        },
+        {
+          "nome": "Leque de Cinzas",
+          "descricao": "Cinco brasas se abrem em leque. Cada alvo recebe um impacto.",
+          "custoEnergia": 18,
+          "recarga": 4.2,
+          "dano": 21
+        },
+        {
+          "nome": "Caldeira",
+          "descricao": "Marque o chão e faça a caldeira entrar em erupção após meio segundo.",
+          "custoEnergia": 30,
+          "recarga": 7.9,
+          "dano": 38
+        }
+      ],
+      "efeitos": [
+        "Combustão",
+        "Área",
+        "resistência térmica (imune a lava rasa)",
+        "queimadura acumulativa"
+      ],
+      "sons": [
+        "fruto-audio:brasa"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Coração da Fornalha",
+        "descricao": "chamas mais intensas, área de combustão maior e explosões secundárias."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 23.4,
+        "maximo": 35
+      },
+      "recargas": [
+        2,
+        5,
+        10,
+        4.2,
+        7.9
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "Gasta bastante energia para manter áreas em chamas. Os projéteis podem errar se você estiver distante.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#ffb05b",
+      "versao": 1
+    },
+    {
+      "id": "geada",
+      "nome": "Geada",
+      "tipo": "elemento",
+      "subtipo": "Gelo",
+      "raridade": "rara",
+      "corRaridade": "#3E9EFF",
+      "descricao": "Cristalize a umidade em gelo voxel. Interrompa os alvos e construa uma barreira contra seus disparos.",
+      "icone": "miniatura:geada",
+      "modelo3D": "FRUTOModels.fruit:2",
+      "precoBase": 40000,
+      "valorTroca": 2,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Estacas de Gelo",
+          "descricao": "Uma linha de gelo que congela por 2 s.",
+          "custoEnergia": 12,
+          "recarga": 2.4,
+          "dano": 25
+        },
+        {
+          "nome": "Muralha Fria",
+          "descricao": "Bloqueia disparos frontais por 4 s.",
+          "custoEnergia": 20,
+          "recarga": 7,
+          "dano": 0
+        },
+        {
+          "nome": "Inverno Repentino",
+          "descricao": "Explosão circular; congela por 3 s.",
+          "custoEnergia": 32,
+          "recarga": 10,
+          "dano": 36
+        },
+        {
+          "nome": "Trilha de Estilhaços",
+          "descricao": "Uma fileira de espinhos avança em cinco etapas e congela quem toca.",
+          "custoEnergia": 19,
+          "recarga": 4.9,
+          "dano": 24
+        },
+        {
+          "nome": "Casulo de Gelo",
+          "descricao": "Envolva-se por 1,6 s. O primeiro disparo quebra a casca e congela ao redor.",
+          "custoEnergia": 22,
+          "recarga": 7.6,
+          "dano": 0
+        }
+      ],
+      "efeitos": [
+        "Controle",
+        "Proteção",
+        "resistência ao frio (imune a nevascas)",
+        "inimigos atingidos ficam 15% mais lentos"
+      ],
+      "sons": [
+        "fruto-audio:geada"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Era Glacial",
+        "descricao": "congela superfícies, cria estruturas maiores, amplia o controle de área."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 21.0,
+        "maximo": 32
+      },
+      "recargas": [
+        2.4,
+        7,
+        10,
+        4.9,
+        7.6
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "Causa menos dano imediato. A muralha dura pouco e o congelamento não impede golpes que já foram disparados."
+      ],
+      "cor": "#8fdded",
+      "versao": 1
+    },
+    {
+      "id": "tormenta",
+      "nome": "Tormenta",
+      "tipo": "elemento",
+      "subtipo": "Raio",
+      "raridade": "rara",
+      "corRaridade": "#3E9EFF",
+      "descricao": "Corra em um clarão e conecte descargas entre os alvos. Uma tempestade cabe dentro desse corpo.",
+      "icone": "miniatura:tormenta",
+      "modelo3D": "FRUTOModels.fruit:3",
+      "precoBase": 40000,
+      "valorTroca": 2,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Arco em Cadeia",
+          "descricao": "Um raio salta por até três alvos.",
+          "custoEnergia": 14,
+          "recarga": 2.2,
+          "dano": 28
+        },
+        {
+          "nome": "Passo Relâmpago",
+          "descricao": "Dash rápido com descarga no caminho.",
+          "custoEnergia": 17,
+          "recarga": 4,
+          "dano": 27
+        },
+        {
+          "nome": "Céu Partido",
+          "descricao": "Uma nuvem marca o ponto do ataque. Três raios atingem o chão em sequência, e o último cobre um raio de 3,65 m.",
+          "custoEnergia": 34,
+          "recarga": 10,
+          "dano": 24
+        },
+        {
+          "nome": "Forquilha Voltaica",
+          "descricao": "Um raio atinge o alvo e salta para até dois vizinhos.",
+          "custoEnergia": 20,
+          "recarga": 4.7,
+          "dano": 25
+        },
+        {
+          "nome": "Para-raios",
+          "descricao": "Plante um condutor e invoque três raios no mesmo ponto.",
+          "custoEnergia": 29,
+          "recarga": 8.1,
+          "dano": 14
+        }
+      ],
+      "efeitos": [
+        "Velocidade",
+        "Corrente",
+        "resistência elétrica",
+        "acúmulo de carga (Choque) nos inimigos"
+      ],
+      "sons": [
+        "fruto-audio:tormenta"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Corpo da Tempestade",
+        "descricao": "velocidade maior, descargas secundárias, ataques elétricos ampliados."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 22.8,
+        "maximo": 34
+      },
+      "recargas": [
+        2.2,
+        4,
+        10,
+        4.7,
+        8.1
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "As correntes precisam de alvos próximos. O passo veloz não concede invulnerabilidade permanente.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#f4dc87",
+      "versao": 1
+    },
+    {
+      "id": "lobo",
+      "nome": "Lobo",
+      "tipo": "fera",
+      "subtipo": "Predador",
+      "raridade": "epica",
+      "corRaridade": "#B56BFF",
+      "descricao": "Alterne entre um caçador de garras e um lobo de quatro patas. Cada corpo muda sua corrida, seu ataque e a técnica de Q.",
+      "icone": "miniatura:lobo",
+      "modelo3D": "FRUTOModels.fruit:4",
+      "precoBase": 120000,
+      "valorTroca": 3,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Rasgo da Presa",
+          "descricao": "Projete três marcas de garra a curta distância.",
+          "custoEnergia": 12,
+          "recarga": 2.5,
+          "dano": 24
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Lute em duas pernas com garras. Repita para voltar à forma humana.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Corra nas quatro patas e ataque com os dentes. Repita para voltar à forma humana.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Uivo de Caça",
+          "descricao": "Solte um uivo frontal que faz os alvos recuarem.",
+          "custoEnergia": 17,
+          "recarga": 4.5,
+          "dano": 23
+        },
+        {
+          "nome": "Caçada Lunar",
+          "descricao": "Avance em dois botes. Cada passada pode atingir uma vez.",
+          "custoEnergia": 25,
+          "recarga": 7.2,
+          "dano": 17
+        }
+      ],
+      "efeitos": [
+        "Transformação",
+        "Corpo a corpo",
+        "faro (rastros de inimigos visíveis)",
+        "+10% de velocidade em forma animal"
+      ],
+      "sons": [
+        "fruto-audio:lobo"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.3
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 6.1
+      },
+      "despertar": {
+        "nome": "Predador Ancestral",
+        "descricao": "força, velocidade, percepção e regeneração aumentadas."
+      },
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.3
+        },
+        "completa": {
+          "velocidade": 6.1
+        }
+      },
+      "consumoEnergia": {
+        "medio": 18.0,
+        "maximo": 25
+      },
+      "recargas": [
+        2.5,
+        0.8,
+        0.8,
+        4.5,
+        7.2
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "As presas e garras exigem aproximação. O bote segue em linha reta. Um alvo que sair do caminho escapa.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#b7cce2",
+      "versao": 1
+    },
+    {
+      "id": "eclipse",
+      "nome": "Eclipse",
+      "tipo": "essencia",
+      "subtipo": "Espacial",
+      "raridade": "lendaria",
+      "corRaridade": "#FFB83D",
+      "descricao": "Dobre pequenas distâncias e atraia tudo para um núcleo de sombra. Ataque de onde ninguém espera.",
+      "icone": "miniatura:eclipse",
+      "modelo3D": "FRUTOModels.fruit:5",
+      "precoBase": 400000,
+      "valorTroca": 5,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Núcleo Sombrio",
+          "descricao": "Projétil que explode e puxa os alvos.",
+          "custoEnergia": 16,
+          "recarga": 2.7,
+          "dano": 30
+        },
+        {
+          "nome": "Passagem Oculta",
+          "descricao": "Teleporte para trás do alvo mais próximo.",
+          "custoEnergia": 20,
+          "recarga": 5,
+          "dano": 22
+        },
+        {
+          "nome": "Horizonte Vazio",
+          "descricao": "Domínio que atrai e causa dano contínuo.",
+          "custoEnergia": 36,
+          "recarga": 11,
+          "dano": 9
+        },
+        {
+          "nome": "Fenda Gêmea",
+          "descricao": "Abra uma fenda de cada lado e puxe os alvos para o centro.",
+          "custoEnergia": 19,
+          "recarga": 4.9,
+          "dano": 23
+        },
+        {
+          "nome": "Colapso Orbital",
+          "descricao": "Um núcleo atrai os alvos antes de explodir.",
+          "custoEnergia": 30,
+          "recarga": 8.6,
+          "dano": 36
+        }
+      ],
+      "efeitos": [
+        "Teleporte",
+        "Gravidade"
+      ],
+      "sons": [
+        "fruto-audio:eclipse"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Eclipse Total (a confirmar)",
+        "descricao": "gravidade mais forte e teleportes encadeados."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 24.2,
+        "maximo": 36
+      },
+      "recargas": [
+        2.7,
+        5,
+        11,
+        4.9,
+        8.6
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "As áreas têm alcance limitado. Teleportar perto de vários alvos deixa você exposto ao fim da proteção.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#bba2ed",
+      "versao": 1
+    },
+    {
+      "id": "mare",
+      "nome": "Maré",
+      "tipo": "elemento",
+      "subtipo": "Água",
+      "raridade": "epica",
+      "corRaridade": "#B56BFF",
+      "descricao": "Erga uma onda de espuma, traga os alvos de volta com a ressaca e reúna-os no olho de um redemoinho.",
+      "icone": "miniatura:mare",
+      "modelo3D": "FRUTOModels.fruit:6",
+      "precoBase": 120000,
+      "valorTroca": 3,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Onda de Arrebentação",
+          "descricao": "Erga uma onda de 6,4 m de largura. A crista percorre até 9,6 m e levanta e empurra quem encontra.",
+          "custoEnergia": 13,
+          "recarga": 2.3,
+          "dano": 26
+        },
+        {
+          "nome": "Ressaca",
+          "descricao": "Puxe uma onda de volta para os seus pés. A espuma traz os alvos que a crista alcança no retorno.",
+          "custoEnergia": 18,
+          "recarga": 4.8,
+          "dano": 18
+        },
+        {
+          "nome": "Olho da Maré",
+          "descricao": "Abra um redemoinho de 4,2 m de raio. Quatro correntes em espiral arrastam os alvos para o olho.",
+          "custoEnergia": 33,
+          "recarga": 9,
+          "dano": 9
+        },
+        {
+          "nome": "Chicote de Espuma",
+          "descricao": "Varra um arco à frente e arraste os alvos com a espuma.",
+          "custoEnergia": 18,
+          "recarga": 4.2,
+          "dano": 24
+        },
+        {
+          "nome": "Coluna de Maré",
+          "descricao": "Faça a água brotar sob o alvo e lançá-lo para o alto.",
+          "custoEnergia": 27,
+          "recarga": 7.0,
+          "dano": 31
+        }
+      ],
+      "efeitos": [
+        "Corrente",
+        "Controle",
+        "surfar na água",
+        "+20% de dano estando sobre a água"
+      ],
+      "sons": [
+        "fruto-audio:mare"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Senhor das Ondas",
+        "descricao": "onda permanente sob os pés; habilidades maiores no mar."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 21.8,
+        "maximo": 33
+      },
+      "recargas": [
+        2.3,
+        4.8,
+        9,
+        4.2,
+        7.0
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "A corrente segue uma faixa. Um inimigo que sai pela lateral escapa antes de a crista chegar."
+      ],
+      "cor": "#6eddd6",
+      "versao": 1
+    },
+    {
+      "id": "cristal",
+      "nome": "Cristal",
+      "tipo": "essencia",
+      "subtipo": "Mineral",
+      "raridade": "incomum",
+      "corRaridade": "#41C978",
+      "descricao": "Cultive quartzo rosa. Perfure à distância ou plante um geodo com uma breve janela antes da ruptura.",
+      "icone": "miniatura:cristal",
+      "modelo3D": "FRUTOModels.fruit:7",
+      "precoBase": 15000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Lança de Quartzo",
+          "descricao": "Dispare um cristal facetado na direção do alvo.",
+          "custoEnergia": 13,
+          "recarga": 1.9,
+          "dano": 29
+        },
+        {
+          "nome": "Coroa de Espinhos",
+          "descricao": "Um anel de cristais irrompe a seus pés e brevemente imobiliza.",
+          "custoEnergia": 21,
+          "recarga": 5,
+          "dano": 25
+        },
+        {
+          "nome": "Geodo de Ruptura",
+          "descricao": "Plante um geodo no chão. Ele se rompe após 0,8 s.",
+          "custoEnergia": 32,
+          "recarga": 8,
+          "dano": 45
+        },
+        {
+          "nome": "Roseta de Quartzo",
+          "descricao": "Lance três estilhaços divergentes. Mais de uma ponta pode acertar de perto.",
+          "custoEnergia": 20,
+          "recarga": 4.7,
+          "dano": 13
+        },
+        {
+          "nome": "Cúpula de Facetas",
+          "descricao": "Por 1,8 s, a cúpula refrata até três disparos contra quem os lançou.",
+          "custoEnergia": 27,
+          "recarga": 8.4,
+          "dano": 15
+        }
+      ],
+      "efeitos": [
+        "Estilhaços",
+        "Armadilha",
+        "armadura de cristal (+10% de defesa)",
+        "estilhaços extras em acertos críticos"
+      ],
+      "sons": [
+        "fruto-audio:cristal"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Catedral de Quartzo",
+        "descricao": "cristais permanecem como obstáculos e refletem luz/raios."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 22.6,
+        "maximo": 32
+      },
+      "recargas": [
+        1.9,
+        5,
+        8,
+        4.7,
+        8.4
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "O geodo permanece onde foi plantado. Sair da área antes da ruptura evita a explosão.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#efa8cd",
+      "versao": 1
+    },
+    {
+      "id": "eco",
+      "nome": "Eco",
+      "tipo": "essencia",
+      "subtipo": "Sonora",
+      "raridade": "comum",
+      "corRaridade": "#A5ADB5",
+      "descricao": "Toque a Nota de Chamada para afinar os alvos. Contratempo ou Câmara Harmônica faz cada alvo marcado responder com outra nota, mesmo se ele se mover.",
+      "icone": "miniatura:eco",
+      "modelo3D": "FRUTOModels.fruit:8",
+      "precoBase": 5000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Nota de Chamada",
+          "descricao": "Uma onda em cone marca cada alvo atingido por 3,2 s.",
+          "custoEnergia": 12,
+          "recarga": 2.1,
+          "dano": 23
+        },
+        {
+          "nome": "Contratempo",
+          "descricao": "Três batidas seguem em frente. A primeira a tocar uma marca libera uma resposta de 12 de dano na batida seguinte.",
+          "custoEnergia": 21,
+          "recarga": 5.3,
+          "dano": 12
+        },
+        {
+          "nome": "Câmara Harmônica",
+          "descricao": "Bata as palmas para espalhar o som em todas as direções. Cada alvo marcado responde uma vez.",
+          "custoEnergia": 31,
+          "recarga": 8.4,
+          "dano": 38
+        },
+        {
+          "nome": "Diapasão",
+          "descricao": "Emita duas linhas paralelas de som. Cada linha pode tocar o mesmo alvo.",
+          "custoEnergia": 19,
+          "recarga": 4.6,
+          "dano": 15
+        },
+        {
+          "nome": "Última Ressonância",
+          "descricao": "Toque duas notas no alvo mais próximo. A segunda o acompanha até a nova posição.",
+          "custoEnergia": 27,
+          "recarga": 7.3,
+          "dano": 18
+        }
+      ],
+      "efeitos": [
+        "Ressonância",
+        "Cadência"
+      ],
+      "sons": [
+        "fruto-audio:eco"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": {
+        "nome": "Orquestra",
+        "descricao": "marcas duram o dobro e respondem duas vezes."
+      },
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 22.0,
+        "maximo": 31
+      },
+      "recargas": [
+        2.1,
+        5.3,
+        8.4,
+        4.6,
+        7.3
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "A nota dura 3,2 s. As três batidas do Contratempo seguem a direção do primeiro gesto e podem ser esquivadas.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#A9EF6F",
+      "versao": 1
+    },
+    {
+      "id": "falcao",
+      "nome": "Falcão",
+      "tipo": "fera",
+      "subtipo": "Ave",
+      "raridade": "incomum",
+      "corRaridade": "#41C978",
+      "descricao": "Assuma um híbrido alado ou um falcão-peregrino. Decole, ajuste a altitude e mergulhe sobre os alvos.",
+      "icone": "miniatura:falcao",
+      "modelo3D": "FRUTOModels.fruit:9",
+      "precoBase": 15000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Rajada de Penas",
+          "descricao": "Lance uma pena rígida que corta o ar até o primeiro alvo.",
+          "custoEnergia": 12,
+          "recarga": 2.3,
+          "dano": 23
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Ganhe asas e garras. Espaço ou Decolar permite voar.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Voe como uma ave de rapina e use o mergulho de Q.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Foice de Vento",
+          "descricao": "Um corte de ar atravessa alvos na linha do voo ou do gesto.",
+          "custoEnergia": 18,
+          "recarga": 4.2,
+          "dano": 24
+        },
+        {
+          "nome": "Corrente Ascendente",
+          "descricao": "Uma corrente levanta os alvos ao redor e ergue o Falcão.",
+          "custoEnergia": 26,
+          "recarga": 7.3,
+          "dano": 29
+        }
+      ],
+      "efeitos": [
+        "Transformação",
+        "Voo"
+      ],
+      "sons": [
+        "fruto-audio:falcao"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.2
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 3.6
+      },
+      "despertar": {
+        "nome": "Céu do Peregrino",
+        "descricao": "voo mais rápido, penas perfurantes."
+      },
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.2
+        },
+        "completa": {
+          "velocidade": 3.6
+        }
+      },
+      "consumoEnergia": {
+        "medio": 18.7,
+        "maximo": 26
+      },
+      "recargas": [
+        2.3,
+        0.8,
+        0.8,
+        4.2,
+        7.3
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "O mergulho segue a direção escolhida. Um golpe de bico em altitude passa por cima de um alvo no chão.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#f0bf79",
+      "versao": 1
+    },
+    {
+      "id": "duna",
+      "nome": "Duna",
+      "tipo": "elemento",
+      "subtipo": "Areia",
+      "raridade": "comum",
+      "corRaridade": "#A5ADB5",
+      "descricao": "Comprima areia em uma agulha, deslize sobre as dunas e erga um furacão que tira os alvos do chão.",
+      "icone": "miniatura:duna",
+      "modelo3D": "FRUTOModels.fruit:10",
+      "precoBase": 5000,
+      "valorTroca": 1,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Agulha de Areia",
+          "descricao": "Um projétil compacto corta o ar em linha reta.",
+          "custoEnergia": 12,
+          "recarga": 1.8,
+          "dano": 22
+        },
+        {
+          "nome": "Passo de Duna",
+          "descricao": "Deslize sobre a areia e atinja cada alvo no caminho.",
+          "custoEnergia": 19,
+          "recarga": 4.2,
+          "dano": 28
+        },
+        {
+          "nome": "Tempestade de Areia",
+          "descricao": "Erga um furacão de 6,3 m. Cinco rajadas arrastam os alvos em espiral, e a última os lança para o alto.",
+          "custoEnergia": 32,
+          "recarga": 9,
+          "dano": 9
+        },
+        {
+          "nome": "Dunas Errantes",
+          "descricao": "Duas erupções de areia atravessam a direção escolhida em sequência.",
+          "custoEnergia": 19,
+          "recarga": 4.7,
+          "dano": 16
+        },
+        {
+          "nome": "Areia Movediça",
+          "descricao": "Prenda quem estiver na área e puxe de volta durante quatro pulsações.",
+          "custoEnergia": 28,
+          "recarga": 8.3,
+          "dano": 9
+        }
+      ],
+      "efeitos": [
+        "Areia",
+        "Mobilidade"
+      ],
+      "sons": [
+        "fruto-audio:duna"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": null,
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 22.0,
+        "maximo": 32
+      },
+      "recargas": [
+        1.8,
+        4.2,
+        9,
+        4.7,
+        8.3
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "A tempestade permanece no chão. Alvos que atravessam sua borda deixam de receber dano.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#e7bd75",
+      "versao": 1
+    },
+    {
+      "id": "ima",
+      "nome": "Ímã",
+      "tipo": "essencia",
+      "subtipo": "Magnética",
+      "raridade": "rara",
+      "corRaridade": "#3E9EFF",
+      "descricao": "Alterne os polos para aproximar inimigos, abrir espaço e prender um grupo na órbita dos fragmentos de ferro.",
+      "icone": "miniatura:ima",
+      "modelo3D": "FRUTOModels.fruit:11",
+      "precoBase": 40000,
+      "valorTroca": 2,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Tração Polar",
+          "descricao": "Um campo frontal atrai os alvos para a sua posição.",
+          "custoEnergia": 13,
+          "recarga": 2.4,
+          "dano": 20
+        },
+        {
+          "nome": "Pulso Repulsor",
+          "descricao": "Repele os inimigos ao seu redor.",
+          "custoEnergia": 19,
+          "recarga": 4.6,
+          "dano": 25
+        },
+        {
+          "nome": "Órbita de Ferro",
+          "descricao": "Três pulsos crescentes giram o ferro em torno de um ponto.",
+          "custoEnergia": 33,
+          "recarga": 8.5,
+          "dano": 14
+        },
+        {
+          "nome": "Trilho Magnético",
+          "descricao": "Perfure os alvos alinhados com um único disparo magnético.",
+          "custoEnergia": 20,
+          "recarga": 4.4,
+          "dano": 29
+        },
+        {
+          "nome": "Inversão de Polos",
+          "descricao": "Atraia os alvos próximos e inverta o campo para arremessá-los.",
+          "custoEnergia": 29,
+          "recarga": 7.8,
+          "dano": 24
+        }
+      ],
+      "efeitos": [
+        "Atração",
+        "Repulsão"
+      ],
+      "sons": [
+        "fruto-audio:ima"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer"
+      ],
+      "formaHibrida": null,
+      "formaCompleta": null,
+      "despertar": null,
+      "atributosPorForma": null,
+      "consumoEnergia": {
+        "medio": 22.8,
+        "maximo": 33
+      },
+      "recargas": [
+        2.4,
+        4.6,
+        8.5,
+        4.4,
+        7.8
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "A tração alcança apenas o cone à frente. A repulsão exige que os alvos já estejam próximos.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#8bc2e7",
+      "versao": 1
+    },
+    {
+      "id": "besta",
+      "nome": "Besta",
+      "tipo": "fera",
+      "subtipo": "Mítica · Quadrúpede",
+      "raridade": "mitica",
+      "corRaridade": "#FF526B",
+      "descricao": "A juba branca protege o pescoço, e dois chifres rubros abrem caminho. A Besta luta perto e joga os alvos para longe com o peso do corpo.",
+      "icone": "miniatura:besta",
+      "modelo3D": "FRUTOModels.fruit:12",
+      "precoBase": 1200000,
+      "valorTroca": 10,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Presa de Marfim",
+          "descricao": "Golpe frontal com os chifres que levanta quem estiver à frente.",
+          "custoEnergia": 13,
+          "recarga": 2.4,
+          "dano": 29
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Assuma a forma bípede da criatura. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Assuma o corpo mítico completo. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Rugido Carmesim",
+          "descricao": "O rugido se abre em cone e empurra os alvos.",
+          "custoEnergia": 19,
+          "recarga": 4.6,
+          "dano": 24
+        },
+        {
+          "nome": "Pisão da Besta",
+          "descricao": "O solo se rompe ao redor do corpo e arremessa os alvos para cima.",
+          "custoEnergia": 27,
+          "recarga": 7.5,
+          "dano": 38
+        }
+      ],
+      "efeitos": [
+        "Chifres",
+        "Impacto"
+      ],
+      "sons": [
+        "fruto-audio:besta"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.1
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 5.8
+      },
+      "despertar": null,
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.1
+        },
+        "completa": {
+          "velocidade": 5.8
+        }
+      },
+      "consumoEnergia": {
+        "medio": 19.7,
+        "maximo": 27
+      },
+      "recargas": [
+        2.4,
+        0.8,
+        0.8,
+        4.6,
+        7.5
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "Os chifres têm pouco alcance. A onda do pisão se concentra ao redor das patas.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#ff5967",
+      "versao": 1
+    },
+    {
+      "id": "fenix",
+      "nome": "Fênix",
+      "tipo": "fera",
+      "subtipo": "Mítica · Ave",
+      "raridade": "mitica",
+      "corRaridade": "#FF526B",
+      "descricao": "As penas azuis terminam em violeta e ouro. A Fênix lança plumas de fogo, ganha altura batendo as asas e se recompõe no clarão da aurora.",
+      "icone": "miniatura:fenix",
+      "modelo3D": "FRUTOModels.fruit:13",
+      "precoBase": 1200000,
+      "valorTroca": 10,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Pluma de Aurora",
+          "descricao": "Lance uma pluma incandescente contra o primeiro alvo no caminho.",
+          "custoEnergia": 12,
+          "recarga": 2.2,
+          "dano": 26
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Assuma a forma bípede da criatura. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Assuma o corpo mítico completo. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Leque Solar",
+          "descricao": "Abra as asas e varra o espaço à frente com um leque de luz.",
+          "custoEnergia": 18,
+          "recarga": 4.2,
+          "dano": 25
+        },
+        {
+          "nome": "Pulso de Renascimento",
+          "descricao": "Recupere 24 de vitalidade e queime os alvos próximos em um clarão.",
+          "custoEnergia": 30,
+          "recarga": 8.2,
+          "dano": 30
+        }
+      ],
+      "efeitos": [
+        "Voo",
+        "Cura"
+      ],
+      "sons": [
+        "fruto-audio:fenix"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.2
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 3.8
+      },
+      "despertar": null,
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.2
+        },
+        "completa": {
+          "velocidade": 3.8
+        }
+      },
+      "consumoEnergia": {
+        "medio": 20.0,
+        "maximo": 30
+      },
+      "recargas": [
+        2.2,
+        0.8,
+        0.8,
+        4.2,
+        8.2
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "As plumas seguem em linha reta. O clarão de cura só alcança adversários próximos.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#53d9ff",
+      "versao": 1
+    },
+    {
+      "id": "oriental",
+      "nome": "Dragão Oriental",
+      "tipo": "fera",
+      "subtipo": "Mítica · Serpente",
+      "raridade": "mitica",
+      "corRaridade": "#FF526B",
+      "descricao": "O corpo serpentino desenha curvas no ar. A juba carmesim e os chifres dourados acompanham o pescoço enquanto o dragão conduz correntes e relâmpagos.",
+      "icone": "miniatura:oriental",
+      "modelo3D": "FRUTOModels.fruit:14",
+      "precoBase": 1200000,
+      "valorTroca": 10,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Raio Imperial",
+          "descricao": "Um raio dourado perfura os alvos alinhados com o gesto.",
+          "custoEnergia": 14,
+          "recarga": 2.5,
+          "dano": 28
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Assuma a forma bípede da criatura. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Assuma o corpo mítico completo. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Espiral Imperial",
+          "descricao": "A corrente gira no ponto marcado e puxa os alvos para o centro.",
+          "custoEnergia": 20,
+          "recarga": 5.2,
+          "dano": 25
+        },
+        {
+          "nome": "Trovão do Poente",
+          "descricao": "Marque o solo. Um relâmpago cai após meio segundo.",
+          "custoEnergia": 28,
+          "recarga": 7.8,
+          "dano": 40
+        }
+      ],
+      "efeitos": [
+        "Voo serpentino",
+        "Atração"
+      ],
+      "sons": [
+        "fruto-audio:oriental"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.25
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 5.0
+      },
+      "despertar": null,
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.25
+        },
+        "completa": {
+          "velocidade": 5.0
+        }
+      },
+      "consumoEnergia": {
+        "medio": 20.7,
+        "maximo": 28
+      },
+      "recargas": [
+        2.5,
+        0.8,
+        0.8,
+        5.2,
+        7.8
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "O raio percorre uma faixa estreita. A espiral se fecha onde o alvo estava ao iniciar o gesto.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#e54c58",
+      "versao": 1
+    },
+    {
+      "id": "ocidental",
+      "nome": "Dragão Ocidental",
+      "tipo": "fera",
+      "subtipo": "Mítica · Alada",
+      "raridade": "mitica",
+      "corRaridade": "#FF526B",
+      "descricao": "Escamas de obsidiana e membranas douradas cobrem o dragão. No solo ele finca as garras e sopra fogo. No ar ele abre as duas asas e plana.",
+      "icone": "miniatura:ocidental",
+      "modelo3D": "FRUTOModels.fruit:15",
+      "precoBase": 1200000,
+      "valorTroca": 10,
+      "pesoSorteio": 1,
+      "regiaoDisponivel": [
+        "ilha-de-treino"
+      ],
+      "habilidades": [
+        {
+          "nome": "Sopro de Fornalha",
+          "descricao": "Expire fogo à frente em um cone de alcance médio.",
+          "custoEnergia": 15,
+          "recarga": 2.8,
+          "dano": 31
+        },
+        {
+          "nome": "Forma Híbrida",
+          "descricao": "Assuma a forma bípede da criatura. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Forma Completa",
+          "descricao": "Assuma o corpo mítico completo. Repita para voltar ao corpo humano.",
+          "custoEnergia": 0,
+          "recarga": 0.8,
+          "dano": 0
+        },
+        {
+          "nome": "Batida de Asas",
+          "descricao": "As membranas varrem o ar e afastam os inimigos próximos.",
+          "custoEnergia": 20,
+          "recarga": 4.8,
+          "dano": 26
+        },
+        {
+          "nome": "Meteoro de Obsidiana",
+          "descricao": "Um núcleo dourado despenca no ponto marcado e explode.",
+          "custoEnergia": 31,
+          "recarga": 8.3,
+          "dano": 43
+        }
+      ],
+      "efeitos": [
+        "Voo",
+        "Fogo"
+      ],
+      "sons": [
+        "fruto-audio:ocidental"
+      ],
+      "animacoes": [
+        "segurar",
+        "comer",
+        "forma-hibrida",
+        "forma-completa"
+      ],
+      "formaHibrida": {
+        "nome": "Forma híbrida",
+        "velocidade": 4.0
+      },
+      "formaCompleta": {
+        "nome": "Forma completa",
+        "velocidade": 4.8
+      },
+      "despertar": null,
+      "atributosPorForma": {
+        "humana": {
+          "velocidade": 3.8
+        },
+        "hibrida": {
+          "velocidade": 4.0
+        },
+        "completa": {
+          "velocidade": 4.8
+        }
+      },
+      "consumoEnergia": {
+        "medio": 22.0,
+        "maximo": 31
+      },
+      "recargas": [
+        2.8,
+        0.8,
+        0.8,
+        4.8,
+        8.3
+      ],
+      "dominio": {
+        "maximo": 600,
+        "desbloqueios": [
+          {
+            "dominio": 0,
+            "libera": "Combo, esquiva e habilidade Q"
+          },
+          {
+            "dominio": 25,
+            "libera": "Habilidade E"
+          },
+          {
+            "dominio": 75,
+            "libera": "Habilidade R"
+          },
+          {
+            "dominio": 150,
+            "libera": "Habilidade T"
+          },
+          {
+            "dominio": 250,
+            "libera": "Habilidade G"
+          },
+          {
+            "dominio": 350,
+            "libera": "Despertar"
+          },
+          {
+            "dominio": 450,
+            "libera": "Segunda passiva"
+          },
+          {
+            "dominio": 500,
+            "libera": "Melhorias"
+          },
+          {
+            "dominio": 600,
+            "libera": "Visual de mestre da fruta"
+          }
+        ]
+      },
+      "restricoes": [
+        "O sopro abre um cone frontal. O meteoro avisa o ponto de impacto antes de cair.",
+        "Na água funda o usuário afunda"
+      ],
+      "cor": "#edb34c",
+      "versao": 1
+    }
+  ]
+}

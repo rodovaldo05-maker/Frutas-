@@ -18,6 +18,7 @@
 | 08 | [Frutas](08-frutas.md) | Regras das frutas e as 16 frutas da Edição 18 |
 | 09 | [Progressão e economia](09-progressao-e-economia.md) | Níveis, status, roleta, mochila, fragmentos, missões |
 | 10 | [Interfaces e controles](10-interfaces-e-controles.md) | Todas as telas, HUD, celular, PC e controle |
+| 11 | [Vilas e construtor de mundo](11-vilas-e-construtor.md) | Editor e gerador procedural de vilas 3D, NPCs, rotinas, navegação |
 
 ## 1. Missão
 

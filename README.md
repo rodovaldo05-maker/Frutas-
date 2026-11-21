@@ -18,10 +18,12 @@ Experiência, níveis (3 pontos de status por nível) e a tela de Status: cada p
 Força soma 1 de fôlego, cada ponto de Defesa soma 6 de vida. O Correr dobra a
 velocidade de andar.
 
-Roleta de frutas com o Mercador de Frutas (×1 e ×10, com moedas ou chaves; Comum 70%,
-Épico 25%, Lendário 5%; Míticas com metade da chance; garantia de Lendário em 50 giros),
-Mochila de 60 frutas, Trocador de Fragmentos (Comum 1, Épico 3, Lendário 5; 10 fragmentos
-= 1 chave), fruta viva na mão, comer com a animação do laboratório e a fraqueza à água
+Frutas com tipo (Essência, Elemento, Fera) e raridade própria em 6 ranks (Comum 45%,
+Incomum 28%, Rara 16%, Épica 7%, Lendária 3%, Mítica 1%), ficha completa de cada fruta em
+`data/frutas.json`, catálogo com filtros e ficha 3D. Roleta com o Mercador de Frutas (×1 e
+×10, moedas ou chaves, chances reais exibidas, garantia de Lendária ou melhor em 50 giros,
+revelação silhueta → rank → fruta com Pular), Mochila de 60 frutas, Trocador de Fragmentos
+(valor da ficha; 10 fragmentos = 1 chave), fruta viva na mão, comer com a animação do laboratório e a fraqueza à água
 (usuário de fruta afunda, menos Maré e Geada). Chão suave com textura, sem linhas de
 grade, e asa-delta nova com botão para ligar e desligar.
 

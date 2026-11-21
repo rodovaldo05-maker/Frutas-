@@ -45,11 +45,13 @@ Redistribuir pontos: custa moedas no Mestre de Missões (grátis uma vez a cada 
 |---|---|
 | Giro ×1 | 200 moedas ou 1 chave |
 | Giro ×10 | 2.000 moedas ou 10 chaves |
-| Sorteio da fruta | As 16 frutas com chance igual; Míticas com metade da chance das demais (a confirmar) |
-| Sorteio do nível | Comum 70% · Épico 25% · Lendário 5% |
+| Sorteio | Primeiro o rank (Comum 45 · Incomum 28 · Rara 16 · Épica 7 · Lendária 3 · Mítica 1), depois uma fruta elegível do rank pelo peso da ficha |
+| Rank sem frutas | O peso é redistribuído de forma explícita entre os ranks com frutas (nunca sorteia fruta inexistente) |
+| Chances | A roleta mostra as chances reais da tabela ativa, por rank e por fruta |
+| Histórico | Cada obtenção fica registrada (últimas 200) |
 | Destino | Toda fruta sorteada vai para a mochila |
 | Segurança | Se a mochila não tiver espaço para o giro, ele é bloqueado sem cobrar |
-| Garantia (proposta) | A cada 50 giros sem Lendário, o próximo é Lendário garantido |
+| Garantia | Configurável por tabela e exibida: na roleta, Lendária ou melhor em até 50 giros |
 | Jogador novo | Começa com 200 moedas (1 giro) |
 
 **Na Fase 1:** o Mercador de Frutas fica na praia da Ilha de Treino, ao lado do Trocador de
@@ -69,14 +71,11 @@ de cada fruta chegam com o combate.
 
 ## 5. Trocador de Fragmentos
 
-| Nível da fruta | Fragmentos |
-|---|---|
-| Comum | 1 |
-| Épico | 3 |
-| Lendário | 5 |
+O valor de troca vem da ficha de cada fruta (não depende só da raridade); os valores
+padrão por rank são Comum 1, Incomum 1, Rara 2, Épica 3, Lendária 5, Mítica 10.
 
 - 10 fragmentos = 1 chave.
-- Atalhos: trocar todas as Comuns; trocar todas as Épicas (pede confirmação).
+- Atalhos: trocar todas as Comuns, Incomuns ou Raras (Incomuns e Raras pedem confirmação).
 - Frutas favoritadas e a fruta na mão pedem confirmação individual.
 
 ## 6. Missões

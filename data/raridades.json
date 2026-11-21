@@ -1,0 +1,65 @@
+{
+  "versao": 1,
+  "ranks": [
+    {
+      "id": "comum",
+      "nome": "Comum",
+      "cor": "#A5ADB5",
+      "peso": 45,
+      "ordem": 0,
+      "valorTroca": 1,
+      "precoBase": 5000,
+      "apresentacao": "Borda cinza simples, sem partículas; animação curta de obtenção."
+    },
+    {
+      "id": "incomum",
+      "nome": "Incomum",
+      "cor": "#41C978",
+      "peso": 28,
+      "ordem": 1,
+      "valorTroca": 1,
+      "precoBase": 15000,
+      "apresentacao": "Borda verde com brilho discreto e partículas suaves."
+    },
+    {
+      "id": "rara",
+      "nome": "Rara",
+      "cor": "#3E9EFF",
+      "peso": 16,
+      "ordem": 2,
+      "valorTroca": 2,
+      "precoBase": 40000,
+      "apresentacao": "Borda azul iluminada com partículas flutuantes."
+    },
+    {
+      "id": "epica",
+      "nome": "Épica",
+      "cor": "#B56BFF",
+      "peso": 7,
+      "ordem": 3,
+      "valorTroca": 3,
+      "precoBase": 120000,
+      "apresentacao": "Moldura roxa ornamentada, energia circulante e revelação com explosão controlada."
+    },
+    {
+      "id": "lendaria",
+      "nome": "Lendária",
+      "cor": "#FFB83D",
+      "peso": 3,
+      "ordem": 4,
+      "valorTroca": 5,
+      "precoBase": 400000,
+      "apresentacao": "Moldura dourada detalhada, iluminação dinâmica moderada e revelação cinematográfica."
+    },
+    {
+      "id": "mitica",
+      "nome": "Mítica",
+      "cor": "#FF526B",
+      "peso": 1,
+      "ordem": 5,
+      "valorTroca": 10,
+      "precoBase": 1200000,
+      "apresentacao": "Moldura carmesim com ornamentos dourados, aura animada e apresentação cinematográfica."
+    }
+  ]
+}

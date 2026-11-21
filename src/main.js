@@ -32,7 +32,9 @@ import { Dust } from './vfx/dust.js';
 import { buildMarket } from './world/npcs.js';
 import { fruitThumbs } from './fruits/fruitArt.js';
 import { FruitShop } from './ui/fruitShop.js';
-import { RARITIES, eat, findItem, isWaterCursed, ensureBag } from './fruits/roulette.js';
+import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
+import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
+import { CatalogScreen } from './ui/catalogScreen.js';
 import { maxStamina, maxHealth } from './progression/status.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
@@ -194,20 +196,25 @@ async function boot() {
   thumbs();
   ensureBag(save);
   const fruitIndex = (id) => DATA.fruits.findIndex((f) => f.id === id);
-  const fruitLabel = (it) => (it ? `${DATA.fruits[fruitIndex(it.fruit)]?.name ?? it.fruit} (${RARITIES[it.rarity].name})` : '');
+  const fruitLabel = (it) => (it ? `${fruitName(it.fruit)} (${RANK[rarityOf(it)].nome})` : '');
+  const fruitProblems = validateFruits();
+  if (fruitProblems.length) console.warn('Dados de frutas com problemas:', fruitProblems);
   const applyHeld = () => {
     const it = save.held !== null ? findItem(save, save.held) : null;
     player.setHeldFruit(it ? fruitIndex(it.fruit) : null);
   };
   const applyFruit = () => {
     ctl.waterCursed = isWaterCursed(save.eaten);
-    hud.setFruit(save.eaten ? { thumb: thumbs()[fruitIndex(save.eaten.fruit)], color: RARITIES[save.eaten.rarity].color, label: fruitLabel(save.eaten) } : null);
+    hud.setFruit(save.eaten ? { thumb: thumbs()[fruitIndex(save.eaten.fruit)], color: RANK[rarityOf(save.eaten)].cor, label: fruitLabel(save.eaten) } : null);
     if (ctl.waterCursed && (ctl.state === 'swim' || ctl.state === 'dive')) ctl.enterWater(0);
   };
+  const reducedFx = () => !!settings.reduceFx;
+  const catalog = new CatalogScreen({ save, thumbs, openModal: (id) => openModal(id), reducedFx });
   const shop = new FruitShop({
     save,
-    fruits: DATA.fruits,
     thumbs,
+    reducedFx,
+    onDetail: (fruitId) => catalog.openDetail(fruitId),
     audio,
     toast: (text, kind) => hud.toast(text, kind),
     openModal: (id) => openModal(id),
@@ -237,7 +244,7 @@ async function boot() {
         refreshProfile();
         if (r) {
           const cursed = isWaterCursed(r.eaten);
-          hud.toast(`Você comeu a fruta ${fruitLabel(r.eaten)}!`, r.eaten.rarity === 'lendario' ? 'gold' : 'good');
+          hud.toast(`Você comeu a fruta ${fruitLabel(r.eaten)}!`, RANK[rarityOf(r.eaten)].ordem >= 4 ? 'gold' : 'good');
           if (cursed) setTimeout(() => hud.toast('Cuidado: agora a água funda faz você afundar.', 'bad'), 1200);
           audio.play('base', 'wing', 0.9);
         }
@@ -249,10 +256,11 @@ async function boot() {
   applyFruit();
 
   const refreshProfile = () => {
-    hud.setProfile({ ...save, xpRatio: xpProgress(save), xpNeed: xpToNext(save.level), fruitLabel: fruitLabel(save.eaten), fruitColor: save.eaten ? RARITIES[save.eaten.rarity].color : '' });
+    hud.setProfile({ ...save, xpRatio: xpProgress(save), xpNeed: xpToNext(save.level), fruitLabel: fruitLabel(save.eaten), fruitColor: save.eaten ? RANK[rarityOf(save.eaten)].cor : '' });
     if (modals.includes('roulette')) shop.renderRoulette();
     if (modals.includes('bag')) shop.renderBag();
     if (modals.includes('trader')) shop.renderTrader();
+    if (modals.includes('catalog')) catalog.render();
   };
   function refreshMission() {
     const st = save.missions.treino;
@@ -287,6 +295,7 @@ async function boot() {
     if (key === 'volume') audio.setVolume(value);
     if (key === 'layout') document.body.classList.toggle('lefty', value === 'canhoto');
     if (key === 'buttonScale') document.documentElement.style.setProperty('--btn', value);
+    if (key === 'reduceFx') document.body.classList.toggle('reduce-fx', !!value);
     if (key === 'gliderOn') {
       ctl.unlocks.glide = !!value && save.unlocks.glide !== false;
       if (!value && ctl.state === 'glide') ctl.setState('air');
@@ -351,6 +360,7 @@ async function boot() {
     if (id === 'roulette') shop.renderRoulette();
     if (id === 'bag') shop.renderBag();
     if (id === 'trader') shop.renderTrader();
+    if (id === 'catalog') catalog.render();
     if (id === 'pause' && mode === 'game') saveNow(true);
     setGameActive();
   }
@@ -361,6 +371,7 @@ async function boot() {
     if (id === 'pause') menu.setOpen(false);
     else $(id).classList.add('hidden');
     shop.onModalClosed(id);
+    if (id === 'fruit-detail') catalog.stopViewer();
     setGameActive();
   }
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModal(b.dataset.close));

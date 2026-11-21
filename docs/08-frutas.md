@@ -37,13 +37,46 @@ forma híbrida e **N** para a completa no PC, dois botões pequenos ("Híbrida" 
 celular e ← / → no direcional do controle. Repetir o comando da forma atual volta à humana.
 As 5 habilidades mudam de comportamento conforme a forma ativa. Transformar não gasta energia.
 
-### 1.2 Nível da fruta (roleta)
+### 1.2 Tipo e raridade (especificação "Sistemas de Frutas e Vilas", Parte A)
 
-| Nível | Chance | Dano | Recarga |
-|---|---|---|---|
-| Comum | 70% | 100% | 100% |
-| Épico | 25% | 135% | 80% |
-| Lendário | 5% | 175% | 60% |
+Cada fruta tem **tipo** e **raridade** independentes. A raridade é da fruta (não de cada
+cópia sorteada) e **não multiplica dano**: o equilíbrio vem de alcance, recarga, custo de
+energia, controle, mobilidade e defesa. Substitui o antigo "nível da fruta" (Comum, Épico,
+Lendário com bônus de dano).
+
+| Rank | Cor | Peso no sorteio padrão | Valor de troca | Apresentação |
+|---|---|---|---|---|
+| Comum | `#A5ADB5` | 45% | 1 fragmento | Borda cinza simples |
+| Incomum | `#41C978` | 28% | 1 | Borda verde, brilho discreto |
+| Rara | `#3E9EFF` | 16% | 2 | Borda azul iluminada, partículas flutuantes |
+| Épica | `#B56BFF` | 7% | 3 | Moldura roxa ornamentada, energia circulando |
+| Lendária | `#FFB83D` | 3% | 5 | Moldura dourada, reflexo e revelação especial |
+| Mítica | `#FF526B` | 1% | 10 | Carmesim com ornamento dourado e aura animada |
+
+Tipos (nomes do FRUTO): **Essência** (o corpo ganha um poder), **Elemento** (o corpo vira e
+controla um elemento) e **Fera** (formas animais; as Míticas têm formas lendárias).
+
+| Fruta | Tipo · subtipo | Raridade |
+|---|---|---|
+| Impacto | Essência · Cinética | Comum |
+| Eco | Essência · Sonora | Comum |
+| Duna | Elemento · Areia | Comum |
+| Brasa | Elemento · Fogo | Incomum |
+| Cristal | Essência · Mineral | Incomum |
+| Falcão | Fera · Ave | Incomum |
+| Geada | Elemento · Gelo | Rara |
+| Tormenta | Elemento · Raio | Rara |
+| Ímã | Essência · Magnética | Rara |
+| Lobo | Fera · Predador | Épica |
+| Maré | Elemento · Água | Épica |
+| Eclipse | Essência · Espacial | Lendária |
+| Besta, Fênix, Dragão Oriental, Dragão Ocidental | Fera · Mítica | Mítica |
+
+A ficha completa de cada fruta (id, tipo, subtipo, raridade, cor, descrição, ícone, modelo
+3D, preço base, valor de troca, peso no sorteio, região, habilidades, efeitos, sons,
+animações, formas, despertar, atributos por forma, energia, recargas, domínio, restrições,
+versão) fica em `data/frutas.json`; os ranks em `data/raridades.json`; as tabelas de sorteio
+(roleta, baús, NPCs, eventos, recompensas, mundo aberto) em `data/tabelas-frutas.json`.
 
 ### 1.3 Maestria da fruta
 

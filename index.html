@@ -104,6 +104,7 @@
               <label class="check"><input type="checkbox" data-key="reduceMotion" /> Reduzir movimento da câmera</label>
               <label class="check"><input type="checkbox" data-key="showStats" /> Mostrar desempenho</label>
               <label class="check"><input type="checkbox" data-key="gliderOn" /> Asa-delta ligada (segurar Pular caindo abre a asa)</label>
+              <label class="check"><input type="checkbox" data-key="reduceFx" /> Efeitos reduzidos (menos brilho, partículas e flashes)</label>
               <div class="row"><label>Botões de toque</label>
                 <div class="choice" data-choice="layout"><button data-value="padrao">Padrão</button><button data-value="canhoto">Canhoto</button></div>
               </div>
@@ -160,12 +161,10 @@
         <button class="close" data-close="roulette" data-icon="close" aria-label="Fechar"></button>
         <div class="roulette-body">
           <div class="stage">
+            <button class="btn skip hidden" id="r-skip">Pular</button>
             <div class="stage-view" id="roulette-stage"><div class="stage-empty">Gire para ganhar uma fruta aleatória.<br />Toda fruta sorteada vai para a mochila.</div></div>
-            <div class="rarity-chips">
-              <span class="chip comum"><b>Comum 70%</b> dano normal</span>
-              <span class="chip epico"><b>Épico 25%</b> +35% dano · −20% recarga</span>
-              <span class="chip lendario"><b>Lendário 5%</b> +75% dano · −40% recarga</span>
-            </div>
+            <div class="rarity-chips" id="r-chips"></div>
+            <p class="pity" id="r-pity"></p>
           </div>
           <div class="side">
             <div class="wallet big"><span data-icon="coin"><b id="r-coins">0</b></span><span data-icon="key"><b id="r-keys">0</b></span></div>
@@ -181,7 +180,8 @@
               <button class="btn" id="r-hold" data-icon="fruit">Segurar na mão</button>
               <button class="btn" id="r-bag" data-icon="bag">Ver mochila</button>
             </div>
-            <div class="pool"><span class="muted">Podem sair:</span><div id="r-pool"></div></div>
+            <div class="pool"><span class="muted">Podem sair (toque para ver a ficha):</span><div id="r-pool"></div></div>
+            <button class="btn" id="r-catalog" data-icon="credits">Catálogo de frutas</button>
           </div>
         </div>
       </div>
@@ -194,10 +194,11 @@
         <button class="close" data-close="bag" data-icon="close" aria-label="Fechar"></button>
         <div class="bag-top">
           <div class="top-tabs" id="bag-filter">
-            <button data-filter="todas" class="active">Todas</button><button data-filter="lendario">Lendário</button><button data-filter="epico">Épico</button><button data-filter="comum">Comum</button><button data-filter="fav">Favoritas</button>
+            <button data-filter="todas" class="active">Todas</button><button data-filter="mitica">Mítica</button><button data-filter="lendaria">Lendária</button><button data-filter="epica">Épica</button><button data-filter="rara">Rara</button><button data-filter="incomum">Incomum</button><button data-filter="comum">Comum</button><button data-filter="fav">Favoritas</button>
           </div>
           <div class="wallet"><span data-icon="gem"><b id="bag-frags">0</b></span><span data-icon="key"><b id="bag-keys">0</b></span></div>
-          <div class="choice" id="bag-sort"><button data-sort="nivel" class="active">Nível</button><button data-sort="nome">Nome</button><button data-sort="data">Data</button></div>
+          <div class="choice" id="bag-sort"><button data-sort="nivel" class="active">Raridade</button><button data-sort="nome">Nome</button><button data-sort="data">Data</button></div>
+          <button class="btn small-btn" id="bag-catalog" data-icon="credits">Catálogo</button>
         </div>
         <div class="fruit-grid" id="bag-grid"></div>
         <div class="bag-actions" id="bag-actions">
@@ -223,13 +224,45 @@
             <div class="row-btns"><button class="btn gold" id="t-key1" data-icon="key">Criar chave (10)</button><button class="btn" id="t-keyall" data-icon="key">Criar todas</button></div>
           </div>
         </div>
+        <div class="row-btns" id="t-values"></div>
         <div class="row-btns">
-          <span class="chip comum"><b>Comum</b> vale 1</span><span class="chip epico"><b>Épico</b> vale 3</span><span class="chip lendario"><b>Lendário</b> vale 5</span>
           <button class="btn" id="t-all-comum">Trocar todas as Comuns</button>
-          <button class="btn" id="t-all-epico">Trocar todas as Épicas</button>
+          <button class="btn" id="t-all-incomum">Trocar todas as Incomuns</button>
+          <button class="btn" id="t-all-rara">Trocar todas as Raras</button>
         </div>
         <p class="muted small">Toque numa fruta para trocá-la.</p>
         <div class="fruit-grid" id="t-grid"></div>
+      </div>
+    </div>
+
+    <!-- ===== Catálogo de frutas ===== -->
+    <div id="catalog" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="credits"><span id="catalog-title">Catálogo de frutas</span></div>
+        <button class="close" data-close="catalog" data-icon="close" aria-label="Fechar"></button>
+        <div class="catalog-filters">
+          <input type="search" id="cat-search" placeholder="Buscar pelo nome" />
+          <div class="choice" id="cat-rank"></div>
+          <div class="choice" id="cat-type"></div>
+          <div class="choice" id="cat-own"><button data-own="todas" class="active">Todas</button><button data-own="mochila">Na mochila</button><button data-own="comida">Comida</button><button data-own="nunca">Não obtidas</button></div>
+          <div class="choice" id="cat-sort"><button data-sort="raridade" class="active">Raridade</button><button data-sort="nome">Nome</button><button data-sort="dominio">Domínio</button></div>
+        </div>
+        <div class="fruit-grid catalog-grid" id="cat-grid"></div>
+      </div>
+    </div>
+
+    <!-- ===== Ficha da fruta ===== -->
+    <div id="fruit-detail" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="fruit"><span id="fd-title">Fruta</span></div>
+        <button class="close" data-close="fruit-detail" data-icon="close" aria-label="Fechar"></button>
+        <div class="detail-body">
+          <div class="viewer">
+            <canvas id="fd-canvas"></canvas>
+            <span class="muted small">Arraste para girar</span>
+          </div>
+          <div class="detail-info" id="fd-info"></div>
+        </div>
       </div>
     </div>
 

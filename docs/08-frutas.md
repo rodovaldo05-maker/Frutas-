@@ -397,6 +397,18 @@ Regras:
 Os efeitos visuais são próprios do jogo (cubos, anéis, marcas, pilares, ondas e muralha na
 cor da fruta). O conjunto completo de efeitos do laboratório pode ser trazido depois.
 
+### 4.1 Modelos das frutas
+
+Os 16 modelos foram redesenhados pela folha de referência do FRUTO: cubo voxel com olhos
+grandes que brilham, folha no alto e as peças do tema (Impacto com armadura, viseira e
+manoplas; Brasa com lava e chamas; Geada com neve e cristais; Tormenta com chifres de raio e
+nuvens; Lobo com orelhas e focinho; Eclipse com lua crescente e anel; Maré com onda; Cristal
+com cristais; Eco com alto-falantes e ondas de som; Falcão com asas e bico; Duna com anel de
+areia; Ímã em U vermelho e azul; Besta com máscara e chifres; Fênix com asas de fogo;
+Dragão Oriental com chifres, bigodes e nuvens; Dragão Ocidental com asas de morcego e boca de
+lava). Olhos, chamas, raios e lava usam material que brilha sem sombra. As mordidas ao
+comer, a polpa e as sementes continuam iguais. Desenho em `src/characters/fruitDesigns.js`.
+
 Código: `src/fruits/powers.js` (formato de cada habilidade), `src/combat/powers.js`
 (energia, recargas e liberação), `src/vfx/powerFx.js` (efeitos), `src/progression/domain.js`
 (domínio), `src/ui/skillBar.js` (slots e Energia); testes em `tests/powers.test.js`.

@@ -30,7 +30,7 @@ import { TRAINING, TrainingMission } from './quests/training.js';
 import { SaveSystem } from './saves/saveSystem.js';
 import { Dust } from './vfx/dust.js';
 import { buildMarket } from './world/npcs.js';
-import { fruitThumbs } from './fruits/fruitArt.js';
+import { fruitThumbs, renderFruitSheet } from './fruits/fruitArt.js';
 import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
@@ -874,6 +874,7 @@ async function boot() {
     get mode() { return mode; },
     get started() { return mode === 'game'; },
     ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx,
+    fruitSheet: (size = 256, yaw = -0.35) => renderFruitSheet(renderer.renderer, DATA.fruits.length, size, 4, yaw),
     start: startGame,
     saveNow,
     openModal,

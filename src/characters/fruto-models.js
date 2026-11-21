@@ -1,9 +1,6 @@
 // Módulo do FRUTO Laboratório Voxel, Edição 18 (dados 3.1), trazido sem alterações de lógica.
 // Fonte: FRUTO_Laboratorio_Voxel_Edicao_18.html. Recebe o THREE como parâmetro (T).
 /* eslint-disable */
-// Atualização dos modelos das frutas: a grade voxel, a paleta e as cores que brilham vêm de
-// fruitDesigns.js (folha de referência do FRUTO); mordidas, polpa e malha continuam aqui.
-import { designFruit } from './fruitDesigns.js';
 export const FRUTOModels = (() => {
  const profiles = ['alto', 'celular', 'compatível'];
  const sockets = {
@@ -617,14 +614,13 @@ const expansionChibiCrowns = [
  // and a fixed seed pattern, so the remaining skin never moves between bites.
  function fruitGeometry(T,fruit,profile,bite){
   const key=fruit+'/'+profile+'/'+bite;if(fruitCache.has(key))return fruitCache.get(key);
-  const design=designFruit(fruit);
-  const surf=new Surface(T),glowSurf=new Surface(T),step=fruitStep,n=fruitGrid,mid=fruitHalfGrid,cells=new Uint8Array(n*n*n);
-  const at=(x,y,z)=>x+n*(y+n*z),palette=design.palette.map(hex=>new T.Color(hex).toArray());
-  const fleshTint=palette.push(new T.Color(design.palette[4]).lerp(new T.Color(design.palette[1]),.21).toArray());
+  const surf=new Surface(T),step=fruitStep,n=fruitGrid,mid=fruitHalfGrid,cells=new Uint8Array(n*n*n);
+  const at=(x,y,z)=>x+n*(y+n*z),palette=palettes[fruit].map(hex=>new T.Color(hex).toArray());
+  const fleshTint=palette.push(new T.Color(palettes[fruit][4]).lerp(new T.Color(palettes[fruit][1]),.21).toArray());
   const masterKey=fruit+'/'+profile;
   let solid=fruitSolids.get(masterKey);
   if(!solid){
-   solid=repairFruitSolid(design.solid.slice());
+   solid=repairFruitSolid(buildFruitSolid(fruit,profile));
    fruitSolids.set(masterKey,solid);
   }
   for(let k=0;k<n;k++)for(let j=0;j<n;j++)for(let i=0;i<n;i++){
@@ -647,21 +643,16 @@ const expansionChibiCrowns = [
      rows:while(j+h<n){for(let q=0;q<w;q++)if(mask[i+q+n*(j+h)]!==c)break rows;h++;}
      for(let y=0;y<h;y++)mask.fill(0,i+n*(j+y),i+w+n*(j+y));
      const points=[[i,j],[i+w,j],[i+w,j+h],[i,j+h]].map(([x,y])=>{const p=[0,0,0];p[d]=(k-mid+sign*.5)*step;p[u]=(x-mid-.5)*step;p[v]=(y-mid-.5)*step;return p;});
-     (design.glow.has(c)?glowSurf:surf).polygon(sign<0?points.reverse():points,palette[c-1]);
+     surf.polygon(sign<0?points.reverse():points,palette[c-1]);
     }
    }
   }
-  // casca iluminada (grupo 0) e partes que brilham sem sombra (grupo 1) na mesma malha
-  const lit=surf.indices.length,base=surf.positions.length/3;
-  surf.positions.push(...glowSurf.positions);surf.normals.push(...glowSurf.normals);surf.colors.push(...glowSurf.colors);
-  for(const i of glowSurf.indices)surf.indices.push(i+base);
-  const geometry=surf.geometry();geometry.addGroup(0,lit,0);geometry.addGroup(lit,surf.indices.length-lit,1);
-  fruitCache.set(key,geometry);return geometry;
+  const geometry=surf.geometry();fruitCache.set(key,geometry);return geometry;
  }
  const fruitMats=new Map();
  function fruit(T,index,profile=0){
   const root=new T.Group();root.name=fruitNames[index];
-  if(!fruitMats.has(index))fruitMats.set(index,[new T.MeshStandardMaterial({vertexColors:true,roughness:[.49,.54,.47,.58,.70,.54,.48,.42,.54,.56,.73,.50,.55,.43,.40,.39][index],metalness:[.14,.025,.05,.045,.015,.045,.025,.065,.02,.03,.01,.09,.065,.05,.11,.15][index]}),new T.MeshBasicMaterial({vertexColors:true,toneMapped:false})]);
+  if(!fruitMats.has(index))fruitMats.set(index,new T.MeshStandardMaterial({vertexColors:true,roughness:[.49,.54,.47,.58,.70,.54,.48,.42,.54,.56,.73,.50,.55,.43,.40,.39][index],metalness:[.14,.025,.05,.045,.015,.045,.025,.065,.02,.03,.01,.09,.065,.05,.11,.15][index]}));
   const mesh=new T.Mesh(fruitGeometry(T,index,profile,0),fruitMats.get(index));mesh.name='Casca_e_polpa';mesh.castShadow=true;root.add(mesh);
   root.userData.bites=0;root.userData.fruitIndex=index;
   root.userData.setState=(state,level=profile)=>{profile=level;root.userData.bites=state;mesh.visible=state<3;if(state<3)mesh.geometry=fruitGeometry(T,index,level,state);};

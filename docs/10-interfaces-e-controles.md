@@ -416,7 +416,7 @@ estilos) marcados com ✔/✖ e botão Aprender (só ativo com todos ✔).
 | Correr (alternar) | Botão Correr | Ctrl | Pressionar analógico esquerdo |
 | Pular / Voar (2×) | Pular | Espaço | A / ✕ |
 | Esquiva / Dash | Esquiva | Shift | B / ◯ |
-| Agachar / Deslizar / Mergulhar | Segurar Esquiva parado | C | Pressionar analógico direito |
+| Agachar / Deslizar / Mergulhar | Segurar Esquiva parado (na Fase 1, botão Agachar próprio) | C | Pressionar analógico direito |
 | Atacar (leve / segurar pesado) | Atacar | Botão esquerdo do mouse / J | X / ▢ |
 | Defender | Defender | Botão direito do mouse / K | RB / R1 |
 | Habilidades 1–5 | Q E R T G na tela | Q E R T G | Segurar RT + A/B/X/Y/RB |

@@ -1,0 +1,68 @@
+# FRUTO Legacy
+
+RPG 3D de ilhas e frutas de poder, feito em HTML/JavaScript com Three.js e Rapier,
+empacotado para Android com Capacitor. A ideia completa está em [IDEIA.md](IDEIA.md) e o
+projeto detalhado em [docs/](docs/00-visao-geral.md).
+
+## Estado atual: Fase 1 — base e movimento
+
+Uma ilha de teste (Ilha de Treino) com o corpo base do FRUTO Laboratório (Edição 18), rosto,
+controles de celular, teclado e controle, câmera, HUD, menu de pausa e salvamento.
+Movimentos: andar, correr, agachar, deslizar, pular (com tolerância de borda e buffer),
+salto duplo, esquiva (no chão e no ar), escalar paredes de pedra e troncos, agarrar e
+subir bordas, salto na parede, corrida na parede, planar, rolamento contra dano de queda,
+nadar, mergulhar (com ar limitado) e escorregar em rampas íngremes.
+Cada área da ilha tem uma placa com a dica do movimento.
+
+## Rodar
+
+```bash
+npm install
+npm run dev        # abre em http://localhost:5173 (também na rede local, para testar no celular)
+npm test           # regras, salvamento, relevo e simulação do movimento na ilha
+npm run build      # gera dist/
+```
+
+## Gerar o APK
+
+Precisa do Android SDK (plataforma 35) e Java 21.
+
+```bash
+export ANDROID_HOME=/caminho/do/android-sdk
+npm run apk        # build + sync + gradle assembleDebug
+# APK em android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Controles
+
+| Ação | Celular | PC | Controle |
+|---|---|---|---|
+| Mover | Joystick (lado esquerdo) | WASD | Analógico esquerdo |
+| Câmera | Arrastar a tela | Arrastar o mouse | Analógico direito |
+| Correr (alterna) | Correr | Ctrl | Apertar analógico esquerdo |
+| Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
+| Esquiva | Esquiva | Shift | B / ◯ |
+| Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
+| Menu | ☰ | Esc | Start |
+
+## Estrutura
+
+```
+src/core        laço com passo fixo, eventos, matemática
+src/renderer    renderizador, céu, luz, câmera de terceira pessoa
+src/physics     Rapier (colisores com etiquetas: escalável, material)
+src/terrain     campo de alturas e malha do relevo em pedaços
+src/ocean       mar com ondas Gerstner (a mesma onda na GPU e na física)
+src/islands     Ilha de Treino
+src/world       construções em blocos e placas
+src/characters  corpo do laboratório, rosto, planador
+src/animation   animação do laboratório + poses novas (escalar, pendurar, planar...)
+src/movement    controlador do personagem, regras e números
+src/controls    toque, teclado, mouse e controle
+src/ui          HUD, menu de pausa, estilos
+src/saves       salvamento local (IndexedDB) com versão e migração
+src/optimization qualidade automática
+data/           catálogo do laboratório (segmentos do corpo, frutas)
+tests/          testes (Vitest), incluindo simulação da ilha sem gráficos
+android/        projeto Android (Capacitor)
+```

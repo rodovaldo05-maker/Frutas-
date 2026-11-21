@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#101516" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>FRUTO Legacy</title>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="water-overlay"></div>
+    <div id="damage-overlay"></div>
+
+    <!-- camada de toque: joystick e câmera -->
+    <div id="touch">
+      <div id="stick" class="stick"><div class="knob"></div></div>
+    </div>
+
+    <div id="hud">
+      <div class="status">
+        <div class="name">FRUTO <b>Legacy</b><span>Ilha de Treino</span></div>
+        <div class="bar health"><i id="bar-health"></i><em id="txt-health">100/100</em></div>
+        <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em>Fôlego</em></div>
+        <div class="bar air" id="box-air"><i id="bar-air"></i><em>Ar</em></div>
+      </div>
+      <div id="hint" class="hint"><b id="hint-title"></b><span id="hint-text"></span></div>
+      <div id="toasts" class="toasts"></div>
+      <div id="state" class="state">Parado</div>
+      <pre id="stats" class="stats"></pre>
+      <button data-btn id="btn-menu" class="round menu" aria-label="Menu">☰</button>
+      <div class="pad">
+        <button data-btn id="btn-sprint" class="round sprint">Correr</button>
+        <button data-btn id="btn-crouch" class="round crouch">Agachar</button>
+        <button data-btn id="btn-dash" class="round dash">Esquiva</button>
+        <button data-btn id="btn-jump" class="round jump">Pular</button>
+      </div>
+      <div class="keys">WASD mover · Espaço pular (segure para planar) · Shift esquiva · C agachar · Ctrl correr · arraste para girar a câmera · Esc menu</div>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <div class="panel">
+        <header>
+          <h2>Pausa</h2>
+          <nav>
+            <button data-tab="jogo" class="active">Jogo</button>
+            <button data-tab="config">Configurações</button>
+            <button data-tab="controles">Controles</button>
+          </nav>
+        </header>
+        <section data-page="jogo">
+          <button id="btn-resume" class="primary">Continuar</button>
+          <button id="btn-save">Salvar agora</button>
+          <button id="btn-restart">Voltar ao início da ilha</button>
+          <p id="pause-info" class="muted"></p>
+        </section>
+        <section data-page="config" class="hidden">
+          <label>Qualidade</label>
+          <div class="choice" data-choice="quality">
+            <button data-value="auto">Auto</button><button data-value="leve">Leve</button><button data-value="media">Média</button><button data-value="alta">Alta</button>
+          </div>
+          <label>Sensibilidade da câmera <output data-out="sensitivity"></output></label>
+          <input type="range" min="0.4" max="2" step="0.1" data-key="sensitivity" />
+          <label>Volume <output data-out="volume"></output></label>
+          <input type="range" min="0" max="1" step="0.05" data-key="volume" data-format="pct" />
+          <label class="check"><input type="checkbox" data-key="invertY" /> Inverter eixo vertical</label>
+          <label class="check"><input type="checkbox" data-key="reduceMotion" /> Reduzir movimento da câmera</label>
+          <label class="check"><input type="checkbox" data-key="showStats" /> Mostrar desempenho</label>
+          <label>Botões de toque</label>
+          <div class="choice" data-choice="layout">
+            <button data-value="padrao">Padrão</button><button data-value="canhoto">Canhoto</button>
+          </div>
+          <label>Tamanho dos botões <output data-out="buttonScale"></output></label>
+          <input type="range" min="0.75" max="1.3" step="0.05" data-key="buttonScale" data-format="pct" />
+        </section>
+        <section data-page="controles" class="hidden">
+          <table>
+            <tr><th>Ação</th><th>Celular</th><th>PC</th><th>Controle</th></tr>
+            <tr><td>Mover</td><td>Joystick (lado esquerdo)</td><td>WASD</td><td>Analógico esquerdo</td></tr>
+            <tr><td>Câmera</td><td>Arrastar a tela</td><td>Arrastar o mouse</td><td>Analógico direito</td></tr>
+            <tr><td>Correr (alterna)</td><td>Correr</td><td>Ctrl</td><td>Apertar analógico esquerdo</td></tr>
+            <tr><td>Pular · salto duplo · planar</td><td>Pular (segurar caindo plana)</td><td>Espaço</td><td>A / ✕</td></tr>
+            <tr><td>Esquiva</td><td>Esquiva</td><td>Shift</td><td>B / ◯</td></tr>
+            <tr><td>Agachar · deslizar · mergulhar · soltar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
+            <tr><td>Escalar</td><td colspan="3">Ir contra parede de pedra escura ou tronco</td></tr>
+            <tr><td>Agarrar borda</td><td colspan="3">Automático ao pular perto de uma borda</td></tr>
+            <tr><td>Rolamento</td><td colspan="3">Agachar logo antes de tocar o chão numa queda alta</td></tr>
+          </table>
+        </section>
+      </div>
+    </div>
+
+    <div id="loading" class="overlay">
+      <div class="title">FRUTO <b>Legacy</b></div>
+      <div id="loading-text" class="muted">Carregando…</div>
+      <button id="btn-start" class="primary hidden">Tocar para começar</button>
+      <p class="muted small">Fase 1 · Base e movimento</p>
+    </div>
+    <div id="rotate" class="overlay"><div>Gire o aparelho para jogar na horizontal</div></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -138,3 +138,30 @@ Nenhuma criatura reutiliza animações humanas inadequadas. Cada tipo tem contro
 | Dragão serpentino | Corpo em segmentos que seguem uma curva | Cabeça lidera, corpo segue o caminho |
 | Gigante | Passos lentos com tremor | Pontos fracos e partes destrutíveis |
 | Aquático | Nado ondulatório, emergir, mergulhar | Gera ondas e respingos |
+
+## 6. Implementado na Fase 1 (unidades do jogo)
+
+O jogo usa a escala do FRUTO Laboratório: o corpo base mede cerca de 4,1 unidades
+(≈ 1,8 m), então 1 m ≈ 2,2 unidades. Os valores do código ficam em
+`src/movement/config.js`; os principais:
+
+| Parâmetro | Valor no jogo | Observação |
+|---|---|---|
+| Cápsula | raio 0,62, altura 4,0 (agachado 2,5) | |
+| Gravidade | 19,6 (descida 1,35×) | A mesma do laboratório |
+| Andar / direcional cheio / Correr | 2,3 / 3,8 / 6,0 | Como no laboratório: 3,8 anda, o Correr corre |
+| Altura do salto | ≈ 1,9 (soltar cedo pula mais baixo) | Salto duplo 7,6 de impulso |
+| Inclinação caminhável | até 46° (acima de 50° escorrega) | Rampas de teste: 15°, 30°, 45°, 55° |
+| Degrau automático | 0,55 | |
+| Coyote time / buffer de salto | 0,12 s / 0,15 s | |
+| Agarrar borda | topo entre 3,0 e 4,7 acima dos pés | Obstáculos até 2,6 são subidos direto |
+| Escalada | 2,2/s, gasta 9–13 de fôlego por segundo | Pedra escura, troncos e barrancos |
+| Corrida na parede | 1,2 s, exige pulo com Correr ligado | |
+| Planar | 6,8 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo |
+| Queda | sem dano até 12; rolando, até 26 | Agachar logo antes de tocar o chão |
+| Nado / mergulho | 2,45 (Correr 3,7) / 2,2, ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
+
+A animação reaproveita o FRUTOMotion (passada ligada à velocidade real) e o FRUTOBalance
+(pés no chão) do laboratório; as poses novas usam a IK de dois ossos do próprio laboratório.
+O comportamento é conferido por `tests/movement.sim.test.js`, que roda a Ilha de Treino com a
+mesma física, sem gráficos.

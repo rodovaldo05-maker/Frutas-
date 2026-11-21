@@ -1,0 +1,9 @@
+{
+  "appId": "com.fruto.legacy",
+  "appName": "FRUTO Legacy",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#101516",
+    "allowMixedContent": false
+  }
+}

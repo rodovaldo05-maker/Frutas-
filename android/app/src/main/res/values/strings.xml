@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FRUTO Legacy</string>
+    <string name="title_activity_main">FRUTO Legacy</string>
+    <string name="package_name">com.fruto.legacy</string>
+    <string name="custom_url_scheme">com.fruto.legacy</string>
+</resources>

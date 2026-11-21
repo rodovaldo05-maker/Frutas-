@@ -92,6 +92,11 @@ prévia e custos crescentes; barcos e profissões com maestrias próprias.
 | 8 | Rigging refinado, IK, animações e sons por raça | — |
 | 9 | Otimização, QA, telemetria, PvP e balanceamento | — |
 
+O treino é uma camada a mais: os pontos de status do nível de aventureiro continuam e são
+distribuídos pelo jogador (doc 09, seção 1.1). O treino não é distribuível e soma por cima.
+A ordem das próximas entregas está no doc 13.
+
 Código: `src/progression/training.js` (curva, atributos, bônus, antifarm, rastreador),
-`src/ui/statusScreen.js` (Personagem › Treinamento), testes em `tests/status.test.js` e
+`src/progression/status.js` (pontos distribuídos e totais), `src/ui/statusScreen.js`
+(Personagem › Status, Treinamento e Ganhos recentes), testes em `tests/status.test.js` e
 `tests/movement.sim.test.js`.

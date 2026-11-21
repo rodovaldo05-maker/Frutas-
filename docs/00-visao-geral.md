@@ -20,6 +20,7 @@
 | 10 | [Interfaces e controles](10-interfaces-e-controles.md) | Todas as telas, HUD, celular, PC e controle |
 | 11 | [Vilas e construtor de mundo](11-vilas-e-construtor.md) | Editor e gerador procedural de vilas 3D, NPCs, rotinas, navegação |
 | 12 | [Evolução, raças e equipamentos](12-evolucao-racas-equipamentos.md) | Treino pela prática, antifarm, quatro tipos corporais, domínio de frutas, itens e forja |
+| 13 | [Atualizações](13-atualizacoes.md) | O que já está no jogo, o que falta e a ordem das próximas atualizações |
 
 ## 1. Missão
 

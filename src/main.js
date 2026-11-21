@@ -35,7 +35,7 @@ import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
-import { maxStamina, maxHealth } from './progression/status.js';
+import { maxStamina, maxHealth, POINTS_PER_LEVEL } from './progression/status.js';
 import { TrainingTracker, bonuses, ATTRS } from './progression/training.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
@@ -145,14 +145,15 @@ async function boot() {
     }
   }
 
-  // vida, fôlego e bônus de movimento vêm do treino (Força: +1 de fôlego por nível)
+  // vida, fôlego e bônus de movimento: pontos distribuídos + treino pela prática
+  // (cada ponto de Força e cada nível de treino de Força: +1 de fôlego)
   const applyStatus = () => {
     const b = bonuses(save.training);
-    ctl.stamina.setMax(maxStamina(save.training));
+    ctl.stamina.setMax(maxStamina(save.status, save.training));
     ctl.stamina.regenMult = b.staminaRegen;
     ctl.mods = { response: b.response, airControl: b.airControl, swimSpeed: b.swimSpeed, breath: b.breath };
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
-    ctl.maxHealth = maxHealth();
+    ctl.maxHealth = maxHealth(save.status);
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
   };
   applyStatus();
@@ -180,7 +181,7 @@ async function boot() {
   function grantXp(amount) {
     const levels = addXp(save, amount);
     if (levels > 0) {
-      hud.toast(`Nível de aventureiro ${save.level}!`, 'gold');
+      hud.toast(`Nível de aventureiro ${save.level}! +${levels * POINTS_PER_LEVEL} pontos de status para distribuir`, 'gold');
       hud.levelUp();
       audio.play('base', 'wing', 1);
       statusScreen.render();
@@ -207,7 +208,14 @@ async function boot() {
   const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
-  const statusScreen = new StatusScreen({ save });
+  const statusScreen = new StatusScreen({
+    save,
+    onChange: () => {
+      applyStatus();
+      refreshProfile();
+      saveNow(true);
+    },
+  });
   statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true }));
   let thumbList = null;
   const thumbs = () => (thumbList ??= fruitThumbs(renderer.renderer, DATA.fruits));

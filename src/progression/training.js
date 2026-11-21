@@ -94,12 +94,13 @@ export function nextMilestone(key, level) {
   return m ? { level: m, nome: ATTRS[key].marcos[m] } : null;
 }
 
-// Bônus atuais (com tetos). Fôlego máximo = (100 + 1 por nível de Força acima do 1) × bônus de Fôlego.
-export function bonuses(t) {
+// Bônus atuais (com tetos). Fôlego máximo = (base + 1 por nível de Força acima do 1) × bônus
+// de Fôlego; a base é 100 mais os pontos de status distribuídos (status.js).
+export function bonuses(t, staminaBase = 100) {
   const a = (k) => t.attrs[k].level;
   const s = (k) => steps10(a(k));
   return {
-    staminaMax: (100 + (a('forca') - 1)) * (1 + Math.min(0.3, 0.03 * s('folego'))),
+    staminaMax: (staminaBase + (a('forca') - 1)) * (1 + Math.min(0.3, 0.03 * s('folego'))),
     staminaRegen: 1 + Math.min(0.2, 0.02 * s('folego')),
     swimSpeed: 1 + Math.min(0.2, 0.02 * s('natacao')),
     breath: 1 + Math.min(0.2, 0.02 * s('natacao')),

@@ -9,11 +9,28 @@
 | Pontos por nível | 3 pontos de status |
 | Fontes de experiência | Inimigos, chefes, missões, exploração (tesouros, segredos), combate naval |
 
-### 1.1 Atributos treinados pela prática (documento mestre 4.0)
+### 1.1 Duas camadas que somam: pontos de nível e treino
 
-O nível de aventureiro (missões e exploração) não dá mais pontos para distribuir. Os
-atributos evoluem pelo que o personagem pratica, de 1 a 100, com a curva
-`arredondar(100 + 18·L + 1,5·L²)` — ver doc 12. Regras principais:
+As duas convivem; uma não substitui a outra.
+
+| | Pontos de status (nível) | Treino pela prática (doc 12) |
+|---|---|---|
+| De onde vem | 3 pontos a cada nível de aventureiro | Ações válidas do personagem (andar, nadar, escalar...) |
+| Distribuir | **Sim**: o jogador escolhe onde colocar (+1, +10, Máx) | **Não**: vai sozinho para o atributo praticado |
+| Redistribuir | Grátis uma vez; depois no Mestre de Missões | Não se apaga (nem trocando fruta ou equipamento) |
+| Atributos | Força, Defesa, Fruta, Espada, Vitalidade | Fôlego, Força, Agilidade, Natação, Resistência Física, Reflexos, Defesa, Resistência Elemental, Voo |
+
+Efeito de cada ponto distribuído:
+
+| Status | Efeito por ponto |
+|---|---|
+| Força | +3% de dano corpo a corpo e **+1 de fôlego máximo** |
+| Defesa | +6 de vida e +0,5 de defesa |
+| Fruta | +3% de dano das frutas |
+| Espada | +3% de dano com armas |
+| Vitalidade | +4 de energia e fôlego |
+
+Treino (nível 1 a 100, curva `arredondar(100 + 18·L + 1,5·L²)`):
 
 | Atributo | Como treina | Bônus (com teto) |
 |---|---|---|
@@ -21,11 +38,17 @@ atributos evoluem pelo que o personagem pratica, de 1 a 100, com a curva
 | Força | Escalar, subir bordas, desafios físicos; em combate, acertar golpes | **+1 de fôlego máximo por nível** |
 | Agilidade | Transpor obstáculos, salto e corrida na parede, deslize, rolamento, aterrissagens | +2% de aceleração e controle no ar a cada 10 níveis (até +20%) |
 | Natação | Nadar (+3 XP a cada 50 m), mergulho rende mais | +2% de velocidade na água e de ar a cada 10 níveis (até +20%) |
-| Resistência Física, Reflexos, Defesa, Resistência Elemental | Em combate (próxima fase) | Mitigação, esquiva e bloqueio com tetos |
+| Resistência Física, Reflexos, Defesa, Resistência Elemental | Em combate (atualização 2, doc 13) | Mitigação, esquiva e bloqueio com tetos |
 | Voo | Só com voo de raça, fruta, forma ou item | Controle aéreo |
 
-Fôlego máximo = (100 + nível de Força − 1) × (1 + bônus de Fôlego). Vida máxima: 100 (raças e
-equipamentos entram depois).
+Força e Defesa aparecem nas duas camadas: na tela de Status, cada uma mostra ao lado o nível
+de treino do mesmo atributo, e os dois somam.
+
+- Fôlego máximo = (100 + pontos de Força + 4 × pontos de Vitalidade + nível de treino de
+  Força − 1) × (1 + bônus do treino de Fôlego).
+- Vida máxima = 100 + 6 × pontos de Defesa (raças e equipamentos entram depois).
+- Salvos antigos: quem estava na versão 4 (sem pontos) recebe os pontos do nível para
+  distribuir; os pontos nunca ficam abaixo de 3 × (nível − 1).
 
 Na Ilha de Treino a experiência de aventureiro vem de cada objetivo da missão de treino
 (60), da recompensa da missão (500 e 1.000 moedas) e de cada área descoberta (25). Os

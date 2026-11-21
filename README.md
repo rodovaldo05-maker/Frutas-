@@ -14,10 +14,12 @@ subir bordas, salto na parede, corrida na parede, planar, rolamento contra dano 
 nadar, mergulhar (com ar limitado) e escorregar em rampas íngremes.
 Cada área da ilha tem uma placa com a dica do movimento, e a missão "Treino de
 movimento" (11 objetivos, 1.000 moedas e 500 de experiência) acompanha o aprendizado.
-Evolução pela prática (documento mestre 4.0): Fôlego, Força, Agilidade e Natação sobem
-com o que o personagem realmente faz, com antifarm e marcos; cada nível de Força soma 1 de
-fôlego. Nível de aventureiro por missões e exploração. O Correr dobra a
-velocidade de andar.
+Duas camadas de evolução que somam: cada nível de aventureiro dá 3 pontos de status que
+você distribui (Força, Defesa, Fruta, Espada, Vitalidade; cada ponto de Força soma 1 de
+fôlego), e o treino pela prática (documento mestre 4.0) sobe Fôlego, Força, Agilidade e
+Natação sozinho com o que o personagem realmente faz, com antifarm e marcos, sem poder ser
+distribuído. O Correr dobra a velocidade de andar. O que falta e a ordem das próximas
+atualizações estão em [docs/13-atualizacoes.md](docs/13-atualizacoes.md).
 
 Frutas com tipo (Essência, Elemento, Fera) e raridade própria em 6 ranks (Comum 45%,
 Incomum 28%, Rara 16%, Épica 7%, Lendária 3%, Mítica 1%), ficha completa de cada fruta em
@@ -85,7 +87,7 @@ src/controls    toque, teclado, mouse e controle
 src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
-src/progression nível, experiência e status
+src/progression nível, pontos de status e treino pela prática
 src/vfx         poeira dos passos
 src/world       construções, placas e natureza (árvores, pedras)
 src/saves       salvamento local (IndexedDB) com versão e migração

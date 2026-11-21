@@ -1,6 +1,8 @@
 // Nível de aventureiro (doc 09): experiência de missões e exploração; para passar do
-// nível n = 100 + 30 × n^1,4; nível máximo 2400. Os atributos evoluem pela prática
-// (progression/training.js), não por pontos distribuídos.
+// nível n = 100 + 30 × n^1,4; nível máximo 2400. Cada nível dá 3 pontos de status para
+// distribuir. O treino pela prática (training.js) é outra camada e não é distribuído.
+
+import { POINTS_PER_LEVEL } from './status.js';
 
 export const MAX_LEVEL = 2400;
 
@@ -16,6 +18,7 @@ export function addXp(save, amount) {
   while (save.level < MAX_LEVEL && save.xp >= xpToNext(save.level)) {
     save.xp -= xpToNext(save.level);
     save.level += 1;
+    save.statusPoints = (save.statusPoints || 0) + POINTS_PER_LEVEL;
     gained += 1;
   }
   if (save.level >= MAX_LEVEL) save.xp = 0;

@@ -1,9 +1,10 @@
 import { newTraining, normalizeTraining } from '../progression/training.js';
+import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../progression/status.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 const DB = 'fruto-legacy';
 const STORE = 'saves';
 const FALLBACK = 'fruto-legacy:';
@@ -35,7 +36,10 @@ export function newSave() {
     coins: 200, // jogador novo começa com um giro da roleta (doc 09)
     fragments: 0,
     xp: 0,
-    training: newTraining(), // atributos treinados pela prática (doc 12)
+    statusPoints: 0, // pontos de nível livres para distribuir (3 por nível)
+    freeRespec: true, // redistribuir é grátis uma vez (doc 09)
+    status: newStatus(), // pontos distribuídos: Força, Defesa, Fruta, Espada, Vitalidade
+    training: newTraining(), // atributos treinados pela prática, não distribuíveis (doc 12)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,
     pity: 0, // giros seguidos sem atingir a garantia da roleta
@@ -61,8 +65,12 @@ const MIGRATIONS = {
     pity: 0,
     history: [],
   }),
-  // evolução pela prática substitui os pontos de status distribuídos
-  3: ({ status, statusPoints, freeRespec, ...s }) => ({ ...s, version: 4, training: newTraining() }),
+  // entra o treino pela prática (os pontos de status continuam)
+  3: (s) => ({ ...s, version: 4, training: newTraining() }),
+  // salvos da versão 4 perderam os pontos de status: devolve os pontos do nível para distribuir
+  4: (s) => (s.status && typeof s.status === 'object'
+    ? { ...s, version: 5 }
+    : { ...s, version: 5, status: newStatus(), statusPoints: pointsForLevel(s.level || 1), freeRespec: true }),
 };
 
 export function migrate(save) {
@@ -79,7 +87,11 @@ export function migrate(save) {
   const out = { ...base, ...s, unlocks: { ...base.unlocks, ...(s.unlocks || {}) } };
   if (!out.missions || typeof out.missions !== 'object') out.missions = {};
   out.training = normalizeTraining(out.training);
-  for (const k of ['coins', 'fragments', 'level', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  out.status = normalizeStatus(out.status);
+  for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  // pontos nunca somem: distribuídos + livres não podem ficar abaixo do que o nível dá
+  const spent = STATUS_KEYS.reduce((n, k) => n + out.status[k], 0);
+  out.statusPoints = Math.max(Math.floor(out.statusPoints), pointsForLevel(out.level) - spent, 0);
   if (!Array.isArray(out.visited)) out.visited = [];
   if (!Array.isArray(out.bag)) out.bag = [];
   for (const k of ['keys', 'pity']) if (!Number.isFinite(out[k])) out[k] = 0;

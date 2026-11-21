@@ -132,7 +132,7 @@
       </div>
     </div>
 
-    <!-- ===== Personagem: treinamento ===== -->
+    <!-- ===== Personagem: status (pontos de nível) e treinamento (prática) ===== -->
     <div id="status" class="overlay hidden">
       <div class="frame window wide">
         <div class="frame-title" data-icon="person">Personagem</div>
@@ -146,10 +146,17 @@
             <div class="status-summary" id="status-summary"></div>
           </div>
           <div class="status-list">
-            <div class="top-tabs" id="train-tabs"><button data-ttab="atributos" class="active">Treinamento</button><button data-ttab="historico">Ganhos recentes</button></div>
-            <p class="muted small train-intro">O corpo aprende o que você pratica: cada ação válida dá experiência ao atributo certo. Repetir a mesma coisa no mesmo lugar rende cada vez menos.</p>
-            <div id="train-rows" class="train-rows"></div>
-            <div id="train-history" class="train-history hidden"></div>
+            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button></div>
+            <div id="pane-status" class="pane-status">
+              <p class="muted small train-intro">Pontos de nível: cada nível de aventureiro dá 3 pontos e <b>você escolhe</b> onde colocar. O treino é separado e soma por cima.</p>
+              <div class="status-head"><span>Pontos disponíveis <b id="status-points">0</b></span><button id="btn-respec" class="btn" data-icon="home">Redistribuir</button></div>
+              <div id="status-rows"></div>
+            </div>
+            <div id="pane-train" class="pane-train hidden">
+              <p class="muted small train-intro">Treino pela prática: o corpo aprende o que você faz e a experiência vai <b>sozinha</b> para o atributo praticado (não dá para distribuir). Repetir a mesma coisa no mesmo lugar rende cada vez menos.</p>
+              <div id="train-rows" class="train-rows"></div>
+              <div id="train-history" class="train-history hidden"></div>
+            </div>
           </div>
         </div>
       </div>

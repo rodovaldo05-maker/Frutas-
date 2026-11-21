@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { maxStamina } from '../src/progression/status.js';
+import { maxStamina, maxHealth, allocate, resetStatus, newStatus, damageMultipliers } from '../src/progression/status.js';
+import { addXp as addAdventurerXp } from '../src/progression/level.js';
 import { newTraining, normalizeTraining, bonuses, addXp, xpToNext, progress, AntiFarm, TrainingTracker, MAX_LEVEL, METER } from '../src/progression/training.js';
 import { Stamina } from '../src/movement/rules.js';
 import { migrate } from '../src/saves/saveSystem.js';
@@ -38,16 +39,25 @@ describe('treino: curva, níveis e bônus', () => {
     expect(t.attrs.natacao.level).toBe(MAX_LEVEL);
   });
 
-  it('cada nível de Força soma 1 ao fôlego máximo', () => {
-    expect(maxStamina(newTraining())).toBe(100);
-    expect(maxStamina(withLevels({ forca: 2 }))).toBe(101);
-    expect(maxStamina(withLevels({ forca: 41 }))).toBe(140);
+  it('cada nível de treino de Força soma 1 ao fôlego máximo', () => {
+    expect(maxStamina(null, newTraining())).toBe(100);
+    expect(maxStamina(null, withLevels({ forca: 2 }))).toBe(101);
+    expect(maxStamina(null, withLevels({ forca: 41 }))).toBe(140);
+  });
+
+  it('pontos distribuídos e treino somam juntos (um não substitui o outro)', () => {
+    // 10 pontos em Força (+10), 5 em Vitalidade (+20) e treino de Força nível 6 (+5)
+    expect(maxStamina({ forca: 10, vitalidade: 5 }, withLevels({ forca: 6 }))).toBe(135);
+    // o bônus do treino de Fôlego multiplica tudo
+    expect(maxStamina({ forca: 10 }, withLevels({ folego: 100 }))).toBe(Math.round(110 * 1.3));
+    expect(maxHealth({ defesa: 5 })).toBe(130);
+    expect(damageMultipliers({ forca: 10, fruta: 2 }).melee).toBeCloseTo(1.3);
   });
 
   it('Fôlego dá +3% de fôlego a cada 10 níveis, com teto de +30%', () => {
-    expect(maxStamina(withLevels({ folego: 10 }))).toBe(103);
-    expect(maxStamina(withLevels({ folego: 100 }))).toBe(130);
-    expect(maxStamina(withLevels({ folego: 100, forca: 11 }))).toBe(Math.round(110 * 1.3));
+    expect(maxStamina(null, withLevels({ folego: 10 }))).toBe(103);
+    expect(maxStamina(null, withLevels({ folego: 100 }))).toBe(130);
+    expect(maxStamina(null, withLevels({ folego: 100, forca: 11 }))).toBe(Math.round(110 * 1.3));
     expect(bonuses(withLevels({ folego: 100 })).staminaRegen).toBeCloseTo(1.2);
   });
 
@@ -60,10 +70,10 @@ describe('treino: curva, níveis e bônus', () => {
 
   it('o fôlego usa o novo máximo mantendo a proporção', () => {
     const s = new Stamina();
-    s.setMax(maxStamina(withLevels({ forca: 51 })));
+    s.setMax(maxStamina(null, withLevels({ forca: 51 })));
     expect(s.max).toBe(150);
     s.drain(75, 1);
-    s.setMax(maxStamina(withLevels({ forca: 52 })));
+    s.setMax(maxStamina(null, withLevels({ forca: 52 })));
     expect(s.value / s.max).toBeCloseTo(0.5);
   });
 
@@ -74,12 +84,54 @@ describe('treino: curva, níveis e bônus', () => {
     expect(t.attrs.natacao.level).toBe(MAX_LEVEL);
   });
 
-  it('salvo antigo com pontos distribuídos vira treino do zero', () => {
-    const s = migrate({ version: 3, status: { forca: 10 }, statusPoints: 4, freeRespec: false, coins: 900 });
-    expect(s.status).toBeUndefined();
-    expect(s.statusPoints).toBeUndefined();
+  it('salvo da versão 3 mantém os pontos distribuídos e ganha o treino', () => {
+    const s = migrate({ version: 3, level: 5, status: { forca: 10 }, statusPoints: 2, freeRespec: false, coins: 900 });
+    expect(s.status.forca).toBe(10);
+    expect(s.statusPoints).toBe(2);
+    expect(s.freeRespec).toBe(false);
     expect(s.training.attrs.forca.level).toBe(1);
     expect(s.coins).toBe(900);
+  });
+
+  it('salvo da versão 4 (sem pontos) recebe os pontos do nível para distribuir', () => {
+    const t = withLevels({ folego: 12 });
+    const s = migrate({ version: 4, level: 8, training: t, coins: 50 });
+    expect(s.statusPoints).toBe(21);
+    expect(s.status).toEqual(newStatus());
+    expect(s.freeRespec).toBe(true);
+    expect(s.training.attrs.folego.level).toBe(12);
+  });
+});
+
+describe('pontos de status por nível (distribuíveis)', () => {
+  it('cada nível de aventureiro dá 3 pontos', () => {
+    const s = migrate(null);
+    addAdventurerXp(s, 130 + 179);
+    expect(s.level).toBe(3);
+    expect(s.statusPoints).toBe(6);
+  });
+
+  it('distribuir usa só os pontos livres e não mexe no treino', () => {
+    const s = { ...migrate(null), statusPoints: 5 };
+    expect(allocate(s, 'forca', 10)).toBe(5);
+    expect(s.status.forca).toBe(5);
+    expect(s.statusPoints).toBe(0);
+    expect(allocate(s, 'defesa', 1)).toBe(0);
+    expect(allocate(s, 'inexistente', 1)).toBe(0);
+    expect(s.training.attrs.forca.level).toBe(1);
+  });
+
+  it('redistribuir devolve os pontos e mantém o treino', () => {
+    const s = { ...migrate(null), statusPoints: 0, status: { ...newStatus(), forca: 4, vitalidade: 2 }, training: withLevels({ forca: 9 }) };
+    expect(resetStatus(s)).toBe(6);
+    expect(s.statusPoints).toBe(6);
+    expect(s.status.forca).toBe(0);
+    expect(s.training.attrs.forca.level).toBe(9);
+  });
+
+  it('pontos não somem: o salvo garante os pontos do nível', () => {
+    const s = migrate({ version: 5, level: 4, status: { forca: 3 }, statusPoints: 0 });
+    expect(s.statusPoints).toBe(6);
   });
 });
 

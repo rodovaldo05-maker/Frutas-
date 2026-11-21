@@ -1,0 +1,174 @@
+# 02 — Mundo e ilhas
+
+> O mundo segue a **estrutura de progressão** de RPGs piratas do gênero (três mares com
+> faixas de nível crescentes, ilhas por bioma, chefes por região), mas **todas as ilhas são
+> originais**. A lista abaixo é o inventário oficial deste projeto; nenhuma ilha conta como
+> "feita" até passar pelo checklist da seção 8.
+
+## 1. Estrutura dos mares
+
+| Mar | Níveis | Tamanho aproximado | Acesso |
+|---|---|---|---|
+| Primeiro Mar | 1–700 | 6 × 6 km | Início do jogo |
+| Segundo Mar | 700–1500 | 8 × 8 km | Derrotar o chefe do Portão das Correntes e obter a Carta Náutica |
+| Terceiro Mar | 1500–2400 | 10 × 10 km | Derrotar a Guardiã da Fenda Celeste |
+
+Entre os mares há uma **travessia** (viagem marítima curta com evento de tempestade) e,
+depois de liberado, um teleporte por porto.
+
+## 2. Inventário de ilhas
+
+### Primeiro Mar
+
+| # | Ilha | Níveis | Bioma | Destaques | Chefe |
+|---|---|---|---|---|---|
+| 1 | Ilha da Âncora | 1–25 | Tropical | Vila inicial, porto, mestre de missões, Roleta de Frutas | Capitão Ferrugem |
+| 2 | Praia dos Saqueadores | 25–75 | Praia e mangue | Acampamento pirata, grutas costeiras | Rainha das Conchas |
+| 3 | Bosque Sussurrante | 75–150 | Floresta densa | Árvores gigantes, pontes suspensas, ruínas | Guardião de Musgo |
+| 4 | Duna Partida | 150–225 | Deserto | Cidade de arenito, cânions, tempestades de areia | Escorpião de Bronze |
+| 5 | Forte Maré-Alta | 225–300 | Base militar | Quartel, prisão, muralhas, estaleiro | Comandante Lâmina-Azul |
+| 6 | Pico Gélido | 300–400 | Montanha nevada | Lagos congelados, cavernas de gelo, teleférico | Urso de Cristal |
+| 7 | Porto das Lanternas | 400–475 | Cidade portuária | Mercado, tavernas, arena clandestina | Duelista Mascarado |
+| 8 | Caldeira Rubra | 475–575 | Vulcânica | Rios de lava, forjas, tremores | Ferreiro da Lava |
+| 9 | Arena do Coliseu Partido | 575–650 | Arena | Torneio por ondas, desafios de combo | Campeão Imbatível |
+| 10 | Fenda Celeste | 650–700 | Ilhas flutuantes | Plataformas no céu, correntes de vento | Guardiã da Fenda Celeste (acesso ao 2º Mar) |
+
+### Segundo Mar
+
+| # | Ilha | Níveis | Bioma | Destaques | Chefe |
+|---|---|---|---|---|---|
+| 11 | Cais das Correntes | 700–775 | Cidade portuária grande | Hub do mar, estaleiro de caravelas | Contramestre Corrente |
+| 12 | Arquipélago Esmeralda | 775–875 | Selva e cachoeiras | Rios navegáveis, templos submersos | Serpente-Raiz |
+| 13 | Cidadela de Granito | 875–975 | Fortaleza gigante | Muralhas em camadas, catapultas, interiores | General Basalto |
+| 14 | Geleira Silente | 975–1075 | Território congelado | Navios presos no gelo, nevascas | Rainha do Inverno Eterno |
+| 15 | Ruínas do Sol Poente | 1075–1175 | Ruínas antigas | Quebra-cabeças de luz, câmaras secretas | Sentinela Dourado |
+| 16 | Ilha do Bosque Noturno | 1175–1275 | Floresta misteriosa | Névoa, cogumelos luminosos, ilusões | Senhora das Sombras |
+| 17 | Bastião Vulcânico | 1275–1375 | Vulcão ativo | Erupções programadas, cavernas de magma | Titã de Obsidiana |
+| 18 | Masmorra do Abismo | 1375–1500 | Masmorra | Andares com chaves, armadilhas | Carcereiro Sem-Rosto (acesso ao 3º Mar) |
+
+### Terceiro Mar
+
+| # | Ilha | Níveis | Bioma | Destaques | Chefe |
+|---|---|---|---|---|---|
+| 19 | Capital dos Mil Mastros | 1500–1600 | Metrópole | Distritos, castelo, docas militares | Almirante Mil-Velas |
+| 20 | Santuário das Escamas | 1600–1725 | Criaturas míticas | Ninhos de dragões, pontes de pedra | Dragão Ancião |
+| 21 | Ilha da Tempestade Eterna | 1725–1850 | Tempestade | Raios constantes, para-raios gigantes | Senhor dos Trovões |
+| 22 | Fortaleza do Horizonte | 1850–1975 | Fortaleza de alto nível | Andares de cerco, canhões gigantes | Marechal do Horizonte |
+| 23 | Mar dos Ossos | 1975–2100 | Oceano de tempestade | Naufrágios, bestas marinhas, ilhotas | Leviatã Ósseo (chefe oceânico) |
+| 24 | Templo da Aurora | 2100–2250 | Monumento celeste | Arquitetura colossal, provas de mobilidade | Avatar da Aurora |
+| 25 | Ilha Oculta | 2250–2400 | Secreta | Só aparece no mapa após um enigma | Soberano Esquecido (chefe mundial) |
+
+Eventos raros do Terceiro Mar: Lua de Sangue (inimigos fortalecidos e loot raro),
+Navio Fantasma (navio errante com tesouro) e Maré Celeste (ilhas flutuantes temporárias).
+
+## 3. Terrenos
+
+Base: o terreno voxel quadriculado do HTML original. A estética se mantém; a geração e o
+acabamento são refeitos.
+
+### 3.1 Geração
+
+| Etapa | Descrição |
+|---|---|
+| Forma da ilha | Contorno desenhado à mão (spline) por ilha, não círculos genéricos |
+| Altura | Heightmap por ilha (imagem 16 bits) + ruído procedural para detalhe fino |
+| Biomas | Máscara de biomas (areia, grama, rocha, neve, lava, terra) pintada por ilha |
+| Voxelização | Altura quantizada em degraus de 0,5 m para manter o visual de blocos |
+| Suavização de jogabilidade | Colisão usa rampas invisíveis em degraus de até 0,5 m, para o personagem não "tropeçar" |
+| Malha | Faces escondidas removidas, vértices unidos, uma malha por chunk |
+| Chunks | 32 × 32 m; streaming em anel de 3 chunks ao redor da câmera |
+| LOD | 3 níveis (1 m, 2 m, 4 m de voxel) sem rachaduras entre níveis (costuras com saias) |
+| Vegetação | Instanciada por chunk, densidade por bioma e por perfil de qualidade |
+| Colisão | Gerada da mesma malha de jogo (não da visual) |
+
+Regras de qualidade obrigatórias: sem buracos, sem faces invertidas, sem degraus
+desnecessários, sem colisão diferente do visual.
+
+### 3.2 Elementos de relevo
+
+Cada ilha combina: montanhas, colinas, penhascos, praias, cavernas, túneis, rios, lagos,
+cachoeiras, trilhas, estradas, pontes, ruínas, vegetação, construções, portos, interiores
+acessíveis e áreas secretas. A ficha de cada ilha (seção 7) lista quais aparecem.
+
+### 3.3 Identidade de cada bioma
+
+| Bioma | Materiais | Luz e clima | Som | Detalhes e jogabilidade |
+|---|---|---|---|---|
+| Tropical | Areia clara, grama viva, madeira | Sol forte, chuva rápida | Ondas, pássaros | Palmeiras, cachoeiras, grutas, fauna pequena |
+| Vulcânico | Basalto escuro, lava, cinza | Céu alaranjado, fumaça | Rugido de lava, tremores | Rios de lava causam dano, rochas incandescentes, tremores ocasionais |
+| Gelado | Neve, gelo, pedra azul | Luz fria, nevasca | Vento, rangido de gelo | Superfícies escorregadias, lagos congelados quebráveis, cristais |
+| Deserto | Arenito, areia dourada | Calor com distorção, tempestade de areia | Vento seco | Dunas que mudam de forma, oásis, cânions |
+| Floresta noturna | Musgo, madeira escura | Névoa, luz de cogumelos | Insetos, sussurros | Visão curta, trilhas escondidas |
+| Cidade | Pedra, telhas, madeira pintada | Lanternas à noite | Multidão, sinos | Interiores, comércio, NPCs com rotina |
+| Celeste | Mármore, nuvens sólidas | Céu amplo, luz dourada | Vento alto | Plataformas flutuantes, correntes de ar para planar |
+
+## 4. Construções e cidades
+
+Construções são **modulares** (kits de peças voxel), não caixas decorativas.
+
+| Kit | Peças | Usado em |
+|---|---|---|
+| Vila | Paredes de madeira, telhados, janelas, varandas | Casas, lojas, tavernas |
+| Militar | Muralhas, torres, portões, ameias | Quartéis, fortalezas, prisões |
+| Porto | Cais, guindastes, armazéns, estaleiro | Docas e estaleiros |
+| Templo | Colunas, escadarias, altares | Templos, ruínas |
+| Masmorra | Corredores, celas, portas trancadas, armadilhas | Masmorras |
+
+Edifícios importantes têm **interior**: mobília, iluminação própria, objetos interativos
+(baús, alavancas, livros) e NPCs. Entrar num interior troca a região de streaming sem
+tela de carregamento perceptível (porta com transição de 0,3 s).
+
+## 5. Exploração
+
+| Atividade | Como funciona |
+|---|---|
+| Escalada | Paredes marcadas como escaláveis (rocha rugosa, trepadeiras); gasta fôlego |
+| Corrida em encostas | Inclinações até 40° caminháveis; acima disso o personagem desliza |
+| Saltos entre plataformas | Distâncias pensadas para o salto normal, outras para o salto duplo |
+| Deslizar em encostas | Encostas de neve e areia permitem deslizar rápido |
+| Cavernas | Iluminação própria; algumas exigem tocha ou fruta luminosa |
+| Tesouros escondidos | Baús com dicas no mapa do tesouro; 8–15 por ilha |
+| Quebra-cabeças ambientais | Alavancas, placas de pressão, espelhos de luz, blocos empurráveis |
+| Passagens secretas | Paredes falsas, cachoeiras com gruta atrás |
+| Áreas submersas | Só para quem pode mergulhar (ver doc 03) |
+| Plataformas móveis | Elevadores, barcos ancorados que balançam, pedras flutuantes |
+| Desafios de parkour | Percursos cronometrados com recompensa |
+
+Meta: cada ilha tem pelo menos **6 atividades** além das missões de combate.
+
+## 6. Clima e dia/noite
+
+- Ciclo de 24 minutos reais = 1 dia no jogo.
+- Clima por bioma com probabilidades (ex.: Tropical 70% sol, 25% chuva, 5% tempestade).
+- Efeitos na jogabilidade: chuva reduz alcance de fogo em 15%; nevasca reduz visão;
+  tempestade aumenta o tamanho das ondas e atrai raios.
+- Alguns inimigos, eventos e chefes só aparecem à noite.
+
+## 7. Ficha de ilha (modelo)
+
+Cada ilha tem uma ficha em `data/islands.json` e um documento curto. Modelo:
+
+| Campo | Exemplo (Ilha da Âncora) |
+|---|---|
+| Níveis | 1–25 |
+| Formato | Meia-lua com enseada ao sul; morro com farol ao norte |
+| Relevo | Praias ao sul, colinas no centro, penhasco no norte, gruta sob o farol |
+| Construções | Vila com 12 casas (4 com interior), porto, taverna, farol, Roleta de Frutas |
+| NPCs | Mestre de Missões, Mercador, Estilista, Trocador de Fragmentos, Mestre de Estilo (Combate Básico) |
+| Inimigos | Bandidos (1–10), Saqueadores (10–25) |
+| Chefe | Capitão Ferrugem (nível 25), no navio encalhado da enseada |
+| Segredos | Gruta atrás da cachoeira, baú no topo do farol, mapa do tesouro na taverna |
+| Atividades | 3 desafios de parkour, 1 quebra-cabeça de alavancas, pesca, corrida de barco |
+| Clima | Tropical |
+
+## 8. Checklist de ilha pronta
+
+Uma ilha só é marcada como pronta quando:
+
+- [ ] Contorno, relevo e biomas conforme a ficha.
+- [ ] Terreno sem buracos, faces invertidas ou colisão divergente (verificado em teste automático).
+- [ ] Todas as construções com colisão; interiores navegáveis.
+- [ ] Inimigos, chefe e missões funcionando.
+- [ ] Pelo menos 6 atividades de exploração.
+- [ ] Sons ambientes e clima próprios.
+- [ ] Dentro do orçamento de desempenho nos três perfis.

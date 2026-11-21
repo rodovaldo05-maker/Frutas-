@@ -1,6 +1,9 @@
 # Frutas — ideia do jogo
 
 > Apenas a ideia. Nada foi implementado ainda.
+>
+> O design detalhado de todos os sistemas e interfaces do **FRUTO LEGACY AAA** está em
+> [`docs/`](docs/00-visao-geral.md), começando pela visão geral.
 
 ## Conceito
 

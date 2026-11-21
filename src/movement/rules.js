@@ -36,7 +36,7 @@ export class JumpGate {
 }
 
 // Fôlego: gastar trava a recuperação por 1 s; zerado, precisa recuperar 30% do máximo.
-// O máximo cresce com os status (Força +1 por ponto, Vitalidade +4).
+// O máximo cresce com o treino (Força +1 por nível; Fôlego aumenta máximo e recuperação).
 export class Stamina {
   constructor(max = STAMINA.max) {
     this.max = max;

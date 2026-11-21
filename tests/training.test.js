@@ -27,7 +27,7 @@ describe('missão de treino', () => {
     expect(m.claim()).toBeNull();
     for (const o of TRAINING.objectives) m.mark(o.id);
     expect(completed).toBe(1);
-    expect(m.claim()).toEqual({ coins: 1000 });
+    expect(m.claim()).toEqual({ coins: 1000, xp: 500 });
     expect(m.claim()).toBeNull();
     // o estado salvo volta igual
     const again = new TrainingMission(JSON.parse(JSON.stringify(state)));

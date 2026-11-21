@@ -12,12 +12,24 @@ beforeAll(async () => {
 }, 60000);
 
 describe('movimento na Ilha de Treino', () => {
-  it('anda a 3,8 e corre a 6,0', () => {
+  it('descendo a praia correndo, os pés não saem do chão', () => {
+    sim.place(0, 71, N);
+    let gap = 0;
+    sim.run(4, (t, c) => {
+      gap = Math.max(gap, c.pos.y - sim.ground(c.pos.x, c.pos.z));
+      return { moveY: 1, sprint: t > 1 };
+    });
+    expect(sim.states).toEqual(['ground']);
+    expect(gap).toBeLessThan(0.1);
+  });
+
+  it('anda a 3,8 e o Correr dobra a velocidade', () => {
     sim.place(0, 71, N);
     sim.run(2, () => ({ moveY: 1 }));
     expect(sim.ctl.speed).toBeCloseTo(MOVE.run, 0);
     sim.run(1.5, () => ({ moveY: 1, sprint: true }));
     expect(sim.ctl.speed).toBeCloseTo(MOVE.sprint, 0);
+    expect(MOVE.sprint / MOVE.run).toBeCloseTo(2, 1);
     expect(sim.ctl.state).toBe('ground');
   });
 

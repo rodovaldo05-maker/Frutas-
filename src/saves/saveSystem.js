@@ -32,7 +32,9 @@ export function newSave() {
     title: 'Aprendiz',
     coins: 200, // jogador novo começa com um giro da roleta (doc 09)
     fragments: 0,
+    xp: 0,
     statusPoints: 0,
+    freeRespec: true, // redistribuir é grátis uma vez (doc 09)
     status: newStatus(), // Força, Defesa, Fruta, Espada, Vitalidade
     missions: {},
   };
@@ -58,7 +60,8 @@ export function migrate(save) {
   const out = { ...base, ...s, unlocks: { ...base.unlocks, ...(s.unlocks || {}) } };
   if (!out.missions || typeof out.missions !== 'object') out.missions = {};
   out.status = normalizeStatus(out.status);
-  for (const k of ['coins', 'fragments', 'level', 'statusPoints']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  if (!Array.isArray(out.visited)) out.visited = [];
   return out;
 }
 

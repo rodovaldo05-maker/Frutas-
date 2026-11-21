@@ -481,11 +481,15 @@ export class CharacterController {
     }
     // sem gravidade no chão: o "grudar no chão" do Rapier desce rampas e degraus, e o
     // movimento horizontal puro sobe rampas sem perder velocidade
-    // o deslocamento segue o plano do chão (rampa acima sem perder a velocidade horizontal)
+    // o deslocamento segue o plano do chão, subindo e descendo rampas sem perder a
+    // velocidade horizontal; um leve empurrão para baixo mantém o contato
     const ny = Math.max(0.5, gn.y);
     this.vel.y = 0;
     const along = gn.y >= COS_WALKABLE ? -(gn.x * this.vel.x + gn.z * this.vel.z) / ny : 0;
-    const m = this.move(this.vel.x * dt, Math.max(0, along) * dt, this.vel.z * dt);
+    const climb = Math.max(0, along);
+    const m = this.move(this.vel.x * dt, climb * dt, this.vel.z * dt);
+    // descida ou plano: assenta no chão num segundo passo, só para baixo
+    if (climb <= 0) this.move(0, (along - 0.9) * dt, 0);
     // velocidade real (parede barra o movimento)
     if (dt > 0 && !this.dash) {
       const real = Math.hypot(m.x, m.z) / dt;
@@ -1027,7 +1031,7 @@ export class CharacterController {
     }
     const sprint = input.sprint && this.stamina.available;
     if (sprint && w.mag > 0.3) this.stamina.drain(STAMINA.swimSprint, dt);
-    const top = MOVE.dive * (sprint ? 1.45 : 1) * w.mag;
+    const top = MOVE.dive * (sprint ? MOVE.diveSprint : 1) * w.mag;
     const k = damp(MOVE.waterResponse * 0.8, dt);
     this.vel.x = lerp(this.vel.x, w.x * top, k);
     this.vel.z = lerp(this.vel.z, w.z * top, k);

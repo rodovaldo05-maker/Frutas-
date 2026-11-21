@@ -64,7 +64,7 @@ export class FollowCamera {
       if (diff < 2.2) this.yaw = lerpAngle(this.yaw, behind, damp(0.9 * clamp(speed / 6), dt));
     }
 
-    const want = (DISTANCE[state] ?? 8.6) * this.zoom;
+    const want = ((DISTANCE[state] ?? 8.6) + (state === 'ground' ? Math.max(0, speed - 4.5) * 0.25 : 0)) * this.zoom;
     this.distance = lerp(this.distance, want, damp(3, dt));
     const cp = Math.cos(this.pitch);
     const dir = new THREE.Vector3(Math.sin(this.yaw) * cp, -Math.sin(this.pitch), Math.cos(this.yaw) * cp);
@@ -84,8 +84,9 @@ export class FollowCamera {
     this.underwater = cam.position.y < surface - 0.05;
     cam.lookAt(from.x, from.y, from.z);
 
-    const sprint = ctl.input?.sprint && speed > 4.5 && state === 'ground';
-    this.fovKick = lerp(this.fovKick, !this.reduceMotion && (sprint || state === 'glide') ? 5 : 0, damp(4, dt));
+    // sensação de velocidade: o campo de visão abre conforme a corrida
+    const rush = state === 'ground' || state === 'slide' || state === 'wallrun' ? Math.min(1, Math.max(0, (speed - 4.2) / 3.4)) : state === 'glide' ? 0.8 : 0;
+    this.fovKick = lerp(this.fovKick, this.reduceMotion ? 0 : 8 * rush, damp(4, dt));
     const base = cam.aspect < 1.3 ? 66 : 58;
     if (Math.abs(cam.fov - (base + this.fovKick)) > 0.01) {
       cam.fov = base + this.fovKick;

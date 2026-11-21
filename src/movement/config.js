@@ -13,12 +13,13 @@ export const MOVE = {
   // Velocidades (unidades/s)
   walk: 2.3,
   run: 3.8, // velocidade base do laboratório
-  sprint: 6.0, // botão Correr (alterna); como no laboratório, 3,8 anda e o Correr corre
+  sprint: 7.6, // botão Correr (alterna): +100% sobre os 3,8 de andar (antes era 6,0, +58%)
   crouch: 1.7,
   swim: 2.45,
-  swimSprint: 3.7,
+  swimSprint: 4.4, // Correr nadando: +80%
+  diveSprint: 1.6, // Correr mergulhando: ×1,6
   dive: 2.2,
-  glideForward: 6.8,
+  glideForward: 8.0, // planar não freia quem vem correndo
   glideFall: 2.6,
 
   // Resposta (como no laboratório: aproximação exponencial)

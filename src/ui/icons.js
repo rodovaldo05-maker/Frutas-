@@ -30,6 +30,12 @@ export const ICONS = {
   home: svg('<path d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/>'),
   flag: svg('<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>'),
   menu: svg('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  person: svg('<circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>'),
+  fist: svg('<path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V7.5a1.5 1.5 0 0 1 3 0V11M16 11V9a1.5 1.5 0 0 1 3 0v4a7 7 0 0 1-7 7h-1a5 5 0 0 1-5-5v-2a2 2 0 0 1 2-2h3"/>'),
+  shield: svg('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M12 7v10" opacity=".6"/>'),
+  fruit: svg('<circle cx="12" cy="14" r="6.5"/><path d="M12 7.5V4M12 5c1.5-1.8 4-2 5.5-1-1 1.8-3.5 2.6-5.5 2"/>'),
+  sword: svg('<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="M6 12l6 6M4 20l3-3"/>'),
+  vital: svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M12 9.5v5M9.5 12h5"/>'),
   pad: svg('<rect x="3" y="8" width="18" height="10" rx="4"/><path d="M8 11v4M6 13h4M15.5 12h.01M17.5 14h.01"/>'),
 };
 

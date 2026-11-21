@@ -150,7 +150,7 @@ O jogo usa a escala do FRUTO Laboratório: o corpo base mede cerca de 4,1 unidad
 |---|---|---|
 | Cápsula | raio 0,62, altura 4,0 (agachado 2,5) | |
 | Gravidade | 19,6 (descida 1,35×) | A mesma do laboratório |
-| Andar / direcional cheio / Correr | 2,3 / 3,8 / 6,0 | Como no laboratório: 3,8 anda, o Correr corre |
+| Andar / direcional cheio / Correr | 2,3 / 3,8 / 7,6 | Correr dá +100% (antes +58%); corpo inclina mais, câmera abre e levanta poeira |
 | Altura do salto | ≈ 1,9 (soltar cedo pula mais baixo) | Salto duplo 7,6 de impulso |
 | Inclinação caminhável | até 46° (acima de 50° escorrega) | Rampas de teste: 15°, 30°, 45°, 55° |
 | Degrau automático | 0,55 | |
@@ -158,9 +158,9 @@ O jogo usa a escala do FRUTO Laboratório: o corpo base mede cerca de 4,1 unidad
 | Agarrar borda | topo entre 3,0 e 4,7 acima dos pés | Obstáculos até 2,6 são subidos direto |
 | Escalada | 2,2/s, gasta 9–13 de fôlego por segundo | Pedra escura, troncos e barrancos |
 | Corrida na parede | 1,2 s, exige pulo com Correr ligado | |
-| Planar | 6,8 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo |
+| Planar | 8,0 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo |
 | Queda | sem dano até 12; rolando, até 26 | Agachar logo antes de tocar o chão |
-| Nado / mergulho | 2,45 (Correr 3,7) / 2,2, ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
+| Nado / mergulho | 2,45 (Correr 4,4) / 2,2 (Correr ×1,6), ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
 
 A animação reaproveita o FRUTOMotion (passada ligada à velocidade real) e o FRUTOBalance
 (pés no chão) do laboratório; as poses novas usam a IK de dois ossos do próprio laboratório.

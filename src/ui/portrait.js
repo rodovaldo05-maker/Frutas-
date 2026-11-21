@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { createPlayer } from '../characters/player.js';
 
-export function renderPortrait(renderer, data, size = 192) {
+// full: corpo inteiro (tela de Status); senão, só o rosto (HUD)
+export function renderPortrait(renderer, data, size = 192, { full = false } = {}) {
   const scene = new THREE.Scene();
   const player = createPlayer(scene, data);
   player.blob.visible = false;
@@ -16,8 +17,13 @@ export function renderPortrait(renderer, data, size = 192) {
   key.position.set(2, 5, 4);
   scene.add(key);
   const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-  cam.position.set(0.25, 3.75, 3.3);
-  cam.lookAt(0.05, 3.62, 0);
+  if (full) {
+    cam.position.set(1.4, 2.6, 8.6);
+    cam.lookAt(0, 2.15, 0);
+  } else {
+    cam.position.set(0.25, 3.75, 3.3);
+    cam.lookAt(0.05, 3.62, 0);
+  }
 
   const target = new THREE.WebGLRenderTarget(size, size);
   target.texture.colorSpace = THREE.SRGBColorSpace;

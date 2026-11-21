@@ -234,7 +234,7 @@ body.in-title #hud, body.in-title #touch { display: none; }
   position: absolute; right: calc(12px + var(--safe-r)); top: calc(152px + var(--safe-t)); width: 220px; padding: 16px 12px 10px;
 }
 /* no celular o rastreador fica à esquerda, embaixo do retrato (os botões ocupam a direita) */
-body.touch .tracker { right: auto; left: calc(12px + var(--safe-l)); top: calc(132px + var(--safe-t)); }
+body.touch .tracker { right: auto; left: calc(12px + var(--safe-l)); top: calc(146px + var(--safe-t)); }
 body.touch.lefty .tracker { left: auto; right: calc(12px + var(--safe-r)); top: calc(152px + var(--safe-t)); }
 .tracker .close { width: 24px; height: 24px; top: -10px; right: -8px; }
 .tracker .close svg { width: 13px; height: 13px; }
@@ -245,8 +245,8 @@ body.touch.lefty .tracker { left: auto; right: calc(12px + var(--safe-r)); top: 
 .tracker.done .tracker-body b { color: #9cf07f; }
 
 .hint {
-  position: absolute; left: max(calc(50vw - 220px), calc(340px + var(--safe-l))); top: calc(16px + var(--safe-t)); transform: translateY(-12px);
-  width: min(440px, calc(100vw - 640px - var(--safe-l) - var(--safe-r))); padding: 10px 14px; opacity: 0; transition: opacity 0.2s, transform 0.2s;
+  position: absolute; left: calc(340px + var(--safe-l)); right: calc(370px + var(--safe-r)); max-width: 440px; margin: 0 auto;
+  top: calc(16px + var(--safe-t)); transform: translateY(-12px); padding: 10px 14px; opacity: 0; transition: opacity 0.2s, transform 0.2s;
   display: grid; gap: 3px; text-align: center;
 }
 .hint.on { opacity: 1; transform: none; }
@@ -427,8 +427,8 @@ body.lefty .act.sprint { right: auto; left: calc(36px + var(--safe-l)); }
   .top-actions { right: calc(130px + var(--safe-r)); }
   .icon-btn { width: 40px; height: 40px; }
   .tracker { top: calc(128px + var(--safe-t)); width: 196px; }
-  body.touch .tracker { top: calc(116px + var(--safe-t)); }
-  .hint { left: max(calc(50vw - 190px), calc(326px + var(--safe-l))); width: min(380px, calc(100vw - 606px - var(--safe-l) - var(--safe-r))); padding: 8px 12px; }
+  body.touch .tracker { top: calc(128px + var(--safe-t)); }
+  .hint { left: calc(322px + var(--safe-l)); right: calc(322px + var(--safe-r)); max-width: 400px; padding: 8px 12px; }
   .slot { width: 44px; height: 44px; }
   .state { bottom: calc(64px + var(--safe-b)); }
   .stats { top: calc(100px + var(--safe-t)); }
@@ -441,4 +441,65 @@ body.lefty .act.sprint { right: auto; left: calc(36px + var(--safe-l)); }
   .logo-text .l1 { font-size: 24px; }
   .logo-text .l2 { font-size: 34px; }
   .ribbon { font-size: 11px; padding: 2px 10px; }
+}
+
+/* ===== Experiência, nível e Status ===== */
+.bar.xp { height: 9px; border-width: 1px; }
+.bar.xp i { background: linear-gradient(180deg, #ffe7a3, #d39a34); }
+.bar.xp em { font-size: 8.5px; justify-content: flex-end; padding-right: 6px; }
+.bar.xp.big { height: 16px; border-width: 2px; width: 100%; }
+.bar.xp.big em { font-size: 10.5px; justify-content: center; padding: 0; }
+.icon-btn { position: relative; }
+.badge {
+  position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  display: grid; place-items: center; font: 800 10px var(--body-font); color: #fff;
+  background: #d8432f; border: 2px solid #ffe7a3;
+}
+.portrait.level-up { animation: levelup 1.6s ease-out; }
+@keyframes levelup {
+  0% { box-shadow: 0 0 0 2px #3b250b, 0 0 0 0 rgba(255, 220, 120, 0.9); }
+  40% { box-shadow: 0 0 0 2px #3b250b, 0 0 0 14px rgba(255, 220, 120, 0.45); }
+  100% { box-shadow: 0 0 0 2px #3b250b, 0 0 0 24px rgba(255, 220, 120, 0); }
+}
+.toast.gold { border-color: #ffe7a3; color: #2b1805; background: linear-gradient(180deg, #ffe38f, #d9a03a); }
+.status-body { position: relative; z-index: 1; display: grid; grid-template-columns: 220px 1fr; gap: 16px; min-height: 0; flex: 1 1 auto; overflow: auto; }
+.status-hero { display: grid; gap: 6px; justify-items: center; align-content: start; text-align: center; }
+.status-hero .figure {
+  width: 160px; height: 160px; border-radius: 50%; border: 3px solid var(--gold); overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #4b3a7a, #1b1430 75%); box-shadow: 0 0 0 2px #3b250b;
+}
+.status-hero .figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.status-hero b { font: 700 18px var(--title-font); color: #fff1cf; }
+.status-hero .lv { font-weight: 800; color: var(--gold-hi); }
+.status-summary { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.status-summary b { color: var(--text); }
+.status-list { display: grid; gap: 7px; align-content: start; }
+.status-head { display: flex; justify-content: space-between; align-items: center; margin-right: 44px; padding: 4px 10px; border-radius: 10px; background: rgba(14, 11, 28, 0.6); border: 1px solid rgba(217, 166, 74, 0.5); font-size: 13px; }
+.status-head b { font: 800 18px var(--body-font); color: var(--gold-hi); }
+.stat-row {
+  display: grid; grid-template-columns: 26px 1fr auto auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px;
+  background: linear-gradient(180deg, rgba(64, 46, 26, 0.5), rgba(28, 20, 12, 0.5)); border: 1px solid rgba(217, 166, 74, 0.45);
+}
+.stat-row svg { width: 22px; height: 22px; }
+.stat-row .name { display: grid; line-height: 1.2; }
+.stat-row .name b { font-size: 14px; }
+.stat-row .name small { font-size: 11px; color: var(--muted); }
+.stat-row .val { font: 800 16px var(--body-font); min-width: 40px; text-align: right; color: #fff4d8; }
+.stat-row .plus { display: flex; gap: 4px; }
+.stat-row .plus button {
+  min-width: 34px; height: 30px; padding: 0 6px; border-radius: 8px; font: 800 12px var(--body-font); color: #2b1805;
+  background: linear-gradient(180deg, #ffe38f, #d9a03a); border: 1px solid #fff1b8; box-shadow: 0 2px 0 #3b250b;
+}
+.stat-row .plus button:disabled { filter: grayscale(1) brightness(0.6); }
+.stat-row.forca svg, .stat-row.forca b { color: #ff7a66; }
+.stat-row.defesa svg, .stat-row.defesa b { color: #ffd45e; }
+.stat-row.fruta svg, .stat-row.fruta b { color: #c48cff; }
+.stat-row.espada svg, .stat-row.espada b { color: #e9eef5; }
+.stat-row.vitalidade svg, .stat-row.vitalidade b { color: #6fc3ff; }
+#btn-respec { justify-self: start; }
+@media (max-height: 450px) {
+  .status-body { grid-template-columns: 170px 1fr; gap: 12px; }
+  .status-hero .figure { width: 110px; height: 110px; }
+  .stat-row { padding: 4px 8px; }
+  .stat-row .plus button { min-width: 30px; height: 26px; }
 }

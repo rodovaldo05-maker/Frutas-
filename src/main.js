@@ -28,7 +28,10 @@ import { renderPortrait } from './ui/portrait.js';
 import { applyIcons, ICONS, EMBLEM } from './ui/icons.js';
 import { TRAINING, TrainingMission } from './quests/training.js';
 import { SaveSystem } from './saves/saveSystem.js';
-import { maxStamina } from './progression/status.js';
+import { Dust } from './vfx/dust.js';
+import { maxStamina, maxHealth } from './progression/status.js';
+import { addXp, xpProgress, xpToNext } from './progression/level.js';
+import { StatusScreen } from './ui/statusScreen.js';
 import { createFruitAudio } from './audio/fruto-audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -84,15 +87,17 @@ async function boot() {
   };
 
   const hud = new Hud();
-  const animator = new PlayerAnimator({ player, data: DATA, groundAt, audio });
+  const dust = new Dust(renderer.scene);
+  const animator = new PlayerAnimator({ player, data: DATA, groundAt, audio, dust });
 
   // ===== Missão de treino =====
   save.missions.treino ??= {};
   const towerTopY = island.field.sample(30, -12) + 15.6;
   const mission = new TrainingMission(save.missions.treino, {
     onObjective: (obj, n, total) => {
-      hud.toast(`Objetivo concluído: ${obj.text} (${n}/${total})`, 'good');
+      hud.toast(`Objetivo concluído: ${obj.text} (${n}/${total}) · +${TRAINING.objectiveXp} exp`, 'good');
       audio.play('base', 'wing', 0.5);
+      grantXp(TRAINING.objectiveXp);
       refreshMission();
       saveNow(true);
     },
@@ -129,9 +134,26 @@ async function boot() {
     }
   }
 
-  // fôlego máximo vem dos status (cada ponto de Força soma 1)
-  const applyStatus = () => ctl.stamina.setMax(maxStamina(save.status));
+  // vida e fôlego máximos vêm dos status (cada ponto de Força soma 1 de fôlego)
+  const applyStatus = () => {
+    ctl.stamina.setMax(maxStamina(save.status));
+    const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
+    ctl.maxHealth = maxHealth(save.status);
+    ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
+  };
   applyStatus();
+
+  // experiência: objetivos, recompensa de missão e áreas descobertas
+  function grantXp(amount) {
+    const levels = addXp(save, amount);
+    if (levels > 0) {
+      hud.toast(`Nível ${save.level}! +${levels * 3} pontos de status`, 'gold');
+      hud.levelUp();
+      audio.play('base', 'wing', 1);
+      statusScreen.render();
+    }
+    refreshProfile();
+  }
 
   // posição salva ou início da ilha
   const spawn = () => {
@@ -152,8 +174,17 @@ async function boot() {
   const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
+  const statusScreen = new StatusScreen({
+    save,
+    onChange: () => {
+      applyStatus();
+      refreshProfile();
+      saveNow(true);
+    },
+  });
+  statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true }));
 
-  const refreshProfile = () => hud.setProfile(save);
+  const refreshProfile = () => hud.setProfile({ ...save, xpRatio: xpProgress(save), xpNeed: xpToNext(save.level) });
   function refreshMission() {
     const st = save.missions.treino;
     const next = mission.next();
@@ -161,7 +192,7 @@ async function boot() {
       visible: st.tracked && !st.claimed,
       title: `${TRAINING.title} (${mission.count}/${mission.total})`,
       step: mission.complete ? 'Concluída! Receba a recompensa em Missões.' : `Próximo: ${next.text}`,
-      reward: `${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas`,
+      reward: `${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas · ${fmt(TRAINING.reward.xp)} exp`,
       done: mission.complete,
     });
     renderMissionList();
@@ -235,6 +266,7 @@ async function boot() {
     else $(id).classList.remove('hidden');
     if (id === 'worldmap') mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
     if (id === 'missions') renderMissionList();
+    if (id === 'status') statusScreen.render();
     if (id === 'pause' && mode === 'game') saveNow(true);
     setGameActive();
   }
@@ -272,6 +304,7 @@ async function boot() {
     else if (mode === 'game') openModal('pause');
   };
   $('btn-missions').addEventListener('click', () => openModal('missions'));
+  $('btn-status').addEventListener('click', () => openModal('status'));
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
   $('btn-untrack').addEventListener('click', () => {
     save.missions.treino.tracked = false;
@@ -280,7 +313,8 @@ async function boot() {
   window.addEventListener('keydown', (e) => {
     if (mode !== 'game' || e.repeat) return;
     if (e.code === 'KeyM') modals.includes('worldmap') ? closeModal('worldmap') : !modals.length && openModal('worldmap');
-    if (e.code === 'KeyJ') modals.includes('missions') ? closeModal('missions') : !modals.length && openModal('missions');
+    if (e.code === 'KeyL') modals.includes('missions') ? closeModal('missions') : !modals.length && openModal('missions');
+    if (e.code === 'KeyP') modals.includes('status') ? closeModal('status') : !modals.length && openModal('status');
   });
 
   // janela de missões
@@ -316,7 +350,7 @@ async function boot() {
         <div class="side">
           <img class="thumb" src="${thumb}" alt="Ilha de Treino" />
           <h4>Recompensas</h4>
-          <div class="rewards"><span>${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas</span></div>
+          <div class="rewards"><span>${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas</span><span>${fmt(TRAINING.reward.xp)} exp</span></div>
           ${action}
         </div>
       </div>`;
@@ -328,12 +362,26 @@ async function boot() {
       const reward = mission.claim();
       if (!reward) return;
       save.coins += reward.coins;
+      grantXp(reward.xp || 0);
       refreshProfile();
       refreshMission();
-      hud.toast(`+${fmt(reward.coins)} moedas`, 'good');
+      hud.toast(`+${fmt(reward.coins)} moedas · +${fmt(reward.xp || 0)} exp`, 'good');
       audio.play('base', 'wing', 1);
       saveNow(true);
     });
+  }
+
+  // ===== Áreas descobertas (perto de cada placa pela primeira vez) =====
+  let discoverTimer = 0;
+  const AREA_XP = 25;
+  function discoverAreas() {
+    for (const sign of island.signs) {
+      if (save.visited.includes(sign.title)) continue;
+      if (Math.abs(ctl.pos.y - sign.y) > 7 || Math.hypot(sign.x - ctl.pos.x, sign.z - ctl.pos.z) > 7.5) continue;
+      save.visited.push(sign.title);
+      hud.toast(`Área descoberta: ${sign.title} · +${AREA_XP} exp`, 'good');
+      grantXp(AREA_XP);
+    }
   }
 
   // ===== Laço =====
@@ -365,6 +413,11 @@ async function boot() {
       prev.copy(ctl.pos);
       ctl.step(dt, input.consume(cam.yaw));
       mission.check(ctl, { towerTopY });
+      discoverTimer -= dt;
+      if (discoverTimer <= 0) {
+        discoverTimer = 0.25;
+        discoverAreas();
+      }
       time += dt;
       playTime += dt;
       autosave += dt;
@@ -388,6 +441,7 @@ async function boot() {
       const animDt = mode === 'title' ? dt : loop.paused ? 0 : dt;
       if (mode === 'title') ctl.input = titleIdle;
       animator.update(animDt, ctl, view);
+      dust.update(animDt);
       if (mode === 'title') titleCamera(clock);
       else cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
       const dv = window.__game?.debugView; // vista livre para testes e capturas

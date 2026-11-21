@@ -20,6 +20,12 @@
 | Vitalidade | +4 de energia e fôlego máximos |
 
 Fôlego máximo = 100 + 1 × Força + 4 × Vitalidade (ex.: 300 pontos em Força → 400 de fôlego).
+Vida máxima = 100 + 6 × Defesa.
+
+Na Ilha de Treino (Fase 1) a experiência vem de: cada objetivo da missão de treino (60),
+recompensa da missão (500 e 1.000 moedas) e cada área descoberta ao chegar perto da placa
+(25). Tudo somado leva o jogador ao nível 6 com 15 pontos de status. A tela de Status tem
++1, +10 e Máx; Redistribuir é grátis uma vez.
 
 Redistribuir pontos: custa moedas no Mestre de Missões (grátis uma vez a cada mar).
 

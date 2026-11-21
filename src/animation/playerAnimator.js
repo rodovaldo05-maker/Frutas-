@@ -17,7 +17,8 @@ const SIDES = [['E', 1], ['D', -1]];
 const BLEND = { ground: 0.16, air: 0.14, climb: 0.2, hang: 0.16, mantle: 0.12, swim: 0.3, dive: 0.25, glide: 0.22, wallrun: 0.14, slide: 0.12, slopeSlide: 0.18, roll: 0.08, faint: 0.2 };
 
 export class PlayerAnimator {
-  constructor({ player, data, groundAt, audio }) {
+  constructor({ player, data, groundAt, audio, dust = null }) {
+    this.dust = dust;
     this.player = player;
     this.body = player.body;
     this.data = data;
@@ -211,6 +212,17 @@ export class PlayerAnimator {
       id: dash ? dash.clip : 'idle', t: dash ? dash.t : t, clock: t, phase: this.walkPhase,
       gait: dash ? 0 : this.stride, runBlend: this.runBlend, swimBlend: 0, air: 0, landing: ctl.landing, dashDirection: dash?.relative,
     });
+    // correndo rápido o corpo inclina mais e os braços trabalham mais
+    const fast = dash ? 0 : clamp((ctl.speed - 5.4) / 2.2) * (1 - ctl.crouchBlend);
+    if (fast > 0.01) {
+      const jj = body.joints;
+      jj.tronco.rotation.x += 0.13 * fast;
+      jj.cabeca.rotation.x -= 0.08 * fast;
+      for (const [side, sign] of SIDES) {
+        jj['antebraco_' + side].rotation.x -= 0.25 * fast;
+        jj['braco_' + side].rotation.z += sign * 0.06 * fast;
+      }
+    }
     const c = ctl.crouchBlend;
     if (c > 0.01) {
       const j = body.joints;
@@ -439,6 +451,12 @@ export class PlayerAnimator {
       if (step !== this.lastStep) {
         this.lastStep = step;
         this.audio.play('base', ctl.inWater ? 'splash' : 'step', ctl.inWater ? 0.18 : 0.35 + 0.4 * this.runBlend);
+        if (this.dust && speed > 5 && !ctl.inWater) {
+          const side = step % 2 ? 'E' : 'D';
+          const foot = this.body.joints['pe_' + side].getWorldPosition(this.v);
+          foot.y = this.body.root.position.y;
+          this.dust.puff(foot, { x: ctl.vel.x / speed, z: ctl.vel.z / speed }, clamp((speed - 5) / 2.6));
+        }
       }
     } else this.lastStep = Math.floor(this.walkPhase / Math.PI);
     if (ctl.state === 'swim' && speed > 0.4) {

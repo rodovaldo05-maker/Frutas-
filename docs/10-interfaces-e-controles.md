@@ -442,6 +442,8 @@ estilos) marcados com ✔/✖ e botão Aprender (só ativo com todos ✔).
 | Vontade de Armadura / Percepção / Soberana | Roda rápida da Vontade | Z / X / V | Direcional ↓ + face |
 | Mochila | Botão Mochila | B | View / Share |
 | Mapa | Minimapa | M | Segurar View |
+| Personagem (Status) | Ícone do personagem | P | — |
+| Missões | Ícone de pergaminho | L | — |
 | Pausa | ☰ | Esc | Menu / Options |
 
 Conflito de teclas no PC: E é habilidade em combate e Interagir fora de combate; o

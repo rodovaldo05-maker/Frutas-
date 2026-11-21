@@ -43,7 +43,7 @@ export class Input {
       if (c === 'ShiftLeft' || c === 'ShiftRight') this.pressed.dash = true;
       if (c === 'KeyC') this.press('crouch');
       if (c === 'ControlLeft' || c === 'ControlRight') this.toggleSprint();
-      if (c === 'Escape' || c === 'KeyP') this.onPause();
+      if (c === 'Escape') this.onPause();
       if (c === 'F3') {
         e.preventDefault();
         this.onToggleDebug();

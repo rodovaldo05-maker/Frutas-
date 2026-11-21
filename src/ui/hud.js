@@ -32,6 +32,7 @@ export class Hud {
       stamina: $('bar-stamina'), staminaText: $('txt-stamina'),
       air: $('bar-air'), airBox: $('box-air'),
       level: $('txt-level'), name: $('txt-name'), coins: $('txt-coins'), frags: $('txt-frags'), portrait: $('portrait'),
+      xp: $('bar-xp'), xpText: $('txt-xp'), badge: $('status-badge'),
       state: $('state'), hint: $('hint'), hintTitle: $('hint-title'), hintText: $('hint-text'),
       toasts: $('toasts'), stats: $('stats'), sprint: $('btn-sprint'), water: $('water-overlay'),
       vignette: $('damage-overlay'), keys: $('keys'),
@@ -48,8 +49,12 @@ export class Hud {
     this.el.portrait.src = url;
   }
 
-  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0 }) {
+  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0, statusPoints = 0, xpRatio = 0 }) {
     this.el.level.textContent = `Nv. ${level}`;
+    this.el.xp.style.transform = `scaleX(${xpRatio})`;
+    this.el.xpText.textContent = `Exp ${Math.floor(xpRatio * 100)}%`;
+    this.el.badge.classList.toggle('hidden', statusPoints < 1);
+    this.el.badge.textContent = statusPoints > 99 ? '99+' : String(statusPoints);
     this.el.name.textContent = title;
     this.el.coins.textContent = coins.toLocaleString('pt-BR');
     this.el.frags.textContent = fragments.toLocaleString('pt-BR');
@@ -63,6 +68,13 @@ export class Hud {
     this.el.trackerTitle.textContent = title;
     this.el.trackerStep.textContent = step;
     this.el.trackerReward.innerHTML = reward;
+  }
+
+  levelUp() {
+    const p = this.el.portrait.parentElement;
+    p.classList.remove('level-up');
+    void p.offsetWidth; // reinicia a animação
+    p.classList.add('level-up');
   }
 
   setSprint(on) {

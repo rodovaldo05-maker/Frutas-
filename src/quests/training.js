@@ -5,7 +5,8 @@ export const TRAINING = {
   id: 'treino',
   title: 'Treino de movimento',
   sub: 'Aprenda a se mover pela Ilha de Treino. Siga as placas.',
-  reward: { coins: 1000 },
+  reward: { coins: 1000, xp: 500 },
+  objectiveXp: 60, // experiência por objetivo
   objectives: [
     { id: 'escalar', text: 'Escale uma parede de pedra' },
     { id: 'torre', text: 'Chegue ao topo da torre' },

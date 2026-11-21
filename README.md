@@ -13,7 +13,10 @@ salto duplo, esquiva (no chão e no ar), escalar paredes de pedra e troncos, aga
 subir bordas, salto na parede, corrida na parede, planar, rolamento contra dano de queda,
 nadar, mergulhar (com ar limitado) e escorregar em rampas íngremes.
 Cada área da ilha tem uma placa com a dica do movimento, e a missão "Treino de
-movimento" (11 objetivos, 1.000 moedas) acompanha o aprendizado.
+movimento" (11 objetivos, 1.000 moedas e 500 de experiência) acompanha o aprendizado.
+Experiência, níveis (3 pontos de status por nível) e a tela de Status: cada ponto de
+Força soma 1 de fôlego, cada ponto de Defesa soma 6 de vida. O Correr dobra a
+velocidade de andar.
 
 Interfaces no estilo dourado do jogo (doc 10): menu inicial com logo e o personagem ao
 vivo, HUD com retrato, vida, fôlego, moedas, fragmentos, minimapa com bússola e
@@ -51,7 +54,7 @@ npm run apk        # build + sync + gradle assembleDebug
 | Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
 | Esquiva | Esquiva | Shift | B / ◯ |
 | Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
-| Mapa · Missões | Ícones no alto | M · J | — |
+| Status · Missões · Mapa | Ícones no alto | P · L · M | — |
 | Pausa | Engrenagem | Esc | Start |
 
 ## Estrutura

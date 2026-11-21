@@ -55,6 +55,12 @@ flutuantes leem a mesma função de altura das ondas que o shader desenha.
 | Resgate | Um aliado ou NPC de resgate pode puxar o jogador para fora; boias e barcos próximos também salvam |
 | Água rasa (até a cintura) | Sem penalidade de vida; só perde a capacidade de usar poderes |
 
+**Na Fase 1 já funciona:** quem comeu uma fruta (menos Maré e Geada) entra no estado
+"Afundando" na água funda: não boia, anda a 40% do nado, o fôlego drena 10/s e, depois de
+2 s com a cabeça embaixo d'água, perde 7% da vida máxima a cada 0,5 s. Ainda dá para
+agarrar uma borda ou um barranco escalável ao alcance. O resgate por aliados vem com o
+multijogador.
+
 **Imunes:**
 
 | Fruta | Como lida com a água |

@@ -80,6 +80,7 @@ describe('movimento na Ilha de Treino', () => {
 
   it('cai na lagoa, nada, mergulha e gasta o ar', () => {
     sim.place(-44, 16, N);
+    sim.ctl.waterCursed = false;
     sim.ctl.pos.set(-50, 1.5, 16);
     sim.ctl.syncCollider();
     sim.ctl.setState('air');
@@ -91,6 +92,21 @@ describe('movimento na Ilha de Treino', () => {
     expect(sim.ctl.breath).toBeLessThan(MOVE.breath - 2);
     sim.run(8, () => ({ jump: true }));
     expect(sim.ctl.state).toBe('swim');
+  });
+
+  it('usuário de fruta afunda na lagoa e perde vida; sem fruta, boia', () => {
+    sim.place(-44, 16, N);
+    sim.ctl.waterCursed = true;
+    sim.ctl.health = sim.ctl.maxHealth;
+    sim.ctl.pos.set(-50, 1.5, 16);
+    sim.ctl.syncCollider();
+    sim.ctl.setState('air');
+    sim.run(6);
+    expect(sim.states).toContain('sink');
+    expect(sim.states).not.toContain('swim');
+    expect(sim.ctl.underwater).toBe(true);
+    expect(sim.ctl.health).toBeLessThan(sim.ctl.maxHealth * 0.8);
+    sim.ctl.waterCursed = false;
   });
 
   it('salto duplo e planar caem devagar', () => {

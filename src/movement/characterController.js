@@ -106,6 +106,9 @@ export class CharacterController {
     this.safeTimer = 0;
     this.hangHold = 0;
     this.speed = 0;
+    this.busyT = 0; // ocupado (comendo): sem movimento
+    this.sinkTime = 0;
+    this.sinkTick = 0;
   }
 
   spawn(x, y, z, yaw = 0) {
@@ -227,13 +230,13 @@ export class CharacterController {
     const prev = this.state;
     this.state = state;
     this.stateTime = 0;
-    if (['air', 'glide', 'wallrun', 'climb', 'hang', 'mantle', 'swim', 'dive', 'faint'].includes(state)) this.kcc.disableSnapToGround();
+    if (['air', 'glide', 'wallrun', 'climb', 'hang', 'mantle', 'swim', 'dive', 'sink', 'faint'].includes(state)) this.kcc.disableSnapToGround();
     else this.kcc.enableSnapToGround(MOVE.snapDistance);
     if (state === 'air' && prev !== 'glide') {
       this.airTime = 0;
       this.fallTime = 0;
     }
-    if (['climb', 'hang', 'mantle', 'wallrun', 'glide', 'swim', 'dive'].includes(state)) this.peakY = this.pos.y;
+    if (['climb', 'hang', 'mantle', 'wallrun', 'glide', 'swim', 'dive', 'sink'].includes(state)) this.peakY = this.pos.y;
     if (state !== 'climb') this.wall = state === 'wallrun' ? this.wall : null;
   }
 
@@ -255,6 +258,10 @@ export class CharacterController {
 
   // ===== Passo =====
   step(dt, input) {
+    if (this.busyT > 0) {
+      this.busyT -= dt;
+      input = { ...input, moveX: 0, moveY: 0, jump: false, jumpPressed: false, crouch: false, crouchPressed: false, dashPressed: false };
+    }
     const camF = { x: Math.sin(input.camYaw), z: Math.cos(input.camYaw) };
     const camR = { x: -camF.z, z: camF.x };
     let wx = camF.x * input.moveY + camR.x * input.moveX;
@@ -292,6 +299,7 @@ export class CharacterController {
       case 'mantle': this.mantleStep(dt); break;
       case 'swim': this.swimStep(dt); break;
       case 'dive': this.diveStep(dt); break;
+      case 'sink': this.sinkStep(dt); break;
       case 'glide': this.glideStep(dt); break;
       case 'wallrun': this.wallRunStep(dt); break;
       case 'slide': this.slideStep(dt); break;
@@ -944,6 +952,15 @@ export class CharacterController {
   // ===== Água =====
   enterWater(vy) {
     this.setCrouched(false, true);
+    if (this.waterCursed) {
+      // usuário de fruta: não boia, afunda devagar (doc 03, 2.2)
+      this.setState('sink');
+      this.vel.y = Math.max(vy * 0.3, -4);
+      this.sinkTime = 0;
+      this.emit('splash', { strength: clamp(Math.abs(vy) / 14, 0.25, 1) });
+      this.emit('sinking', {});
+      return;
+    }
     if (vy < -10) {
       this.setState('dive');
       this.vel.y = vy * 0.25;
@@ -1047,6 +1064,55 @@ export class CharacterController {
     }
     // fundo raso: fica de pé
     if (this.waterDepth < MOVE.swimDepth && this.kccGrounded) this.setState('ground');
+  }
+
+  // ===== Afundando (usuário de fruta na água funda) =====
+  sinkStep(dt) {
+    const w = this.wish;
+    this.grounded = false;
+    this.peakY = this.pos.y;
+    if (!this.inWater) {
+      this.setState('air');
+      return;
+    }
+    if (this.waterDepth < MOVE.swimDepth) {
+      const g = this.probeGround(0.6);
+      if (g && g.gap < 0.5) {
+        this.setState('ground');
+        return;
+      }
+    }
+    // ainda dá para se agarrar numa borda ao alcance ou num barranco escalável
+    if (w.mag > 0.4) {
+      const ledge = this.probeLedge({ x: w.x, z: w.z }, 0.3, MOVE.hangReachMax);
+      if (ledge && (ledge.clear || ledge.crouchClear) && ledge.normal.x * -w.x + ledge.normal.z * -w.z > 0.5) {
+        this.startMantle(ledge);
+        return;
+      }
+    }
+    const top = MOVE.swim * 0.4 * w.mag;
+    const k = damp(MOVE.waterResponse * 0.6, dt);
+    this.vel.x = lerp(this.vel.x, w.x * top, k);
+    this.vel.z = lerp(this.vel.z, w.z * top, k);
+    this.vel.y = lerp(this.vel.y, -1.4, damp(2, dt));
+    if (w.mag > 0.1) this.turnToward(w.x, w.z, MOVE.turnRate * 0.3, dt);
+    this.move(this.vel.x * dt, this.vel.y * dt, this.vel.z * dt);
+    if (this.kccGrounded) this.vel.y = 0;
+    this.stamina.drain(10, dt);
+    // dano: 7% da vida máxima a cada 0,5 s depois de 2 s submerso
+    if (this.underwater) {
+      this.sinkTime += dt;
+      if (this.sinkTime > 2) {
+        this.sinkTick -= dt;
+        if (this.sinkTick <= 0) {
+          this.sinkTick = 0.5;
+          this.damage(this.maxHealth * 0.07, 'água');
+        }
+      }
+    } else {
+      this.sinkTime = Math.max(0, this.sinkTime - dt * 2);
+      this.sinkTick = 0;
+    }
   }
 
   // ===== Planar =====

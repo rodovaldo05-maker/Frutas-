@@ -158,7 +158,7 @@ O jogo usa a escala do FRUTO Laboratório: o corpo base mede cerca de 4,1 unidad
 | Agarrar borda | topo entre 3,0 e 4,7 acima dos pés | Obstáculos até 2,6 são subidos direto |
 | Escalada | 2,2/s, gasta 9–13 de fôlego por segundo | Pedra escura, troncos e barrancos |
 | Corrida na parede | 1,2 s, exige pulo com Correr ligado | |
-| Planar | 8,0 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo |
+| Planar (asa-delta) | 8,0 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo. A asa-delta (vela listrada, tubos e barra de controle) abre da mochila nas costas; o piloto voa deitado segurando a barra e inclina nas curvas. Botão da asa (celular), tecla U ou Configurações ligam e desligam |
 | Queda | sem dano até 12; rolando, até 26 | Agachar logo antes de tocar o chão |
 | Nado / mergulho | 2,45 (Correr 4,4) / 2,2 (Correr ×1,6), ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
 

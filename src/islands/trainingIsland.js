@@ -64,7 +64,7 @@ export function buildTrainingIsland({ scene, physics }) {
     const t = coastDistance(x, z);
     return y < 1.8 && t < 18 ? 1 - smooth(10, 18, t) : 0;
   };
-  const terrain = buildTerrain({ field, physics, colorAt: tropicalColor(sandBand), waterLevel: ISLAND.waterLevel });
+  const terrain = buildTerrain({ field, physics, colorAt: tropicalColor(sandBand) });
   scene.add(terrain.group);
 
   const sb = new StructureBuilder(scene, physics);

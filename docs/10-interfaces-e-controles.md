@@ -267,6 +267,12 @@ status com **+1 / +10 / +máx** e prévia do efeito ("Força 40 → 41: dano cor
 Fruta na mão marcada "Na mão". Ícones são miniaturas renderizadas dos modelos 3D.
 "Comer" mostra a confirmação: "Sua fruta atual (Brasa · Épico) será substituída".
 
+**Na Fase 1:** Mochila com filtros (Todas, Lendário, Épico, Comum, Favoritas), ordenação
+(Nível, Nome, Data), cartões com a miniatura 3D da fruta e a borda na cor do nível, e as
+ações Segurar/Guardar, Comer (com confirmação), Trocar, Favoritar e Jogar fora. A fruta
+na mão fica viva (balança e respira); comer usa a animação do laboratório, com mordidas.
+O HUD mostra a fruta comida num selo no retrato e no título.
+
 ### 5.3 Frutas (dossiê)
 
 ```
@@ -441,6 +447,7 @@ estilos) marcados com ✔/✖ e botão Aprender (só ativo com todos ✔).
 | Interagir / Falar | Botão contextual | E (perto de NPC ou objeto, fora de combate) | Y / △ |
 | Vontade de Armadura / Percepção / Soberana | Roda rápida da Vontade | Z / X / V | Direcional ↓ + face |
 | Mochila | Botão Mochila | B | View / Share |
+| Asa-delta (liga/desliga) | Botão da asa | U | — |
 | Mapa | Minimapa | M | Segurar View |
 | Personagem (Status) | Ícone do personagem | P | — |
 | Missões | Ícone de pergaminho | L | — |

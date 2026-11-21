@@ -70,7 +70,7 @@ export class TrainingMission {
     if (s === 'wallrun') this.mark('corridaParede');
     if (s === 'slide') this.mark('deslizar');
     if (s === 'glide' && ctl.stateTime >= 3) this.mark('planar');
-    if (s === 'dive' && ctl.submerged > 0.9) this.mark('mergulhar');
+    if ((s === 'dive' || s === 'sink') && ctl.submerged > 0.9) this.mark('mergulhar');
     if (s === 'ground' && ctx.towerTopY !== undefined && Math.abs(ctl.pos.x - 30) < 3.3 && Math.abs(ctl.pos.z + 12) < 3.3 && ctl.pos.y > ctx.towerTopY - 1) this.mark('torre');
     if (ctl.crouched && ctl.pos.x > -11.7 && ctl.pos.x < -8.3 && ctl.pos.z > 31.5 && ctl.pos.z < 40.5) this.mark('tunel');
   }

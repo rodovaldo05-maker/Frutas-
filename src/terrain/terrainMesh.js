@@ -1,125 +1,125 @@
-// Malha do terreno no estilo do FRUTO Laboratório: relevo facetado, cores por altura e
-// bioma, linhas de grade e curvas de nível. Dividida em chunks para culling.
-// Cada chunk também gera o seu colisor (trimesh com os mesmos triângulos).
+// Malha do terreno: relevo suave com cores por vértice (bioma, altura, inclinação) e um
+// detalhe de ruído no shader (manchas de grama, grãos de areia), sem linhas de grade.
+// Dividida em chunks para culling; cada chunk gera o seu colisor com os mesmos triângulos
+// (a, c, b) e (b, c, d) usados pelo campo de alturas.
 
 import * as THREE from 'three';
 import { smooth } from '../core/math.js';
 
 const CHUNK = 32; // células por chunk
 
-export function buildTerrain({ field, physics, colorAt, contourStep = 1.5, waterLevel = 0 }) {
+// Ruído de valor no shader + variação de tom em manchas grandes
+function detailMaterial() {
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.94, metalness: 0.0 });
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vWPos;
+float tHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float tNoise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(tHash(i), tHash(i + vec2(1.0, 0.0)), u.x), mix(tHash(i + vec2(0.0, 1.0)), tHash(i + vec2(1.0, 1.0)), u.x), u.y);
+}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+{
+  vec2 p = vWPos.xz;
+  float dist = length(cameraPosition - vWPos);
+  float fine = 1.0 - smoothstep(18.0, 70.0, dist);
+  float n1 = tNoise(p * 0.16);
+  float n2 = tNoise(p * 0.85 + 17.0);
+  float n3 = tNoise(p * 4.2 + 41.0);
+  float shade = 0.88 + 0.2 * n1 + 0.1 * n2 + 0.12 * (n3 - 0.5) * fine;
+  diffuseColor.rgb *= shade;
+  // camadas de rocha nos barrancos
+  vec3 wn = inverseTransformDirection(normalize(vNormal), viewMatrix);
+  float steep = smoothstep(0.22, 0.45, 1.0 - wn.y);
+  float strata = 0.5 + 0.5 * sin(vWPos.y * 3.2 + n2 * 2.5);
+  diffuseColor.rgb *= 1.0 - steep * (0.16 * strata + 0.06 * n3);
+  // manchas maiores: um pouco mais secas (amareladas) ou mais verdes
+  float patchy = smoothstep(0.35, 0.8, tNoise(p * 0.055 + 3.0));
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.08, 1.05, 0.82), patchy * 0.55);
+  // pontinhos claros (flores miúdas, grãos de areia) só de perto
+  float speck = step(0.93, tNoise(p * 9.0 + 7.0)) * fine;
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.18, speck * 0.6);
+}`);
+  };
+  material.customProgramCacheKey = () => 'terreno-detalhe-v2';
+  return material;
+}
+
+export function buildTerrain({ field, physics, colorAt }) {
   const group = new THREE.Group();
   group.name = 'Terreno';
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.02, flatShading: true });
-  // Grade e curvas de nível numa só malha de linhas por chunk (cores por vértice)
-  const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.22, depthWrite: false });
-  const GRID = [0.84, 0.89, 0.78];
-  const CONTOUR = [1.0, 0.95, 0.72];
+  const material = detailMaterial();
   const color = new THREE.Color();
   const n = field.count;
+  const s = field.spacing;
+  const h = (i, j) => field.at(Math.max(0, Math.min(n, i)), Math.max(0, Math.min(n, j)));
   let triangles = 0;
 
   for (let cj = 0; cj < n; cj += CHUNK) {
     for (let ci = 0; ci < n; ci += CHUNK) {
-      const positions = [];
-      const colors = [];
-      const grid = [];
-      const contours = [];
-      const collVerts = [];
-      const collIdx = [];
-
-      const face = (a, b, c) => {
-        positions.push(...a, ...b, ...c);
-        const cx = (a[0] + b[0] + c[0]) / 3;
-        const cy = (a[1] + b[1] + c[1]) / 3;
-        const cz = (a[2] + b[2] + c[2]) / 3;
-        // inclinação do triângulo para pintar pedra nos barrancos
-        const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-        const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-        const up = Math.abs(ny) / Math.hypot(nx, ny, nz);
-        colorAt(cx, cy, cz, up, color);
-        for (let k = 0; k < 3; k++) colors.push(color.r, color.g, color.b);
-        const base = collVerts.length / 3;
-        collVerts.push(...a, ...b, ...c);
-        collIdx.push(base, base + 1, base + 2);
-        for (const level of contourLevels(a[1], b[1], c[1], contourStep)) {
-          const p = [];
-          for (const [u, v] of [[a, b], [b, c], [c, a]]) {
-            if ((u[1] < level) === (v[1] < level)) continue;
-            const t = (level - u[1]) / (v[1] - u[1]);
-            p.push([u[0] + (v[0] - u[0]) * t, level + 0.02, u[2] + (v[2] - u[2]) * t]);
-          }
-          if (p.length === 2) contours.push(...p[0], ...p[1]);
-        }
-        triangles += 1;
-      };
-
       const iEnd = Math.min(n, ci + CHUNK);
       const jEnd = Math.min(n, cj + CHUNK);
-      for (let j = cj; j < jEnd; j++) {
-        for (let i = ci; i < iEnd; i++) {
-          const a = field.point(i, j);
-          const b = field.point(i + 1, j);
-          const c = field.point(i, j + 1);
-          const d = field.point(i + 1, j + 1);
-          face(a, c, b);
-          face(b, c, d);
-          // linhas da grade a cada 2 células (só acima da água, onde aparecem)
-          if (i % 2 === 0 && Math.max(a[1], c[1]) > waterLevel - 0.5) grid.push(a[0], a[1] + 0.03, a[2], c[0], c[1] + 0.03, c[2]);
-          if (j % 2 === 0 && Math.max(a[1], b[1]) > waterLevel - 0.5) grid.push(a[0], a[1] + 0.03, a[2], b[0], b[1] + 0.03, b[2]);
+      const w = iEnd - ci + 1;
+      const positions = [];
+      const normals = [];
+      const colors = [];
+      const index = [];
+      for (let j = cj; j <= jEnd; j++) {
+        for (let i = ci; i <= iEnd; i++) {
+          const [x, y, z] = field.point(i, j);
+          positions.push(x, y, z);
+          // normal suave por diferenças centrais (igual dos dois lados da borda do chunk)
+          const nx = -(h(i + 1, j) - h(i - 1, j)) / (2 * s);
+          const nz = -(h(i, j + 1) - h(i, j - 1)) / (2 * s);
+          const len = Math.hypot(nx, 1, nz);
+          normals.push(nx / len, 1 / len, nz / len);
+          colorAt(x, y, z, 1 / len, color);
+          colors.push(color.r, color.g, color.b);
         }
       }
-
+      for (let j = 0; j < jEnd - cj; j++) {
+        for (let i = 0; i < iEnd - ci; i++) {
+          const a = j * w + i;
+          const b = a + 1;
+          const c = a + w;
+          const d = c + 1;
+          index.push(a, c, b, b, c, d);
+          triangles += 2;
+        }
+      }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
       geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      geo.computeVertexNormals();
+      geo.setIndex(index);
       geo.computeBoundingSphere();
       const mesh = new THREE.Mesh(geo, material);
       mesh.receiveShadow = true;
       mesh.name = `chunk_${ci}_${cj}`;
       group.add(mesh);
-      if (grid.length || contours.length) group.add(lines(grid, contours, lineMat, GRID, CONTOUR));
-      physics.addTrimesh(new Float32Array(collVerts), new Uint32Array(collIdx), { material: 'terreno', climbable: true, terrain: true });
+      physics.addTrimesh(new Float32Array(positions), new Uint32Array(index), { material: 'terreno', climbable: true, terrain: true });
     }
   }
   return { group, triangles };
 }
 
-function lines(grid, contours, material, gridColor, contourColor) {
-  const positions = grid.concat(contours);
-  const colors = [];
-  for (let i = 0; i < grid.length / 3; i++) colors.push(...gridColor);
-  for (let i = 0; i < contours.length / 3; i++) colors.push(...contourColor);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  g.computeBoundingSphere();
-  return new THREE.LineSegments(g, material);
-}
-
-function contourLevels(a, b, c, step) {
-  const lo = Math.min(a, b, c);
-  const hi = Math.max(a, b, c);
-  const out = [];
-  for (let level = Math.ceil(lo / step) * step; level <= hi; level += step) {
-    if (level > 0.4) out.push(level); // sem curvas no fundo do mar
-  }
-  return out;
-}
-
-// Paleta do terreno (tons do laboratório com biomas da ilha tropical)
+// Paleta do terreno (tons do laboratório com biomas da ilha tropical), com transições suaves
 const PAL = {
-  seabedDeep: new THREE.Color('#3f6a6c'),
-  seabed: new THREE.Color('#6f9a8e'),
-  sand: new THREE.Color('#d8c690'),
-  sandWet: new THREE.Color('#b9a879'),
-  grassLow: new THREE.Color('#5f8a58'),
-  grassHigh: new THREE.Color('#86a273'),
-  rock: new THREE.Color('#737a70'),
-  rockLight: new THREE.Color('#8e9488'),
+  seabedDeep: new THREE.Color('#3c6669'),
+  seabed: new THREE.Color('#76a291'),
+  sand: new THREE.Color('#e2cf98'),
+  sandWet: new THREE.Color('#bfae7d'),
+  grassLow: new THREE.Color('#5b9150'),
+  grassHigh: new THREE.Color('#8bb06c'),
+  rock: new THREE.Color('#767d72'),
+  rockLight: new THREE.Color('#959b8d'),
 };
+const tmp = new THREE.Color();
 
 export function tropicalColor(sandBand) {
   return (x, y, z, up, out) => {
@@ -128,13 +128,12 @@ export function tropicalColor(sandBand) {
       return out;
     }
     const sandy = sandBand(x, z, y);
-    if (up < 0.62) {
-      out.copy(PAL.rock).lerp(PAL.rockLight, smooth(2, 16, y));
-      return out;
-    }
     out.copy(PAL.grassLow).lerp(PAL.grassHigh, smooth(1, 16, y));
     if (sandy > 0) out.lerp(y < 0.6 ? PAL.sandWet : PAL.sand, sandy);
-    if (up < 0.8) out.lerp(PAL.rock, (0.8 - up) * 2.5);
+    if (y < 0.2) out.lerp(PAL.seabed, smooth(0.2, -0.4, y));
+    // barrancos viram pedra aos poucos
+    const rocky = smooth(0.82, 0.6, up);
+    if (rocky > 0) out.lerp(tmp.copy(PAL.rock).lerp(PAL.rockLight, smooth(2, 16, y)), rocky);
     return out;
   };
 }

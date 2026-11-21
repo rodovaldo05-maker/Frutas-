@@ -52,6 +52,11 @@ Redistribuir pontos: custa moedas no Mestre de Missões (grátis uma vez a cada 
 | Garantia (proposta) | A cada 50 giros sem Lendário, o próximo é Lendário garantido |
 | Jogador novo | Começa com 200 moedas (1 giro) |
 
+**Na Fase 1:** o Mercador de Frutas fica na praia da Ilha de Treino, ao lado do Trocador de
+Fragmentos. A roleta, a garantia de 50 giros, a mochila de 60, a troca por fragmentos, as
+chaves e o comer já funcionam (regras em `src/fruits/roulette.js`, testadas). Os poderes
+de cada fruta chegam com o combate.
+
 ## 4. Mochila
 
 | Regra | Valor |

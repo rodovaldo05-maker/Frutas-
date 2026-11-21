@@ -21,9 +21,9 @@
     <!-- ===== HUD ===== -->
     <div id="hud">
       <div class="player-card">
-        <div class="portrait"><img id="portrait" alt="" /><span class="level" id="txt-level">Nv. 1</span></div>
+        <div class="portrait"><img id="portrait" alt="" /><span class="level" id="txt-level">Nv. 1</span><span class="fruit-badge hidden" id="fruit-badge"><img id="fruit-badge-img" alt="" /></span></div>
         <div class="player-bars">
-          <div class="player-title"><b id="txt-name">Aprendiz</b><span>Ilha de Treino</span></div>
+          <div class="player-title"><b id="txt-name">Aprendiz</b><span id="txt-sub">Ilha de Treino</span></div>
           <div class="bar health"><i id="bar-health"></i><em data-icon="heart"><span id="txt-health">Vida: 100 / 100</span></em></div>
           <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego: 100 / 100</span></em></div>
           <div class="bar xp"><i id="bar-xp"></i><em><span id="txt-xp">Exp 0%</span></em></div>
@@ -34,6 +34,7 @@
 
       <div class="top-actions">
         <button data-btn id="btn-status" class="icon-btn" data-icon="person" aria-label="Status"><span class="badge hidden" id="status-badge"></span></button>
+        <button data-btn id="btn-bag" class="icon-btn" data-icon="bag" aria-label="Mochila"></button>
         <button data-btn id="btn-missions" class="icon-btn" data-icon="scroll" aria-label="Missões"></button>
         <button data-btn id="btn-map" class="icon-btn" data-icon="map" aria-label="Mapa"></button>
         <button data-btn id="btn-menu" class="icon-btn" data-icon="gear" aria-label="Pausa e configurações"></button>
@@ -58,17 +59,19 @@
       <div id="toasts" class="toasts"></div>
       <pre id="stats" class="stats"></pre>
       <div id="state" class="state">Parado</div>
+      <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
       <div class="hotbar">
         <div class="slot"><i>1</i></div><div class="slot"><i>2</i></div><div class="slot"><i>3</i></div><div class="slot"><i>4</i></div><div class="slot"><i>5</i></div>
       </div>
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Shift esquiva · C agachar · Ctrl correr · P status · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Shift esquiva · C agachar · Ctrl correr · U asa-delta · E falar · B mochila · P status · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
         <button data-btn id="btn-crouch" class="act crouch" data-icon="crouch" aria-label="Agachar"></button>
         <button data-btn id="btn-dash" class="act dash" data-icon="dash" aria-label="Esquiva"></button>
         <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
+        <button data-btn id="btn-glider" class="act glider on" data-icon="glider" aria-label="Asa-delta: ligar ou desligar"></button>
       </div>
     </div>
 
@@ -100,6 +103,7 @@
               <label class="check"><input type="checkbox" data-key="invertY" /> Inverter eixo vertical</label>
               <label class="check"><input type="checkbox" data-key="reduceMotion" /> Reduzir movimento da câmera</label>
               <label class="check"><input type="checkbox" data-key="showStats" /> Mostrar desempenho</label>
+              <label class="check"><input type="checkbox" data-key="gliderOn" /> Asa-delta ligada (segurar Pular caindo abre a asa)</label>
               <div class="row"><label>Botões de toque</label>
                 <div class="choice" data-choice="layout"><button data-value="padrao">Padrão</button><button data-value="canhoto">Canhoto</button></div>
               </div>
@@ -113,8 +117,10 @@
                 <tr><td>Correr (alterna)</td><td>Botão do corredor</td><td>Ctrl</td><td>Apertar analógico esquerdo</td></tr>
                 <tr><td>Pular · salto duplo · planar</td><td>Seta grande (segure caindo)</td><td>Espaço</td><td>A / ✕</td></tr>
                 <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
+                <tr><td>Asa-delta (liga/desliga)</td><td>Botão da asa</td><td>U</td><td>—</td></tr>
                 <tr><td>Agachar · deslizar · mergulhar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
-                <tr><td>Status · Missões · Mapa</td><td>Ícones no alto</td><td>P · L · M</td><td>—</td></tr>
+                <tr><td>Status · Mochila · Missões · Mapa</td><td>Ícones no alto</td><td>P · B · L · M</td><td>—</td></tr>
+                <tr><td>Falar (Mercador, Trocador)</td><td>Botão Falar</td><td>E</td><td>Y / △</td></tr>
                 <tr><td>Escalar</td><td colspan="3">Ir contra pedra escura, troncos ou barrancos</td></tr>
                 <tr><td>Agarrar borda</td><td colspan="3">Automático ao pular perto de uma borda</td></tr>
                 <tr><td>Rolamento</td><td colspan="3">Agachar logo antes de tocar o chão numa queda alta</td></tr>
@@ -144,6 +150,95 @@
             <button id="btn-respec" class="btn" data-icon="home">Redistribuir</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ===== Roleta de Frutas ===== -->
+    <div id="roulette" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="fruit">Roleta de Frutas</div>
+        <button class="close" data-close="roulette" data-icon="close" aria-label="Fechar"></button>
+        <div class="roulette-body">
+          <div class="stage">
+            <div class="stage-view" id="roulette-stage"><div class="stage-empty">Gire para ganhar uma fruta aleatória.<br />Toda fruta sorteada vai para a mochila.</div></div>
+            <div class="rarity-chips">
+              <span class="chip comum"><b>Comum 70%</b> dano normal</span>
+              <span class="chip epico"><b>Épico 25%</b> +35% dano · −20% recarga</span>
+              <span class="chip lendario"><b>Lendário 5%</b> +75% dano · −40% recarga</span>
+            </div>
+          </div>
+          <div class="side">
+            <div class="wallet big"><span data-icon="coin"><b id="r-coins">0</b></span><span data-icon="key"><b id="r-keys">0</b></span></div>
+            <div class="my-fruit" id="r-mine">Sua fruta: nenhuma</div>
+            <div class="spin-grid">
+              <button class="btn gold spin" id="spin-1">Girar ×1<small>200 moedas</small></button>
+              <button class="btn gold spin" id="spin-10">Girar ×10<small>2.000 moedas</small></button>
+              <button class="btn spin" id="spin-key-1" data-icon="key">Usar 1 chave</button>
+              <button class="btn spin" id="spin-key-10" data-icon="key">Usar 10 chaves</button>
+            </div>
+            <p class="spin-reason" id="spin-reason"></p>
+            <div class="r-actions hidden" id="r-actions">
+              <button class="btn" id="r-hold" data-icon="fruit">Segurar na mão</button>
+              <button class="btn" id="r-bag" data-icon="bag">Ver mochila</button>
+            </div>
+            <div class="pool"><span class="muted">Podem sair:</span><div id="r-pool"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Mochila ===== -->
+    <div id="bag" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="bag"><span id="bag-title">Mochila de frutas · 0/60</span></div>
+        <button class="close" data-close="bag" data-icon="close" aria-label="Fechar"></button>
+        <div class="bag-top">
+          <div class="top-tabs" id="bag-filter">
+            <button data-filter="todas" class="active">Todas</button><button data-filter="lendario">Lendário</button><button data-filter="epico">Épico</button><button data-filter="comum">Comum</button><button data-filter="fav">Favoritas</button>
+          </div>
+          <div class="wallet"><span data-icon="gem"><b id="bag-frags">0</b></span><span data-icon="key"><b id="bag-keys">0</b></span></div>
+          <div class="choice" id="bag-sort"><button data-sort="nivel" class="active">Nível</button><button data-sort="nome">Nome</button><button data-sort="data">Data</button></div>
+        </div>
+        <div class="fruit-grid" id="bag-grid"></div>
+        <div class="bag-actions" id="bag-actions">
+          <span id="bag-selected" class="muted">Toque numa fruta para ver as ações.</span>
+          <button class="btn" id="bag-hold" data-icon="fruit">Segurar</button>
+          <button class="btn gold" id="bag-eat" data-icon="check">Comer</button>
+          <button class="btn" id="bag-trade" data-icon="gem">Trocar</button>
+          <button class="btn" id="bag-fav" data-icon="star">Favoritar</button>
+          <button class="btn" id="bag-drop" data-icon="trash">Jogar fora</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Trocador de Fragmentos ===== -->
+    <div id="trader" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="gem">Trocador de Fragmentos</div>
+        <button class="close" data-close="trader" data-icon="close" aria-label="Fechar"></button>
+        <div class="trader-top">
+          <div class="wallet big"><span data-icon="gem"><b id="t-frags">0</b></span><span data-icon="key"><b id="t-keys">0</b></span></div>
+          <div class="key-progress">
+            <div class="bar xp big"><i id="t-bar"></i><em><span id="t-progress">0/10 para a próxima chave</span></em></div>
+            <div class="row-btns"><button class="btn gold" id="t-key1" data-icon="key">Criar chave (10)</button><button class="btn" id="t-keyall" data-icon="key">Criar todas</button></div>
+          </div>
+        </div>
+        <div class="row-btns">
+          <span class="chip comum"><b>Comum</b> vale 1</span><span class="chip epico"><b>Épico</b> vale 3</span><span class="chip lendario"><b>Lendário</b> vale 5</span>
+          <button class="btn" id="t-all-comum">Trocar todas as Comuns</button>
+          <button class="btn" id="t-all-epico">Trocar todas as Épicas</button>
+        </div>
+        <p class="muted small">Toque numa fruta para trocá-la.</p>
+        <div class="fruit-grid" id="t-grid"></div>
+      </div>
+    </div>
+
+    <!-- ===== Confirmação ===== -->
+    <div id="confirm" class="overlay hidden">
+      <div class="frame window narrow confirm-box">
+        <div class="frame-title" data-icon="flag">Confirmar</div>
+        <p id="confirm-text"></p>
+        <div class="row-btns"><button class="btn gold" id="confirm-yes">Confirmar</button><button class="btn" id="confirm-no">Cancelar</button></div>
       </div>
     </div>
 

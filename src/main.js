@@ -29,6 +29,10 @@ import { applyIcons, ICONS, EMBLEM } from './ui/icons.js';
 import { TRAINING, TrainingMission } from './quests/training.js';
 import { SaveSystem } from './saves/saveSystem.js';
 import { Dust } from './vfx/dust.js';
+import { buildMarket } from './world/npcs.js';
+import { fruitThumbs } from './fruits/fruitArt.js';
+import { FruitShop } from './ui/fruitShop.js';
+import { RARITIES, eat, findItem, isWaterCursed, ensureBag } from './fruits/roulette.js';
 import { maxStamina, maxHealth } from './progression/status.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
@@ -63,6 +67,8 @@ async function boot() {
   await Promise.race([document.fonts?.load('700 64px Cinzel'), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
   await setLoading('Erguendo a Ilha de Treino…', 35);
   const island = buildTrainingIsland({ scene: renderer.scene, physics });
+  const market = buildMarket({ scene: renderer.scene, physics, field: island.field, data: DATA });
+  island.signs.push(...market.signs);
   physics.world.updateSceneQueries?.();
   physics.step();
 
@@ -183,8 +189,71 @@ async function boot() {
     },
   });
   statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true }));
+  let thumbList = null;
+  const thumbs = () => (thumbList ??= fruitThumbs(renderer.renderer, DATA.fruits));
+  thumbs();
+  ensureBag(save);
+  const fruitIndex = (id) => DATA.fruits.findIndex((f) => f.id === id);
+  const fruitLabel = (it) => (it ? `${DATA.fruits[fruitIndex(it.fruit)]?.name ?? it.fruit} (${RARITIES[it.rarity].name})` : '');
+  const applyHeld = () => {
+    const it = save.held !== null ? findItem(save, save.held) : null;
+    player.setHeldFruit(it ? fruitIndex(it.fruit) : null);
+  };
+  const applyFruit = () => {
+    ctl.waterCursed = isWaterCursed(save.eaten);
+    hud.setFruit(save.eaten ? { thumb: thumbs()[fruitIndex(save.eaten.fruit)], color: RARITIES[save.eaten.rarity].color, label: fruitLabel(save.eaten) } : null);
+    if (ctl.waterCursed && (ctl.state === 'swim' || ctl.state === 'dive')) ctl.enterWater(0);
+  };
+  const shop = new FruitShop({
+    save,
+    fruits: DATA.fruits,
+    thumbs,
+    audio,
+    toast: (text, kind) => hud.toast(text, kind),
+    openModal: (id) => openModal(id),
+    closeModal: (id) => closeModal(id),
+    onChange: () => {
+      refreshProfile();
+      saveNow(true);
+    },
+    onHold: () => applyHeld(),
+    onEat: (item) => startEating(item),
+  });
+  function startEating(item) {
+    if (ctl.state !== 'ground' || animator.eat) {
+      hud.toast('Para comer, fique com os pés no chão.');
+      return;
+    }
+    save.held = item.uid;
+    applyHeld();
+    ctl.busyT = 3.2;
+    ctl.vel.set(0, 0, 0);
+    animator.startEat({
+      fruit: player.heldFruit,
+      onDone: () => {
+        const r = eat(save, item.uid);
+        player.setHeldFruit(null);
+        applyFruit();
+        refreshProfile();
+        if (r) {
+          const cursed = isWaterCursed(r.eaten);
+          hud.toast(`Você comeu a fruta ${fruitLabel(r.eaten)}!`, r.eaten.rarity === 'lendario' ? 'gold' : 'good');
+          if (cursed) setTimeout(() => hud.toast('Cuidado: agora a água funda faz você afundar.', 'bad'), 1200);
+          audio.play('base', 'wing', 0.9);
+        }
+        saveNow(true);
+      },
+    });
+  }
+  applyHeld();
+  applyFruit();
 
-  const refreshProfile = () => hud.setProfile({ ...save, xpRatio: xpProgress(save), xpNeed: xpToNext(save.level) });
+  const refreshProfile = () => {
+    hud.setProfile({ ...save, xpRatio: xpProgress(save), xpNeed: xpToNext(save.level), fruitLabel: fruitLabel(save.eaten), fruitColor: save.eaten ? RARITIES[save.eaten.rarity].color : '' });
+    if (modals.includes('roulette')) shop.renderRoulette();
+    if (modals.includes('bag')) shop.renderBag();
+    if (modals.includes('trader')) shop.renderTrader();
+  };
   function refreshMission() {
     const st = save.missions.treino;
     const next = mission.next();
@@ -218,6 +287,11 @@ async function boot() {
     if (key === 'volume') audio.setVolume(value);
     if (key === 'layout') document.body.classList.toggle('lefty', value === 'canhoto');
     if (key === 'buttonScale') document.documentElement.style.setProperty('--btn', value);
+    if (key === 'gliderOn') {
+      ctl.unlocks.glide = !!value && save.unlocks.glide !== false;
+      if (!value && ctl.state === 'glide') ctl.setState('air');
+      $('btn-glider').classList.toggle('on', !!value);
+    }
   };
   for (const [k, v] of Object.entries(settings)) applySetting(k, v);
 
@@ -226,8 +300,15 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu') },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider') },
   });
+  input.onToggleGlider = () => {
+    settings.gliderOn = !settings.gliderOn;
+    applySetting('gliderOn', settings.gliderOn);
+    menu.sync();
+    saves.saveSettings(settings);
+    hud.toast(settings.gliderOn ? 'Asa-delta ligada: segure Pular caindo para planar' : 'Asa-delta desligada');
+  };
   input.onSprintChange = (on) => hud.setSprint(on);
   input.onToggleDebug = () => {
     settings.showStats = !settings.showStats;
@@ -267,6 +348,9 @@ async function boot() {
     if (id === 'worldmap') mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
     if (id === 'missions') renderMissionList();
     if (id === 'status') statusScreen.render();
+    if (id === 'roulette') shop.renderRoulette();
+    if (id === 'bag') shop.renderBag();
+    if (id === 'trader') shop.renderTrader();
     if (id === 'pause' && mode === 'game') saveNow(true);
     setGameActive();
   }
@@ -276,6 +360,7 @@ async function boot() {
     if (i >= 0) modals.splice(i, 1);
     if (id === 'pause') menu.setOpen(false);
     else $(id).classList.add('hidden');
+    shop.onModalClosed(id);
     setGameActive();
   }
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeModal(b.dataset.close));
@@ -305,6 +390,14 @@ async function boot() {
   };
   $('btn-missions').addEventListener('click', () => openModal('missions'));
   $('btn-status').addEventListener('click', () => openModal('status'));
+  $('btn-bag').addEventListener('click', () => openModal('bag'));
+  // falar com o NPC perto
+  let nearNpc = null;
+  const talk = () => {
+    if (!nearNpc || modals.length || mode !== 'game') return;
+    openModal(nearNpc.id === 'mercador' ? 'roulette' : 'trader');
+  };
+  $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
   $('btn-untrack').addEventListener('click', () => {
     save.missions.treino.tracked = false;
@@ -315,6 +408,8 @@ async function boot() {
     if (e.code === 'KeyM') modals.includes('worldmap') ? closeModal('worldmap') : !modals.length && openModal('worldmap');
     if (e.code === 'KeyL') modals.includes('missions') ? closeModal('missions') : !modals.length && openModal('missions');
     if (e.code === 'KeyP') modals.includes('status') ? closeModal('status') : !modals.length && openModal('status');
+    if (e.code === 'KeyB') modals.includes('bag') ? closeModal('bag') : !modals.length && openModal('bag');
+    if (e.code === 'KeyE') talk();
   });
 
   // janela de missões
@@ -442,6 +537,7 @@ async function boot() {
       if (mode === 'title') ctl.input = titleIdle;
       animator.update(animDt, ctl, view);
       dust.update(animDt);
+      market.update(mode === 'title' ? dt : animDt, view);
       if (mode === 'title') titleCamera(clock);
       else cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
       const dv = window.__game?.debugView; // vista livre para testes e capturas
@@ -477,6 +573,13 @@ async function boot() {
         ctl, signs: island.signs, underwater: cam.underwater,
         stats: { fps: quality.fps, frameMs: quality.frameMs, quality: renderer.qualityId, scale: renderer.resolutionScale, calls: info.calls, triangles: info.triangles },
       });
+      // botão Falar perto do Mercador e do Trocador
+      const npc = ctl.state === 'ground' && !modals.length && !animator.eat ? market.nearest(ctl.pos) : null;
+      if (npc !== nearNpc) {
+        nearNpc = npc;
+        $('btn-interact').classList.toggle('hidden', !npc);
+        if (npc) $('interact-text').textContent = `Falar com o ${npc.name}`;
+      }
       minimapTimer -= dt;
       if (minimapTimer <= 0) {
         minimapTimer = 0.1;
@@ -552,7 +655,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit,
     start: startGame,
     saveNow,
     openModal,

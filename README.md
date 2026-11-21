@@ -18,6 +18,13 @@ Experiência, níveis (3 pontos de status por nível) e a tela de Status: cada p
 Força soma 1 de fôlego, cada ponto de Defesa soma 6 de vida. O Correr dobra a
 velocidade de andar.
 
+Roleta de frutas com o Mercador de Frutas (×1 e ×10, com moedas ou chaves; Comum 70%,
+Épico 25%, Lendário 5%; Míticas com metade da chance; garantia de Lendário em 50 giros),
+Mochila de 60 frutas, Trocador de Fragmentos (Comum 1, Épico 3, Lendário 5; 10 fragmentos
+= 1 chave), fruta viva na mão, comer com a animação do laboratório e a fraqueza à água
+(usuário de fruta afunda, menos Maré e Geada). Chão suave com textura, sem linhas de
+grade, e asa-delta nova com botão para ligar e desligar.
+
 Interfaces no estilo dourado do jogo (doc 10): menu inicial com logo e o personagem ao
 vivo, HUD com retrato, vida, fôlego, moedas, fragmentos, minimapa com bússola e
 rastreador de missão, botões de ação com ícones, janelas de Pausa, Missões, Mapa da
@@ -54,7 +61,9 @@ npm run apk        # build + sync + gradle assembleDebug
 | Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
 | Esquiva | Esquiva | Shift | B / ◯ |
 | Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
-| Status · Missões · Mapa | Ícones no alto | P · L · M | — |
+| Status · Mochila · Missões · Mapa | Ícones no alto | P · B · L · M | — |
+| Falar (Mercador, Trocador) | Botão Falar | E | Y / △ |
+| Asa-delta (liga/desliga) | Botão da asa | U | — |
 | Pausa | Engrenagem | Esc | Start |
 
 ## Estrutura
@@ -72,6 +81,9 @@ src/movement    controlador do personagem, regras e números
 src/controls    toque, teclado, mouse e controle
 src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
 src/quests      missão de treino
+src/fruits      roleta, mochila, trocador e modelos das frutas
+src/progression nível, experiência e status
+src/vfx         poeira dos passos
 src/world       construções, placas e natureza (árvores, pedras)
 src/saves       salvamento local (IndexedDB) com versão e migração
 src/optimization qualidade automática

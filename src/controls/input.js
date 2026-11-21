@@ -22,6 +22,7 @@ export class Input {
     this.onPause = () => {};
     this.onToggleDebug = () => {};
     this.onSprintChange = () => {};
+    this.onToggleGlider = () => {};
     this.usingTouch = window.matchMedia('(pointer: coarse)').matches;
     this.stick = stick;
     this.buttons = buttons;
@@ -44,6 +45,7 @@ export class Input {
       if (c === 'KeyC') this.press('crouch');
       if (c === 'ControlLeft' || c === 'ControlRight') this.toggleSprint();
       if (c === 'Escape') this.onPause();
+      if (c === 'KeyU') this.onToggleGlider();
       if (c === 'F3') {
         e.preventDefault();
         this.onToggleDebug();
@@ -162,6 +164,7 @@ export class Input {
     hold(buttons.crouch, () => this.press('crouch'), () => (this.held.crouch = false));
     hold(buttons.sprint, () => this.toggleSprint());
     hold(buttons.menu, () => this.onPause());
+    if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
   }
 
   // ===== Controle =====

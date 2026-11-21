@@ -21,7 +21,7 @@ export function stateLabel(ctl) {
   return {
     climb: 'Escalando', hang: 'Pendurado na borda', mantle: 'Subindo', swim: ctl.speed > 0.4 ? 'Nadando' : 'Boiando',
     dive: 'Mergulhando', glide: 'Planando', wallrun: 'Correndo na parede', slide: 'Deslizando', slopeSlide: 'Escorregando',
-    roll: 'Rolamento', faint: 'Desmaiado',
+    roll: 'Rolamento', faint: 'Desmaiado', sink: 'Afundando (usuário de fruta)',
   }[s] || s;
 }
 
@@ -49,13 +49,16 @@ export class Hud {
     this.el.portrait.src = url;
   }
 
-  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0, statusPoints = 0, xpRatio = 0 }) {
+  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0, statusPoints = 0, xpRatio = 0, fruitLabel = '', fruitColor = '' }) {
     this.el.level.textContent = `Nv. ${level}`;
     this.el.xp.style.transform = `scaleX(${xpRatio})`;
     this.el.xpText.textContent = `Exp ${Math.floor(xpRatio * 100)}%`;
     this.el.badge.classList.toggle('hidden', statusPoints < 1);
     this.el.badge.textContent = statusPoints > 99 ? '99+' : String(statusPoints);
     this.el.name.textContent = title;
+    const sub = $('txt-sub');
+    sub.textContent = fruitLabel ? `Fruta ${fruitLabel}` : 'Ilha de Treino';
+    sub.style.color = fruitColor || '';
     this.el.coins.textContent = coins.toLocaleString('pt-BR');
     this.el.frags.textContent = fragments.toLocaleString('pt-BR');
   }
@@ -75,6 +78,16 @@ export class Hud {
     p.classList.remove('level-up');
     void p.offsetWidth; // reinicia a animação
     p.classList.add('level-up');
+  }
+
+  // fruta comida no retrato (com a cor do nível) e no título
+  setFruit(info) {
+    const badge = $('fruit-badge');
+    badge.classList.toggle('hidden', !info);
+    if (!info) return;
+    $('fruit-badge-img').src = info.thumb;
+    badge.style.setProperty('--r', info.color);
+    badge.title = info.label;
   }
 
   setSprint(on) {

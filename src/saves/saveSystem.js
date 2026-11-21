@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS = {
   volume: 0.8,
   layout: 'padrao',
   buttonScale: 1,
+  gliderOn: true, // asa-delta: segurar Pular caindo abre a asa
 };
 
 export function newSave() {
@@ -35,6 +36,13 @@ export function newSave() {
     xp: 0,
     statusPoints: 0,
     freeRespec: true, // redistribuir é grátis uma vez (doc 09)
+    bag: [], // mochila de frutas (doc 09, seção 4)
+    keys: 0,
+    pity: 0, // giros seguidos sem Lendário
+    nextUid: 1,
+    held: null, // fruta na mão (uid)
+    eaten: null, // fruta comida { fruit, rarity }
+
     status: newStatus(), // Força, Defesa, Fruta, Espada, Vitalidade
     missions: {},
   };
@@ -62,6 +70,11 @@ export function migrate(save) {
   out.status = normalizeStatus(out.status);
   for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
   if (!Array.isArray(out.visited)) out.visited = [];
+  if (!Array.isArray(out.bag)) out.bag = [];
+  for (const k of ['keys', 'pity']) if (!Number.isFinite(out[k])) out[k] = 0;
+  if (!Number.isFinite(out.nextUid)) out.nextUid = 1 + out.bag.reduce((m, it) => Math.max(m, it.uid || 0), 0);
+  if (out.held !== null && !out.bag.some((it) => it.uid === out.held)) out.held = null;
+
   return out;
 }
 

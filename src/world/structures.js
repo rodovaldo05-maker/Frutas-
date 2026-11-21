@@ -13,6 +13,8 @@ export const STYLES = {
   muro: { color: '#dcd2b8', top: '#e9e1c9', climbable: false, material: 'pedra', tile: [0.95, 0.48], offset: true, jitter: 0.06 },
   rampa: { color: '#c9b78a', top: '#dbcb9c', climbable: false, material: 'pedra', tile: [1.1, 1.1], offset: false, jitter: 0.08 },
   trepadeira: { color: '#56804c', top: '#6f9a5f', climbable: true, material: 'planta', tile: [0.8, 0.8], offset: true, jitter: 0.2 },
+  lonaRoxa: { color: '#5b2a86', top: '#6b3aa0', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.02 },
+  lonaOuro: { color: '#e0a83a', top: '#f2c14e', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.02 },
 };
 
 const FACES = [

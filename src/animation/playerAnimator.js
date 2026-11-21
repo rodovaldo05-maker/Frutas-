@@ -9,12 +9,12 @@ import * as THREE from 'three';
 import { FRUTOMotion } from './fruto-motion.js';
 import { FRUTOBalance } from './fruto-balance.js';
 import { MOVE } from '../movement/config.js';
-import { clamp, damp, lerp, smooth } from '../core/math.js';
+import { clamp, damp, lerp, smooth, wrapAngle } from '../core/math.js';
 
 const motion = FRUTOMotion;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const SIDES = [['E', 1], ['D', -1]];
-const BLEND = { ground: 0.16, air: 0.14, climb: 0.2, hang: 0.16, mantle: 0.12, swim: 0.3, dive: 0.25, glide: 0.22, wallrun: 0.14, slide: 0.12, slopeSlide: 0.18, roll: 0.08, faint: 0.2 };
+const BLEND = { sink: 0.3, ground: 0.16, air: 0.14, climb: 0.2, hang: 0.16, mantle: 0.12, swim: 0.3, dive: 0.25, glide: 0.22, wallrun: 0.14, slide: 0.12, slopeSlide: 0.18, roll: 0.08, faint: 0.2 };
 
 export class PlayerAnimator {
   constructor({ player, data, groundAt, audio, dust = null }) {
@@ -128,7 +128,7 @@ export class PlayerAnimator {
       if (category !== 'ground') this.balance.reset();
     }
 
-    const inWater = state === 'swim' || state === 'dive';
+    const inWater = state === 'swim' || state === 'dive' || state === 'sink';
     this.swimBlend = lerp(this.swimBlend, inWater ? 1 : 0, damp(inWater ? 6 : 12, dt));
     const maxSpeed = state === 'swim' ? MOVE.swim : ctl.input?.sprint ? MOVE.sprint : MOVE.run;
     const groundLike = state === 'ground' || state === 'air';
@@ -137,8 +137,13 @@ export class PlayerAnimator {
     if (state === 'ground') this.walkPhase += dt * speed * lerp(2.9, 2.28, this.runBlend);
     if (state === 'wallrun') this.walkPhase += dt * speed * 2.28;
     if (inWater) this.swimPhase += dt * lerp(2.62, 5.24, clamp(this.stride));
-    this.glide = lerp(this.glide, state === 'glide' ? 1 : 0, damp(state === 'glide' ? 7 : 10, dt));
-    this.player.setGlider(this.glide);
+    this.glide = lerp(this.glide, state === 'glide' ? 1 : 0, damp(state === 'glide' ? 6 : 9, dt));
+    // inclinação nas curvas pela velocidade de giro
+    const turn = dt > 0 ? wrapAngle(ctl.yaw - (this.prevYaw ?? ctl.yaw)) / dt : 0;
+    this.prevYaw = ctl.yaw;
+    this.bank = lerp(this.bank ?? 0, clamp(-turn * 0.3, -0.55, 0.55) * (state === 'glide' ? 1 : 0), damp(5, dt));
+    this.player.setGlider(this.glide, !!ctl.unlocks?.glide);
+    this.player.glider.group.rotation.z = this.bank;
     this.hurt = Math.max(0, this.hurt - dt);
 
     let grounded = false;
@@ -162,6 +167,9 @@ export class PlayerAnimator {
       case 'swim':
       case 'dive':
         this.poseSwim(ctl, t, state === 'dive');
+        break;
+      case 'sink':
+        this.poseSink(ctl, t);
         break;
       case 'glide':
         this.poseGlide(ctl, t);
@@ -199,6 +207,15 @@ export class PlayerAnimator {
       });
     } else this.balance.reset();
 
+    this.updateEat(dt);
+    const fruit = this.player.heldFruit;
+    if (fruit && !this.eat) {
+      const base = fruit.userData.baseScale ?? 0.72;
+      fruit.rotation.y = Math.sin(t * 1.6) * 0.45;
+      fruit.rotation.z = Math.sin(t * 2.3) * 0.08;
+      fruit.position.y = Math.abs(Math.sin(t * 3.1)) * 0.04;
+      fruit.scale.set(base * (1 + 0.04 * Math.sin(t * 2.6)), base * (1 - 0.04 * Math.sin(t * 2.6)), base);
+    }
     this.updateFace(dt, ctl);
     this.updateSounds(ctl, speed);
     this.updateBlob(ctl, root);
@@ -208,10 +225,17 @@ export class PlayerAnimator {
   poseGround(dt, ctl, t) {
     const body = this.body;
     const dash = ctl.dash;
+    const eating = this.eat;
     motion.apply(THREE, body, this.data, {
-      id: dash ? dash.clip : 'idle', t: dash ? dash.t : t, clock: t, phase: this.walkPhase,
-      gait: dash ? 0 : this.stride, runBlend: this.runBlend, swimBlend: 0, air: 0, landing: ctl.landing, dashDirection: dash?.relative,
+      id: eating ? 'comer' : dash ? dash.clip : 'idle', t: eating ? eating.t : dash ? dash.t : t, clock: t, phase: this.walkPhase,
+      gait: eating || dash ? 0 : this.stride, runBlend: this.runBlend, swimBlend: 0, air: 0, landing: ctl.landing, dashDirection: dash?.relative,
     });
+    // segurando uma fruta parado: o antebraço sobe para mostrá-la
+    if (this.player.heldFruit && !eating && !dash) {
+      const show = clamp(1 - ctl.speed / 1.2) * (1 - ctl.crouchBlend);
+      body.joints.antebraco_D.rotation.x -= 0.75 * show;
+      body.joints.braco_D.rotation.x -= 0.25 * show;
+    }
     // correndo rápido o corpo inclina mais e os braços trabalham mais
     const fast = dash ? 0 : clamp((ctl.speed - 5.4) / 2.2) * (1 - ctl.crouchBlend);
     if (fast > 0.01) {
@@ -362,22 +386,60 @@ export class PlayerAnimator {
     }
   }
 
+  // Usuário de fruta afundando: bate os braços sem conseguir subir
+  poseSink(ctl, t) {
+    const body = this.body;
+    const j = body.joints;
+    motion.apply(THREE, body, this.data, { id: 'tread', t, clock: t, phase: this.swimPhase, gait: 0.2, swimBlend: this.swimBlend });
+    const k = Math.sin(t * 9);
+    for (const [side, sign] of SIDES) {
+      j['braco_' + side].rotation.z += sign * (1.2 + 0.35 * k * sign);
+      j['braco_' + side].rotation.x -= 0.6 + 0.3 * Math.sin(t * 7 + sign);
+    }
+    j.cabeca.rotation.x -= 0.4;
+  }
+
+  // Começa a animação de comer do laboratório; morde em 0,98 s, 1,4 s e 1,82 s
+  startEat({ fruit, onDone }) {
+    this.eat = { t: 0, fruit, onDone, bites: 0 };
+  }
+
+  updateEat(dt) {
+    const e = this.eat;
+    if (!e) return;
+    e.t += dt;
+    const bites = [0.98, 1.4, 1.82].filter((at) => e.t >= at).length;
+    if (bites !== e.bites) {
+      e.bites = bites;
+      e.fruit?.userData.setState?.(bites);
+      this.audio?.play('base', 'step', 0.3);
+    }
+    if (e.t >= 3.12) {
+      this.eat = null;
+      e.onDone?.();
+    }
+  }
+
+  // Piloto deitado sob a asa-delta, segurando a barra de controle; inclina nas curvas
   poseGlide(ctl, t) {
     const body = this.body;
     const j = body.joints;
     motion.apply(THREE, body, this.data, { id: 'idle', t, clock: t, phase: this.walkPhase, gait: 0, air: 1, swimBlend: 0 });
     const g = this.glide;
-    const flutter = Math.sin(t * 11) * 0.04;
     for (const [side, sign] of SIDES) {
-      j['braco_' + side].rotation.set(-0.2 * g, 0, sign * (1.35 * g + flutter));
-      j['antebraco_' + side].rotation.set(-0.15 * g, 0, sign * 0.1 * g);
-      this.legIK(side, V(sign * 0.36, 0.3, -0.18), 0.5);
+      this.legIK(side, V(sign * 0.22, 0.32, -0.32 + 0.04 * Math.sin(t * 2.2 + sign)), 0.6);
     }
-    j.cabeca.rotation.x -= 0.65 * g;
-    j.tronco.rotation.x -= 0.12 * g;
-    this.rotateAbout(V(1, 0, 0), 1.0 * g, V(0, 2.2, 0));
-    // inclina nas curvas
-    this.rotateAbout(V(0, 0, 1), clamp(-this.acceleration.x * Math.cos(ctl.yaw) + this.acceleration.z * Math.sin(ctl.yaw), -6, 6) * 0.05 * g, V(0, 2.2, 0));
+    j.cabeca.rotation.x -= 0.75 * g;
+    j.tronco.rotation.x -= 0.1 * g;
+    this.rotateAbout(V(1, 0, 0), 1.12 * g, V(0, 2.2, 0));
+    this.rotateAbout(V(0, 0, 1), this.bank * 0.6 * g, V(0, 2.6, 0));
+    body.root.updateMatrixWorld(true);
+    // mãos na barra (a barra fica em y 2,9 e z 1,2 com a asa aberta)
+    const e = g * g * (3 - 2 * g);
+    for (const [side, sign] of SIDES) {
+      const target = V(sign * 0.5, lerp(2.4, 3.0, e) - this.bank * sign * 0.25, lerp(0.7, 1.08, e));
+      this.armIK(side, target, V(sign * 1.5, 2.2, 0.4), -0.9);
+    }
   }
 
   poseWallRun(ctl, t) {
@@ -429,6 +491,8 @@ export class PlayerAnimator {
     const s = ctl.state;
     let expression = 'neutro';
     if (s === 'faint') expression = 'fechado';
+    else if (s === 'sink') expression = ctl.underwater ? 'dor' : 'susto';
+    else if (this.eat) expression = this.eat.t > 0.9 && this.eat.t < 2.2 ? 'fechado' : 'feliz';
     else if (this.hurt > 0) expression = 'dor';
     else if (s === 'air' && ctl.fallTime > MOVE.freeFallTime * 0.7) expression = 'susto';
     else if (s === 'dive' && ctl.submerged > 0.9) expression = ctl.breath < 8 ? 'dor' : 'folego';

@@ -1,3 +1,5 @@
+import { newStatus, normalizeStatus } from '../progression/status.js';
+
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
 
@@ -30,6 +32,8 @@ export function newSave() {
     title: 'Aprendiz',
     coins: 200, // jogador novo começa com um giro da roleta (doc 09)
     fragments: 0,
+    statusPoints: 0,
+    status: newStatus(), // Força, Defesa, Fruta, Espada, Vitalidade
     missions: {},
   };
 }
@@ -53,7 +57,8 @@ export function migrate(save) {
   const base = newSave();
   const out = { ...base, ...s, unlocks: { ...base.unlocks, ...(s.unlocks || {}) } };
   if (!out.missions || typeof out.missions !== 'object') out.missions = {};
-  for (const k of ['coins', 'fragments', 'level']) if (!Number.isFinite(out[k])) out[k] = base[k];
+  out.status = normalizeStatus(out.status);
+  for (const k of ['coins', 'fragments', 'level', 'statusPoints']) if (!Number.isFinite(out[k])) out[k] = base[k];
   return out;
 }
 

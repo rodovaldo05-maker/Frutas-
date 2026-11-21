@@ -1247,7 +1247,7 @@ export class CharacterController {
   snapshot() {
     return {
       x: +this.pos.x.toFixed(3), y: +this.pos.y.toFixed(3), z: +this.pos.z.toFixed(3), yaw: +this.yaw.toFixed(3),
-      health: Math.round(this.health), stamina: Math.round(this.stamina.value),
+      health: Math.round(this.health), stamina: Math.round(this.stamina.value), staminaMax: this.stamina.max,
       safe: { x: +this.safe.x.toFixed(3), y: +this.safe.y.toFixed(3), z: +this.safe.z.toFixed(3) },
     };
   }

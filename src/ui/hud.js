@@ -87,7 +87,7 @@ export class Hud {
     const el = this.el;
     // barras (todo quadro: só transform/opacity)
     el.health.style.transform = `scaleX(${ctl.health / ctl.maxHealth})`;
-    const st = ctl.stamina.value / 100;
+    const st = ctl.stamina.value / ctl.stamina.max;
     el.stamina.style.transform = `scaleX(${st})`;
     el.stamina.classList.toggle('tired', ctl.stamina.exhausted);
     const breath = ctl.breath / MOVE.breath;
@@ -106,7 +106,7 @@ export class Hud {
     if (this.timer > 0) return;
     this.timer = 0.1;
     el.healthText.textContent = `Vida: ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
-    el.staminaText.textContent = `Fôlego: ${Math.round(ctl.stamina.value)} / 100`;
+    el.staminaText.textContent = `Fôlego: ${Math.round(ctl.stamina.value)} / ${Math.round(ctl.stamina.max)}`;
     el.state.textContent = stateLabel(ctl);
 
     // placa mais próxima

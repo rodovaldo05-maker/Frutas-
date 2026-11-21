@@ -420,7 +420,7 @@ export class PlayerAnimator {
     else if (this.hurt > 0) expression = 'dor';
     else if (s === 'air' && ctl.fallTime > MOVE.freeFallTime * 0.7) expression = 'susto';
     else if (s === 'dive' && ctl.submerged > 0.9) expression = ctl.breath < 8 ? 'dor' : 'folego';
-    else if (['climb', 'hang', 'mantle'].includes(s) || (ctl.stamina.value < 25 && ctl.speed > 1)) expression = 'esforco';
+    else if (['climb', 'hang', 'mantle'].includes(s) || (ctl.stamina.value < ctl.stamina.max * 0.25 && ctl.speed > 1)) expression = 'esforco';
     else if (s === 'glide' || s === 'wallrun' || s === 'slide') expression = 'feliz';
     const look = { x: 0, y: 0 };
     if (s === 'climb' || s === 'hang') look.y = 0.8;

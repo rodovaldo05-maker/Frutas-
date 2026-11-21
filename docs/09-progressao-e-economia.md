@@ -13,11 +13,13 @@
 
 | Status | Efeito por ponto |
 |---|---|
-| Força | +3% de dano corpo a corpo e de estilos |
+| Força | +3% de dano corpo a corpo e de estilos; +1 de fôlego máximo |
 | Defesa | +6 de vida máxima e +0,5 de defesa |
 | Fruta | +3% de dano das habilidades de fruta |
 | Espada | +3% de dano com armas (sistema de armas é futuro) |
 | Vitalidade | +4 de energia e fôlego máximos |
+
+Fôlego máximo = 100 + 1 × Força + 4 × Vitalidade (ex.: 300 pontos em Força → 400 de fôlego).
 
 Redistribuir pontos: custa moedas no Mestre de Missões (grátis uma vez a cada mar).
 

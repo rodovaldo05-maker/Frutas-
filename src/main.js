@@ -28,6 +28,7 @@ import { renderPortrait } from './ui/portrait.js';
 import { applyIcons, ICONS, EMBLEM } from './ui/icons.js';
 import { TRAINING, TrainingMission } from './quests/training.js';
 import { SaveSystem } from './saves/saveSystem.js';
+import { maxStamina } from './progression/status.js';
 import { createFruitAudio } from './audio/fruto-audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -127,6 +128,10 @@ async function boot() {
       default:
     }
   }
+
+  // fôlego máximo vem dos status (cada ponto de Força soma 1)
+  const applyStatus = () => ctl.stamina.setMax(maxStamina(save.status));
+  applyStatus();
 
   // posição salva ou início da ilha
   const spawn = () => {
@@ -493,7 +498,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus,
     start: startGame,
     saveNow,
     openModal,

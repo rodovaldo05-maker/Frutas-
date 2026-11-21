@@ -88,7 +88,7 @@ export const MOVE = {
 };
 
 export const STAMINA = {
-  max: 100,
+  max: 100, // base; cada ponto de Força soma 1 e de Vitalidade soma 4 (src/progression/status.js)
   regen: 25,
   regenDelay: 1,
   sprint: 12, // por segundo
@@ -99,7 +99,7 @@ export const STAMINA = {
   doubleJump: 15,
   swimSprint: 10,
   wallRun: 20,
-  exhaustedRecover: 30, // precisa recuperar até aqui depois de zerar
+  exhaustedRecover: 30, // % do máximo que precisa voltar depois de zerar
 };
 
 // Habilidades de mobilidade desbloqueáveis (doc 04). Na ilha de teste vêm liberadas.

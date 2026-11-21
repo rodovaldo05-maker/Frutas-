@@ -35,12 +35,21 @@ export class JumpGate {
   }
 }
 
-// Fôlego: gastar trava a recuperação por 1 s; zerado, precisa recuperar até 30
+// Fôlego: gastar trava a recuperação por 1 s; zerado, precisa recuperar 30% do máximo.
+// O máximo cresce com os status (Força +1 por ponto, Vitalidade +4).
 export class Stamina {
-  constructor() {
-    this.value = STAMINA.max;
+  constructor(max = STAMINA.max) {
+    this.max = max;
+    this.value = max;
     this.idle = 0;
     this.exhausted = false;
+  }
+
+  // Troca o máximo mantendo a mesma proporção da barra
+  setMax(max) {
+    const ratio = this.max > 0 ? this.value / this.max : 1;
+    this.max = Math.max(1, max);
+    this.value = Math.min(this.max, ratio * this.max);
   }
 
   // gasto contínuo (por segundo)
@@ -66,8 +75,8 @@ export class Stamina {
 
   update(dt) {
     this.idle += dt;
-    if (this.idle >= STAMINA.regenDelay) this.value = Math.min(STAMINA.max, this.value + STAMINA.regen * dt);
-    if (this.exhausted && this.value >= STAMINA.exhaustedRecover) this.exhausted = false;
+    if (this.idle >= STAMINA.regenDelay) this.value = Math.min(this.max, this.value + STAMINA.regen * dt);
+    if (this.exhausted && this.value >= this.max * (STAMINA.exhaustedRecover / 100)) this.exhausted = false;
   }
 }
 

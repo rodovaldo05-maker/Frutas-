@@ -247,7 +247,7 @@ Abas roláveis horizontalmente no celular; LB/RB no controle; teclas de atalho n
 
 Modelo 3D girável à esquerda; à direita: nível e experiência, pontos disponíveis, os 5
 status com **+1 / +10 / +máx** e prévia do efeito ("Força 40 → 41: dano corpo a corpo
-+120% → +123%"), botão Redistribuir. Abaixo: Vontade e estilo equipados.
++120% → +123%, fôlego 140 → 141"), botão Redistribuir. Abaixo: Vontade e estilo equipados.
 
 ### 5.2 Mochila
 

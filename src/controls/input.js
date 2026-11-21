@@ -12,7 +12,7 @@ export class Input {
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
     this.held = { jump: false, crouch: false, block: false };
-    this.pressed = { jump: false, crouch: false, dash: false, attack: false };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1 };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = false;
     this.stillTime = 0;
@@ -48,6 +48,7 @@ export class Input {
       if (c === 'Escape') this.onPause();
       if (c === 'KeyU') this.onToggleGlider();
       if (c === 'KeyJ' || c === 'KeyF') this.pressed.attack = true;
+      if (c === 'Digit1' || c === 'Digit2' || c === 'Digit3') this.pressed.skill = Number(c.slice(-1)) - 1;
       if (c === 'KeyK' || c === 'KeyQ') this.setBlock('key', true);
       if (c === 'F3') {
         e.preventDefault();
@@ -189,6 +190,7 @@ export class Input {
     hold(buttons.menu, () => this.onPause());
     if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
     if (buttons.attack) hold(buttons.attack, () => (this.pressed.attack = true));
+    (buttons.skills || []).forEach((el, i) => el && hold(el, () => (this.pressed.skill = i)));
     if (buttons.block) hold(buttons.block, () => this.setBlock('touch', true), () => this.setBlock('touch', false));
   }
 
@@ -216,6 +218,9 @@ export class Input {
       if (edge(11)) this.press('crouch');
       if (edge(10)) this.toggleSprint();
       if (edge(2) || edge(7)) this.pressed.attack = true;
+      if (edge(14)) this.pressed.skill = 0;
+      if (edge(12)) this.pressed.skill = 1;
+      if (edge(15)) this.pressed.skill = 2;
     }
     this.setBlock('pad', this.enabled && (btn(5) || btn(6)));
     if (edge(9)) this.onPause();
@@ -277,10 +282,12 @@ export class Input {
       crouchPressed: this.pressed.crouch,
       dashPressed: this.pressed.dash,
       attackPressed: this.pressed.attack,
+      skill: this.pressed.skill,
       block: this.held.block,
       sprint: this.sprint,
     };
     this.pressed.jump = this.pressed.crouch = this.pressed.dash = this.pressed.attack = false;
+    this.pressed.skill = -1;
     return out;
   }
 

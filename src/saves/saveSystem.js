@@ -1,5 +1,6 @@
 import { newTraining, normalizeTraining } from '../progression/training.js';
 import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../progression/status.js';
+import { normalizeDomain } from '../progression/domain.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -40,6 +41,7 @@ export function newSave() {
     freeRespec: true, // redistribuir é grátis uma vez (doc 09)
     status: newStatus(), // pontos distribuídos: Força, Defesa, Fruta, Espada, Vitalidade
     training: newTraining(), // atributos treinados pela prática, não distribuíveis (doc 12)
+    domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,
     pity: 0, // giros seguidos sem atingir a garantia da roleta
@@ -88,6 +90,7 @@ export function migrate(save) {
   if (!out.missions || typeof out.missions !== 'object') out.missions = {};
   out.training = normalizeTraining(out.training);
   out.status = normalizeStatus(out.status);
+  out.domain = normalizeDomain(out.domain);
   for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
   // pontos nunca somem: distribuídos + livres não podem ficar abaixo do que o nível dá
   const spent = STATUS_KEYS.reduce((n, k) => n + out.status[k], 0);

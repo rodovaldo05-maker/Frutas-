@@ -118,6 +118,7 @@ export class Dummy {
 
   receiveHit({ attacker, attack, damage }) {
     this.hits += 1;
+    this.lastHit = attack.id;
     this.wobbleV += (attack.heavy ? 5.5 : 3.2);
     this.wobbleDir = Math.atan2(this.pos.x - attacker.x, this.pos.z - attacker.z);
     return { result: 'hit', damage };
@@ -166,6 +167,12 @@ export class Recruta {
     this.clock = Math.random() * 10;
     this.hurtAmount = 0;
     this.strafe = Math.random() < 0.5 ? 1 : -1;
+    // efeitos dos poderes das frutas
+    this.frozen = 0;
+    this.burn = 0;
+    this.burnTick = 0;
+    this.lift = 0; // altura do lançamento
+    this.liftV = 0;
     if (!visual) return;
     const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
     for (const [part, mesh] of Object.entries(body.meshes)) mesh.material.color.set(def.look[PART[part] || 'skin']);
@@ -195,8 +202,9 @@ export class Recruta {
   }
 
   // ===== Golpe recebido do jogador =====
-  receiveHit({ attacker, attack, damage }) {
+  receiveHit({ attacker, attack, damage, effect = null }) {
     if (!this.alive) return null;
+    if (effect) this.applyEffect(effect, attacker);
     this.recentHits += 1;
     this.recentT = 2;
     // às vezes levanta a guarda depois de apanhar seguido
@@ -208,8 +216,8 @@ export class Recruta {
     if (r.result === 'break') this.set('stun');
     this.health = Math.max(0, this.health - r.damage);
     const away = Math.atan2(this.pos.x - attacker.x, this.pos.z - attacker.z);
-    const k = attack.knock / 0.22;
-    this.knock.set(Math.sin(away) * k, 0, Math.cos(away) * k);
+    const k = this.frozen > 0 ? 0 : attack.knock / 0.22;
+    if (!effect?.pull) this.knock.set(Math.sin(away) * k, 0, Math.cos(away) * k);
     this.hurtAmount = 1;
     this.attack = null;
     if (this.health <= 0) {
@@ -217,6 +225,9 @@ export class Recruta {
       this.guard.holding = false;
       this.set('down');
       this.onDefeated?.(this);
+    } else if (this.frozen > 0 || this.lift > 0 || this.liftV > 0) {
+      this.set('stun');
+      this.stunTime = Math.max(this.frozen, 0.9);
     } else if (r.result !== 'break') {
       this.set('hurt');
       this.hurtTime = reactionTime(attack.reaction);
@@ -230,6 +241,8 @@ export class Recruta {
   update(dt, player, arena) {
     this.t += dt;
     this.clock += dt;
+    this.arenaRef = arena;
+    this.updateEffects(dt);
     this.recentT = Math.max(0, this.recentT - dt);
     if (this.recentT <= 0) this.recentHits = 0;
     this.guard.update(dt);
@@ -292,12 +305,20 @@ export class Recruta {
         break;
       }
       case 'windup': {
+        if (!this.attack) {
+          this.set('chase');
+          break;
+        }
         face(yawTo, 14);
         if (this.t >= this.def.windup) this.set('attack');
         break;
       }
       case 'attack': {
         const a = this.attack;
+        if (!a) {
+          this.set('chase');
+          break;
+        }
         a.t += dt * this.def.clipSpeed;
         if (!a.struck && a.t >= a.tm.release) {
           a.struck = true;
@@ -339,7 +360,7 @@ export class Recruta {
         break;
       case 'stun':
         if (arena.token === this) arena.token = null;
-        if (this.t >= (this.stunTime ?? 1.2)) {
+        if (this.t >= (this.stunTime ?? 1.2) && this.frozen <= 0 && this.lift <= 0) {
           this.stunTime = null;
           this.set('chase');
         }
@@ -381,9 +402,66 @@ export class Recruta {
         }
       }
     }
-    this.pos.y = this.field.sample(this.pos.x, this.pos.z);
+    this.pos.y = this.field.sample(this.pos.x, this.pos.z) + this.lift;
     this.speed = Math.hypot(this.vel.x, this.vel.z);
+    if (this.frozen > 0) {
+      this.vel.set(0, 0, 0);
+      this.speed = 0;
+    }
     if (this.state === 'windup' || this.state === 'attack' || this.state === 'hurt') this.drawTag();
+  }
+
+  // Congelar, queimar, puxar, empurrar e lançar (poderes das frutas)
+  applyEffect(e, attacker) {
+    if (e.freeze) {
+      this.frozen = Math.max(this.frozen, e.freeze);
+      this.attack = null;
+      this.guard.holding = false;
+    }
+    if (e.burn) this.burn = Math.max(this.burn, e.burn);
+    if ((e.freeze || e.launch) && this.alive) {
+      if (this.arenaRef?.token === this) this.arenaRef.token = null;
+      this.set('stun');
+      this.stunTime = Math.max(e.freeze ?? 0, 0.9);
+    }
+    if (e.launch && this.frozen <= 0) {
+      this.liftV = 8 + 6 * e.launch;
+      this.attack = null;
+    }
+    if (e.pull && this.frozen <= 0) {
+      const dx = e.pull.x - this.pos.x;
+      const dz = e.pull.z - this.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 1.2) this.knock.set((dx / d) * Math.min(14, d * 3.2), 0, (dz / d) * Math.min(14, d * 3.2));
+    }
+    if (e.push && this.frozen <= 0) {
+      const away = Math.atan2(this.pos.x - attacker.x, this.pos.z - attacker.z);
+      const k = e.push / 0.22;
+      this.knock.set(Math.sin(away) * k, 0, Math.cos(away) * k);
+    }
+  }
+
+  // Queimadura (dano por segundo), gelo e lançamento: roda antes da IA
+  updateEffects(dt) {
+    if (this.frozen > 0) {
+      this.frozen = Math.max(0, this.frozen - dt);
+      this.knock.set(0, 0, 0);
+    }
+    if (this.burn > 0 && this.alive) {
+      this.burn = Math.max(0, this.burn - dt);
+      this.burnTick += dt;
+      if (this.burnTick >= 0.5) {
+        this.burnTick = 0;
+        this.health = Math.max(1, this.health - 3);
+        this.onBurn?.(this, 3);
+        this.drawTag();
+      }
+    }
+    if (this.liftV !== 0 || this.lift > 0) {
+      this.liftV -= 30 * dt;
+      this.lift = Math.max(0, this.lift + this.liftV * dt);
+      if (this.lift <= 0 && this.liftV < 0) this.liftV = 0;
+    }
   }
 
   startAttack(id) {
@@ -409,6 +487,7 @@ export class Recruta {
   // ===== Animação (corpo do laboratório) =====
   render(dt, playerPos) {
     if (!this.body) return;
+    if (this.frozen > 0) dt = 0; // congelado: a pose para
     const body = this.body;
     const visible = this.state !== 'gone';
     body.root.visible = visible;
@@ -440,6 +519,15 @@ export class Recruta {
           j['braco_' + side].rotation.z = sign * -0.35;
           j['antebraco_' + side].rotation.x = -1.75;
         }
+      }
+    }
+    // gelo (azul) e fogo (laranja) no corpo
+    const tint = this.frozen > 0 ? 1 : this.burn > 0 ? 2 : 0;
+    if (tint !== this.tint) {
+      this.tint = tint;
+      for (const mesh of Object.values(body.meshes)) {
+        mesh.material.emissive?.set(tint === 1 ? '#3fa9ff' : tint === 2 ? '#ff5a1a' : '#000000');
+        if (mesh.material.emissive) mesh.material.emissiveIntensity = tint ? 0.55 : 1;
       }
     }
     const hit = this.hurtAmount;

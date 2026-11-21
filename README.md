@@ -24,7 +24,13 @@ Combate base (atualização 2): Atacar com o combo Jab → Direto → Gancho do 
 Defender (segurar) com defesa perfeita e Postura, esquiva que cancela o golpe, hitstop e
 números de dano. Na Arena de combate há bonecos de treino e Recrutas que avisam antes de
 bater, defendem às vezes e dão experiência e moedas. Lutar treina Força, Resistência
-Física, Reflexos e Defesa. O que falta e a ordem das próximas
+Física, Reflexos e Defesa.
+
+Poderes das frutas (atualização 3): com uma fruta comida aparece a barra de Energia e três
+habilidades (teclas 1 · 2 · 3 ou slots da barra) com o gesto do laboratório e efeito real:
+projéteis, investidas, áreas, pontos marcados, faixas, cones, muralha, teleporte e raio em
+cadeia, que congelam, queimam, puxam, empurram ou lançam. A fruta troca o combo pelos golpes
+dela e tem domínio próprio (1 a 100) que libera a segunda e a terceira habilidade. O que falta e a ordem das próximas
 atualizações estão em [docs/13-atualizacoes.md](docs/13-atualizacoes.md).
 
 Frutas com tipo (Essência, Elemento, Fera) e raridade própria em 6 ranks (Comum 45%,
@@ -73,6 +79,7 @@ npm run apk        # build + sync + gradle assembleDebug
 | Esquiva | Esquiva | Shift | B / ◯ |
 | Atacar (combo) | Punho | Clique ou J | X / ▢ ou RT |
 | Defender (segurar) | Escudo | Botão direito ou K | RB / R1 ou LT |
+| Poderes da fruta | Slots 1 · 2 · 3 | 1 · 2 · 3 | Direcional ← ↑ → |
 | Agachar · deslizar · mergulhar | Agachar | C | Apertar analógico direito |
 | Status · Mochila · Missões · Mapa | Ícones no alto | P · B · L · M | — |
 | Falar (Mercador, Trocador) | Botão Falar | E | Y / △ |
@@ -97,7 +104,7 @@ src/combat      regras do combate, combate do jogador, bonecos e Recrutas
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática
-src/vfx         poeira dos passos
+src/vfx         poeira dos passos e efeitos dos poderes
 src/world       construções, placas e natureza (árvores, pedras)
 src/saves       salvamento local (IndexedDB) com versão e migração
 src/optimization qualidade automática

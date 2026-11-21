@@ -32,7 +32,7 @@ export class PlayerCombat {
     const c = this.ctl;
     this.hitstop = Math.max(0, this.hitstop - dt);
     const slow = this.hitstop > 0 ? 0.08 : 1;
-    const can = this.canFight();
+    const can = this.canFight() && !this.powers?.busy;
     if (input.attackPressed && (can || this.runner.busy)) this.runner.press();
     // esquiva só cancela depois do contato; antes disso o golpe vai até o fim
     if (this.runner.busy && !this.runner.recovering) input.dashPressed = false;
@@ -64,15 +64,15 @@ export class PlayerCombat {
     if (cur && cur !== before) this.beginAttack(cur, input, targets);
     if (cur) {
       c.attackLock = Math.max(c.attackLock, 0.05);
-      c.action = { clip: ATTACKS[cur.id].clip, t: cur.t };
-    } else c.action = null;
+      c.action = { clip: this.runner.attacks[cur.id].clip, t: cur.t };
+    } else if (!this.powers?.busy) c.action = null;
     if (strike) this.strike(strike, targets);
   }
 
   // Vira para o alvo mais próximo à frente (ou para onde o direcional aponta) e avança
   beginAttack(cur, input, targets) {
     const c = this.ctl;
-    const a = ATTACKS[cur.id];
+    const a = this.runner.attacks[cur.id];
     let best = null;
     let bd = 9;
     for (const t of targets) {
@@ -126,6 +126,11 @@ export class PlayerCombat {
     if (c.invulnerable > 0) {
       this.onEvent('dodge', { source, life });
       return { result: 'dodge' };
+    }
+    // muralha de gelo ativa: segura golpes que vêm de frente
+    if (this.powers?.wallBlocks(attacker)) {
+      this.onEvent('wall', { source, life });
+      return { result: 'block', damage: 0 };
     }
     const s = this.stats();
     const dmg = computeDamage(damage, { defense: s.defense, mitigation: s.mitigation });

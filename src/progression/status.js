@@ -82,6 +82,11 @@ export function maxHealth(status) {
   return 100 + normalizeStatus(status).defesa * 6;
 }
 
+// Energia (paga os poderes das frutas): 100 + 4 por ponto de Vitalidade
+export function maxEnergy(status) {
+  return 100 + normalizeStatus(status).vitalidade * 4;
+}
+
 // Multiplicadores de dano dos pontos distribuídos (usados pelo combate)
 export function damageMultipliers(status) {
   const s = normalizeStatus(status);

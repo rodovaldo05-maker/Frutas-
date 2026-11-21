@@ -30,10 +30,32 @@ export const GUARD = {
 const REACTION = { leve: 0.32, media: 0.5, pesada: 0.75 };
 export const reactionTime = (kind) => REACTION[kind] ?? 0.3;
 
-// Tempo de cada golpe a partir do clipe do laboratório
-export function timing(id) {
-  const c = FRUTOMotion.clips[ATTACKS[id].clip];
+// Tempo de um clipe do laboratório (contato, ativo e duração)
+export function clipTiming(clip) {
+  const c = FRUTOMotion.clips[clip];
   return { release: c.release, active: c.active ?? 0.07, duration: c.duration };
+}
+
+// Tempo de cada golpe a partir do clipe do laboratório
+export function timing(id, attacks = ATTACKS) {
+  return clipTiming(attacks[id].clip);
+}
+
+// Combo próprio de uma fruta comida (golpes assinados do laboratório: fruta_j1..j3).
+// Sem clipes próprios (frutas míticas), usa Jab, Direto e Gancho com o dano da fruta.
+export function fruitStyle(fruit) {
+  if (!fruit?.combat) return { attacks: ATTACKS, combo: COMBO, nome: 'Combate Básico' };
+  const dmg = fruit.combat.damage || [10, 12, 16];
+  const attacks = {};
+  const combo = [];
+  for (let i = 0; i < 3; i++) {
+    const own = FRUTOMotion.clips[`${fruit.id}_j${i + 1}`];
+    const base = ATTACKS[COMBO[i]];
+    const id = `${fruit.id}_j${i + 1}`;
+    attacks[id] = { ...base, clip: own ? id : base.clip, nome: own?.label || base.nome, damage: dmg[i] ?? base.damage, fruit: fruit.id };
+    combo.push(id);
+  }
+  return { attacks, combo, nome: fruit.combat.name || fruit.name };
 }
 
 // Fórmula do doc 05 (parte física): base × atributo × defesa do alvo × mitigação
@@ -55,8 +77,10 @@ export function inReach(attacker, target, attack, { radius = 0.9, arc = 0.45 } =
 
 // Sequência de golpes: combo com janela, entrada guardada (buffer) e evento de contato.
 export class AttackRunner {
-  constructor({ speed = 1 } = {}) {
+  constructor({ speed = 1, attacks = ATTACKS, combo = COMBO } = {}) {
     this.speed = speed;
+    this.attacks = attacks;
+    this.combo = combo;
     this.current = null; // { id, t, step, struck, tm }
     this.buffer = 0;
     this.comboStep = 0;
@@ -72,9 +96,16 @@ export class AttackRunner {
     this.buffer = 0.32;
   }
 
+  // Troca o estilo (combo de uma fruta ou o Combate Básico)
+  setStyle({ attacks, combo }) {
+    this.attacks = attacks;
+    this.combo = combo;
+    this.cancel();
+  }
+
   start(step) {
-    const id = COMBO[step % COMBO.length];
-    this.current = { id, t: 0, step, struck: false, tm: timing(id) };
+    const id = this.combo[step % this.combo.length];
+    this.current = { id, t: 0, step, struck: false, tm: timing(id, this.attacks) };
     this.buffer = 0;
     return this.current;
   }
@@ -95,15 +126,15 @@ export class AttackRunner {
       c.t += dt * this.speed;
       if (!c.struck && c.t >= c.tm.release) {
         c.struck = true;
-        strike = { ...ATTACKS[c.id], id: c.id, step: c.step };
+        strike = { ...this.attacks[c.id], id: c.id, step: c.step };
       }
       // depois do contato, um novo aperto emenda o próximo golpe
-      const chain = c.t >= c.tm.release + c.tm.active && this.buffer > 0 && c.step < COMBO.length - 1;
+      const chain = c.t >= c.tm.release + c.tm.active && this.buffer > 0 && c.step < this.combo.length - 1;
       if (chain) {
         this.start(c.step + 1);
       } else if (c.t >= c.tm.duration) {
-        this.comboStep = c.step + 1 < COMBO.length ? c.step + 1 : 0;
-        this.comboTimer = c.step + 1 < COMBO.length ? 0.3 : 0;
+        this.comboStep = c.step + 1 < this.combo.length ? c.step + 1 : 0;
+        this.comboTimer = c.step + 1 < this.combo.length ? 0.3 : 0;
         this.current = null;
       }
     }

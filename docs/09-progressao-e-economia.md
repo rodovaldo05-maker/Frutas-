@@ -26,9 +26,9 @@ Efeito de cada ponto distribuído:
 |---|---|
 | Força | +3% de dano corpo a corpo e **+1 de fôlego máximo** |
 | Defesa | +6 de vida e +0,5 de defesa |
-| Fruta | +3% de dano das frutas |
+| Fruta | +3% de dano das habilidades das frutas |
 | Espada | +3% de dano com armas |
-| Vitalidade | +4 de energia e fôlego |
+| Vitalidade | +4 de energia (poderes das frutas) e +4 de fôlego |
 
 Treino (nível 1 a 100, curva `arredondar(100 + 18·L + 1,5·L²)`):
 

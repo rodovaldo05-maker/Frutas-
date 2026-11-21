@@ -35,7 +35,13 @@ import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
-import { maxStamina, maxHealth, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
+import { maxStamina, maxHealth, maxEnergy, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
+import { FruitPowers } from './combat/powers.js';
+import { powersOf } from './fruits/powers.js';
+import { fruitStyle } from './combat/rules.js';
+import { domainOf, addDomainXp, domainBonus } from './progression/domain.js';
+import { PowerFx } from './vfx/powerFx.js';
+import { SkillBar } from './ui/skillBar.js';
 import { buildArena } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
@@ -162,7 +168,9 @@ async function boot() {
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = maxHealth(save.status);
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
+    powers?.setEnergyMax(maxEnergy(save.status));
   };
+  let powers = null;
   applyStatus();
 
   // ===== Combate (atualização 2): golpes, defesa, inimigos da arena e treino =====
@@ -192,6 +200,7 @@ async function boot() {
           audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
           shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
           tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
+          if (d.attack.fruit) grantDomain(d.attack.fruit, t.hostile ? 1 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           if (d.result === 'break') floats.add({ ...at, y: at.y + 0.8 }, 'Guarda quebrada!', 'perfeita');
           break;
         }
@@ -210,6 +219,7 @@ async function boot() {
           audio.play('base', 'land', 0.5);
           tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: false }, p);
           break;
+        case 'wall': floats.add(head, 'Muralha!', 'esquiva'); audio.play('base', 'land', 0.5); break;
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           floats.add(head, `−${d.damage}`, 'jogador');
@@ -235,6 +245,81 @@ async function boot() {
     };
   }
   const playerProxy = { pos: ctl.pos, get yaw() { return ctl.yaw; }, alive: true };
+
+  // ===== Poderes das frutas (atualização 3): energia, habilidades 1–3 e domínio =====
+  const fx = new PowerFx(renderer.scene, { ground: (x, z) => island.field.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
+  const skillBar = new SkillBar();
+  const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
+  const domainBudget = new Map();
+  let deniedAt = -9;
+  function grantDomain(fruitId, xp, key, hostile, foe) {
+    let amount = xp;
+    if (hostile) {
+      const k = `${foe.id}:${foe.life}`;
+      const used = domainBudget.get(k) || 0;
+      amount = Math.max(0, Math.min(xp, 20 - used));
+      domainBudget.set(k, used + amount);
+    } else amount *= tracker.farm.repetition(`dominio:${key}`, ctl.pos, tracker.now);
+    if (amount <= 0) return;
+    const before = domainOf(save, fruitId).level;
+    const levels = addDomainXp(save, fruitId, amount);
+    if (!levels) return;
+    const d = domainOf(save, fruitId);
+    const f = DATA.fruits.find((x) => x.id === fruitId);
+    const opened = powers.powers.filter((p) => p.unlock > before && p.unlock <= d.level).map((p) => p.nome);
+    hud.toast(`Domínio de ${f?.name ?? fruitId} nível ${d.level}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length ? 'gold' : 'good');
+    audio.play('base', 'wing', 0.9);
+    powers.domainLevel = d.level;
+    skillBar.setFruit(eatenFruit(), powers.powers, d.level);
+    if (modals.includes('status')) statusScreen.render();
+    saveNow(true);
+  }
+  powers = new FruitPowers({
+    ctl,
+    fx,
+    stats: () => ({ fruit: damageMultipliers(save.status).fruit, domain: domainBonus(powers.domainLevel) }),
+    onEvent: (name, d) => {
+      const p = ctl.pos;
+      switch (name) {
+        case 'cast': audio.play(d.power.fruit, 'preparar', 0.7); break;
+        case 'release': audio.play(d.power.fruit, 'liberar', d.power.slot === 2 ? 1.1 : 0.9); break;
+        case 'impact': shake = Math.max(shake, 0.12); break;
+        case 'denied':
+          if (time - deniedAt > 1.5) {
+            deniedAt = time;
+            hud.toast(d.message);
+          }
+          break;
+        case 'heal': floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, `+${d.amount}`, 'info'); break;
+        case 'teleport': ctl.spawn(d.x, island.field.sample(d.x, d.z) + 0.4, d.z, d.yaw); break;
+        case 'hit': {
+          const t = d.target;
+          const at = { x: t.pos.x, y: t.pos.y + 3.2, z: t.pos.z };
+          if (d.result === 'block') {
+            floats.add(at, 'Defendeu', 'bloqueio');
+            break;
+          }
+          if (d.damage > 0) floats.add(at, String(d.damage), d.power.slot === 2 ? 'forte' : 'dano');
+          audio.play(d.power.fruit, 'acerto', 0.8);
+          shake = Math.max(shake, d.power.slot === 2 ? 0.2 : 0.1);
+          grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
+          break;
+        }
+        default:
+      }
+    },
+  });
+  combat.powers = powers;
+  applyStatus();
+  for (const r of arena.recrutas) r.onBurn = (foe, n) => floats.add({ x: foe.pos.x, y: foe.pos.y + 3, z: foe.pos.z }, String(n), 'forte');
+  // fruta comida: habilidades, combo próprio e domínio
+  const setupPowers = () => {
+    const f = eatenFruit();
+    const level = f ? domainOf(save, f.id).level : 1;
+    powers.setFruit(f, f ? powersOf(f) : [], level);
+    combat.runner.setStyle(fruitStyle(f));
+    skillBar.setFruit(f, powers.powers, level);
+  };
 
   // evolução pela prática: deslocamento real e eventos do controlador viram experiência
   let diminishedAt = -99;
@@ -311,6 +396,7 @@ async function boot() {
     ctl.waterCursed = isWaterCursed(save.eaten);
     hud.setFruit(save.eaten ? { thumb: thumbs()[fruitIndex(save.eaten.fruit)], color: RANK[rarityOf(save.eaten)].cor, label: fruitLabel(save.eaten) } : null);
     if (ctl.waterCursed && (ctl.state === 'swim' || ctl.state === 'dive')) ctl.enterWater(0);
+    setupPowers?.();
   };
   const reducedFx = () => !!settings.reduceFx;
   const catalog = new CatalogScreen({ save, thumbs, openModal: (id) => openModal(id), reducedFx });
@@ -413,7 +499,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block') },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), skills: [$('slot-1'), $('slot-2'), $('slot-3')] },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -623,6 +709,9 @@ async function boot() {
       prev.copy(ctl.pos);
       const inp = input.consume(cam.yaw);
       combat.update(dt, inp, arena.targets);
+      const canCast = combat.canFight() && !combat.runner.busy && !ctl.guarding;
+      if (inp.skill >= 0) powers.cast(inp.skill, arena.targets, canCast);
+      powers.update(dt, arena.targets, combat.canFight());
       ctl.step(dt, inp);
       playerProxy.alive = ctl.faint <= 0;
       arena.update(dt, playerProxy);
@@ -667,6 +756,8 @@ async function boot() {
         if (!settings.reduceMotion) renderer.camera.position.add(new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake));
       }
       floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
+      fx.update(animDt);
+      if (mode === 'game') skillBar.update(powers);
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);
@@ -782,7 +873,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx,
     start: startGame,
     saveNow,
     openModal,

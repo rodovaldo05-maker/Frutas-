@@ -9,6 +9,8 @@ import { ATTRS, ATTR_KEYS, progress, nextMilestone, xpToNext as attrXpToNext } f
 import { xpToNext, MAX_LEVEL } from '../progression/level.js';
 import { STATUS_KEYS, STATUS_INFO, TRAINED_TWIN, allocate, resetStatus, maxHealth, maxStamina, normalizeStatus } from '../progression/status.js';
 import { ICONS } from './icons.js';
+import { fruitName } from '../fruits/catalog.js';
+import { domainProgress } from '../progression/domain.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString('pt-BR');
@@ -58,7 +60,10 @@ export class StatusScreen {
     $('status-level').textContent = s.level >= MAX_LEVEL ? `Nível ${s.level} (Máx)` : `Aventureiro Nv. ${s.level}`;
     $('status-xp-bar').style.transform = `scaleX(${s.level >= MAX_LEVEL ? 1 : Math.min(1, (s.xp || 0) / need)})`;
     $('status-xp-text').textContent = s.level >= MAX_LEVEL ? 'Nível máximo' : `${fmt(Math.floor(s.xp || 0))} / ${fmt(need)} exp`;
-    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t))}</b></span><span>Tipo corporal <b>Humano</b></span>`;
+    const eaten = s.eaten?.fruit;
+    const dom = eaten ? s.domain?.[eaten] ?? { level: 1, xp: 0 } : null;
+    const domLine = dom ? `<span>Domínio de ${fruitName(eaten)} <b>Nv. ${dom.level}</b> (${Math.floor(domainProgress(dom) * 100)}%)</span>` : '';
+    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t))}</b></span>${domLine}<span>Tipo corporal <b>Humano</b></span>`;
     const badge = $('tab-points');
     badge.classList.toggle('hidden', points < 1);
     badge.textContent = points > 99 ? '99+' : String(points);

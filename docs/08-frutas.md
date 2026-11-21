@@ -378,3 +378,25 @@ Regras:
 - Formas completas são maiores: a câmera se afasta e a hitbox cresce (mais fácil de acertar).
 - Cada forma tem animações próprias (doc 04, seção 4); nada de animação humana reaproveitada.
 - Água: formas não voadoras afundam como usuário de fruta comum.
+
+## 4. Situação no jogo (atualização 3 — poderes das frutas)
+
+| Parte | Como ficou |
+|---|---|
+| Energia | Barra roxa no HUD (aparece com fruta comida): 100 + 4 por ponto de Vitalidade; volta 7/s depois de 1 s sem gastar |
+| Habilidades | Três por fruta, nas teclas 1 · 2 · 3, nos slots 1–3 da barra de baixo (toque) ou no direcional ← ↑ → do controle; nome, custo, recarga e dano vêm do laboratório |
+| Gesto e tempo | Clipe de cada habilidade do laboratório; o efeito sai no quadro de contato do clipe |
+| Formatos | Projétil (com explosão, puxão, queimadura), investida, área em volta, ponto marcado com aviso no chão (com pulsos), faixa, cone, muralha, teleporte, raio em cadeia e pilares |
+| Efeitos nos inimigos | Congelar (fica parado e azul), queimar (dano por segundo, laranja), puxar, empurrar e lançar para o alto |
+| Combo da fruta | Comer uma fruta troca o Jab → Direto → Gancho pelos três golpes assinados da fruta, com o dano dela |
+| Dano | Dano da habilidade × (1 + 3% por ponto de Fruta) × bônus de domínio (até +30%) × defesa do alvo |
+| Domínio | Por fruta, nível 1 a 100 (curva dos atributos × 1,4). Sobe acertando inimigos com as habilidades (+3, a terceira +4) e com o combo da fruta (+1), com teto por oponente; em bonecos rende pouco e cai com repetição. Habilidade 2 abre no domínio 5 e a 3 no 13 (0, 25 e 75 de 600 na ficha). Trocar de fruta não apaga o domínio |
+| Transformações | Lobo, Falcão, Besta, Fênix, Oriental e Ocidental usam por enquanto as habilidades sem forma (moves 3 e 4); as formas chegam na atualização 13 |
+| Despertar | Slot 4, bloqueado até o domínio 59 (atualização 13) |
+
+Os efeitos visuais são próprios do jogo (cubos, anéis, marcas, pilares, ondas e muralha na
+cor da fruta). O conjunto completo de efeitos do laboratório pode ser trazido depois.
+
+Código: `src/fruits/powers.js` (formato de cada habilidade), `src/combat/powers.js`
+(energia, recargas e liberação), `src/vfx/powerFx.js` (efeitos), `src/progression/domain.js`
+(domínio), `src/ui/skillBar.js` (slots e Energia); testes em `tests/powers.test.js`.

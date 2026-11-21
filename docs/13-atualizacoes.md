@@ -14,6 +14,7 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | Missões | Missão "Treino de movimento" com 11 objetivos e recompensa |
 | Evolução | Nível de aventureiro com **pontos de status distribuíveis** e **treino pela prática** (não distribuível) somando juntos — Atualização 1 |
 | Combate base | Atacar (Jab → Direto → Gancho), Defender, defesa perfeita, Postura, esquiva, hitstop; Arena com bonecos e Recrutas; Força, Resistência, Reflexos e Defesa treinam lutando — Atualização 2 |
+| Poderes das frutas | Energia, 3 habilidades por fruta com gesto do laboratório e efeito real (congelar, queimar, puxar, empurrar, lançar), combo próprio da fruta, domínio por fruta que libera as habilidades — Atualização 3 |
 
 ## Roteiro
 
@@ -21,8 +22,8 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 |---|---|---|---|---|
 | 1 | **Status e treino lado a lado** | Pontos de nível (3 por nível) distribuídos em Força, Defesa, Fruta, Espada e Vitalidade; treino pela prática separado, sem distribuir; os dois somam (Força dá +1 de fôlego nas duas camadas) | Distribuir, redistribuir e treinar mudam vida e fôlego; salvos antigos recebem os pontos | **Feita** |
 | 2 | **Combate base** (doc 05) | Botão Atacar, combo de socos do laboratório (Jab, Direto, Gancho), Defender com defesa perfeita, Postura, hitstop, reações; bonecos de treino e primeiros inimigos da ilha; dano com os pontos de Força e Defesa; derrota e volta ao ponto seguro; experiência de aventureiro por inimigo | Derrotar inimigos dá nível e pontos; acertar treina Força, apanhar treina Resistência Física, esquivar de golpe real treina Reflexos, bloquear treina Defesa | **Feita** (missão de combate fica para quando houver várias missões) |
-| 3 | **Poderes das frutas** (docs 08 e 12) | Barra de Energia, 3 habilidades + despertar por fruta com os golpes do laboratório, efeitos e sons; Domínio da fruta por fruta (1–100); pontos de Fruta aumentam o dano | Cada fruta comida tem habilidades com efeito real nos inimigos; trocar de fruta não apaga o domínio | Próxima |
-| 4 | **Armas e espada** (docs 06 e 12) | Primeira espada na loja, troca entre soco e espada, combos de espada, proficiência de armas; pontos de Espada aumentam o dano | Trocar de arma não muda a proficiência; Espada soma no dano | — |
+| 3 | **Poderes das frutas** (docs 08 e 12) | Barra de Energia, 3 habilidades + despertar por fruta com os golpes do laboratório, efeitos e sons; Domínio da fruta por fruta (1–100); pontos de Fruta aumentam o dano | Cada fruta comida tem habilidades com efeito real nos inimigos; trocar de fruta não apaga o domínio | **Feita** (despertar e formas na 13) |
+| 4 | **Armas e espada** (docs 06 e 12) | Primeira espada na loja, troca entre soco e espada, combos de espada, proficiência de armas; pontos de Espada aumentam o dano | Trocar de arma não muda a proficiência; Espada soma no dano | Próxima |
 | 5 | **Quatro raças** (doc 12, fase 3) | Escolha de tipo corporal: Humano, Aquático, Ghoul, Homem do Céu; passivas, ativas e maestria racial; visual próprio | Homem do Céu tem saltos extras; Aquático sem o dano da água; Ghoul só reforça dano de fruta; Humano aprende mais rápido com teto | — |
 | 6 | **Voo e Resistência Elemental** | Treino de Voo (asa-delta, raça e fruta), inimigos com fogo, gelo e raio, condições (queimadura, congelamento, choque) | Voar se deslocando treina Voo; pairar parado não; resistências com teto | — |
 | 7 | **Vontade e estilos de luta** (docs 06 e 07) | Barra de Vontade (Armadura, Percepção, Soberana) e os estilos com mestres para comprar e maestria | Cada estilo tem combo e habilidades próprias | — |

@@ -27,6 +27,7 @@
           <div class="player-title"><b id="txt-name">Aprendiz</b><span id="txt-sub">Ilha de Treino</span></div>
           <div class="bar health"><i id="bar-health"></i><em data-icon="heart"><span id="txt-health">Vida: 100 / 100</span></em></div>
           <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego: 100 / 100</span></em></div>
+          <div class="bar energy hidden" id="box-energy"><i id="bar-energy"></i><em data-icon="fruit"><span id="txt-energy">Energia</span></em></div>
           <div class="bar xp"><i id="bar-xp"></i><em><span id="txt-xp">Exp 0%</span></em></div>
           <div class="bar air" id="box-air"><i id="bar-air"></i><em data-icon="bubble"><span>Ar</span></em></div>
           <div class="wallet-row"><div class="wallet"><span data-icon="coin"><b id="txt-coins">200</b></span><span data-icon="gem"><b id="txt-frags">0</b></span></div><span class="xp-feed" id="xp-feed"></span></div>
@@ -63,9 +64,9 @@
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
       <div class="hotbar">
-        <div class="slot"><i>1</i></div><div class="slot"><i>2</i></div><div class="slot"><i>3</i></div><div class="slot"><i>4</i></div><div class="slot"><i>5</i></div>
+        <button data-btn class="slot" id="slot-1" aria-label="Habilidade 1"><i>1</i></button><button data-btn class="slot" id="slot-2" aria-label="Habilidade 2"><i>2</i></button><button data-btn class="slot" id="slot-3" aria-label="Habilidade 3"><i>3</i></button><button data-btn class="slot" id="slot-4" aria-label="Despertar"><i>4</i></button><div class="slot"><i>5</i></div>
       </div>
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · Shift esquiva · C agachar · Ctrl correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · 1 2 3 poderes da fruta · Shift esquiva · C agachar · Ctrl correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
@@ -123,6 +124,7 @@
                 <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
                 <tr><td>Atacar (Jab → Direto → Gancho)</td><td>Punho</td><td>Clique ou J</td><td>X / ▢ ou RT</td></tr>
                 <tr><td>Defender (segurar; no tempo certo: defesa perfeita)</td><td>Escudo</td><td>Botão direito ou K</td><td>RB / R1 ou LT</td></tr>
+                <tr><td>Poderes da fruta 1 · 2 · 3</td><td>Slots 1, 2 e 3 da barra</td><td>1 · 2 · 3</td><td>Direcional ← ↑ →</td></tr>
                 <tr><td>Asa-delta (liga/desliga)</td><td>Botão da asa</td><td>U</td><td>—</td></tr>
                 <tr><td>Agachar · deslizar · mergulhar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
                 <tr><td>Personagem · Mochila · Missões · Mapa</td><td>Ícones no alto</td><td>P · B · L · M</td><td>—</td></tr>

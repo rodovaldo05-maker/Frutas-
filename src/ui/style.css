@@ -791,3 +791,30 @@ body.reduce-fx .fcard, body.reduce-fx .fcard.win, body.reduce-fx .fcard.rank-in,
 .float-text.gold { font-size: 18px; color: #ffe38f; text-shadow: 0 0 8px rgba(255, 190, 60, 0.9), 0 2px 0 #3b1a08; }
 .float-text.cyan { font-size: 18px; color: #9be7ff; text-shadow: 0 0 8px rgba(80, 200, 255, 0.8), 0 2px 0 #08223b; }
 .float-text.info { font-size: 14px; color: #b9f2a8; }
+
+/* ===== Poderes das frutas: barra de Energia e slots ===== */
+.bar.energy i { background: linear-gradient(180deg, #d7a2ff, #7b3fc4); }
+button.slot { padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.slot.skill { border-color: var(--fruit); box-shadow: inset 0 0 12px color-mix(in srgb, var(--fruit) 45%, transparent), 0 3px 6px rgba(0, 0, 0, 0.45); }
+.slot.skill b {
+  position: absolute; left: 2px; right: 2px; bottom: 3px; font: 800 9px/1.05 var(--body-font); color: #fff4d8; text-align: center;
+  text-shadow: 0 1px 2px #000; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+}
+.slot.skill small { position: absolute; right: 4px; top: 2px; font: 800 9px var(--body-font); color: #d7a2ff; }
+.slot.skill.cooling b, .slot.skill.cooling small { opacity: 0.3; }
+.bar.energy { height: 13px; }
+body.has-energy.touch .tracker { top: calc(166px + var(--safe-t)); }
+body.has-energy.touch.lefty .tracker { top: calc(172px + var(--safe-t)); }
+.slot.skill .cd {
+  position: absolute; inset: 0; border-radius: 8px; display: grid; place-items: center; font: 800 15px var(--body-font); color: #fff;
+  background: conic-gradient(rgba(10, 6, 20, 0.72) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; text-shadow: 0 1px 3px #000;
+}
+.slot.skill.low { filter: saturate(0.4) brightness(0.75); }
+.slot.skill.casting { transform: scale(1.08); border-color: #fff1b8; }
+.slot.skill.locked { filter: grayscale(0.85) brightness(0.7); }
+.slot.skill.locked b { display: none; }
+.slot.skill.locked::after { content: '🔒'; position: absolute; left: 0; right: 0; top: 13px; text-align: center; font-size: 13px; filter: grayscale(1) brightness(1.6); }
+.slot .lock {
+  position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font: 800 9px var(--body-font); color: #ffd45e; text-shadow: 0 1px 2px #000;
+}
+.slot.skill.down, button.slot.down { transform: scale(0.94); }

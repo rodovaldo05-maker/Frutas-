@@ -818,3 +818,139 @@ body.has-energy.touch.lefty .tracker { top: calc(172px + var(--safe-t)); }
   position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font: 800 9px var(--body-font); color: #ffd45e; text-shadow: 0 1px 2px #000;
 }
 .slot.skill.down, button.slot.down { transform: scale(0.94); }
+
+/* ===== HUD novo: status embaixo, barra de equipar e lista de habilidades ===== */
+.dock {
+  position: absolute; left: 50%; bottom: calc(8px + var(--safe-b)); transform: translateX(-50%);
+  width: min(380px, 46vw); display: grid; gap: 3px; justify-items: stretch;
+}
+.dock .hotbar { position: static; transform: none; justify-content: center; margin-top: 4px; }
+.dock-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; }
+.dock-pill {
+  display: flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 9px; font: 800 12px var(--body-font); color: #ffe9b3;
+  background: rgba(14, 11, 28, 0.82); border: 1px solid rgba(217, 166, 74, 0.8); box-shadow: 0 2px 0 #2a1906;
+}
+.dock-pill.coins { justify-self: start; }
+.dock-pill.gems { justify-self: end; }
+.dock-pill svg { width: 15px; height: 15px; }
+.dock-level { position: relative; display: flex; align-items: baseline; gap: 3px; line-height: 1; color: #ffd84a; text-shadow: 0 2px 0 #3b250b, 0 0 6px rgba(0, 0, 0, 0.9); }
+.dock-level small { font: 800 11px var(--body-font); }
+.dock-level b { font: 900 22px var(--title-font); }
+.dock-level.level-up { animation: levelup 1.6s ease-out; }
+.dock .bar.health { height: 18px; }
+.dock .bar em { font-size: 11px; }
+.dock-sub { display: flex; gap: 4px; }
+.dock-sub .bar { flex: 1; height: 12px; }
+.dock-sub .bar em { font-size: 9.5px; }
+.dock-sub .bar em svg { width: 10px; height: 10px; }
+.dock-xp { display: grid; grid-template-columns: auto 1fr auto; gap: 5px; align-items: center; }
+.dock .bar.xp { height: 13px; }
+.dock .bar.xp i { background: linear-gradient(180deg, #fff07a, #c9a218); }
+.dock .bar.xp em { font-size: 9.5px; }
+.mini-btn {
+  position: relative; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--gold); color: var(--gold-hi); background: linear-gradient(180deg, #3e2f66, #17122b);
+}
+.mini-btn svg { width: 15px; height: 15px; }
+.mini-btn .badge { top: -7px; right: -7px; }
+.dock .bar.air { position: absolute; left: 15%; right: 15%; bottom: calc(100% + 26px); height: 12px; }
+.dock .xp-feed { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); text-align: center; }
+.slot.equip { display: grid; place-items: center; overflow: hidden; }
+.slot.equip img { width: 86%; height: 86%; object-fit: contain; image-rendering: auto; }
+.slot.equip svg { width: 58%; height: 58%; color: #f3e2c0; }
+.slot.equip .lbl { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font: 800 8.5px var(--body-font); color: #fff4d8; text-shadow: 0 1px 2px #000; }
+.slot.equip.empty .lbl { color: rgba(255, 244, 216, 0.45); }
+.slot.equip.on { border-color: #ffe14a; box-shadow: 0 0 0 2px #ffe14a, 0 0 12px rgba(255, 225, 74, 0.7); }
+.slot.bag-slot { display: grid; place-items: center; }
+.slot.bag-slot svg { width: 56%; height: 56%; color: #f3e2c0; }
+
+.skill-list { position: absolute; right: calc(16px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); width: 250px; display: grid; gap: 3px; }
+.skill-head {
+  justify-self: end; min-width: 150px; text-align: center; padding: 2px 12px; font: 700 12.5px var(--title-font); color: #fff1cf;
+  background: linear-gradient(180deg, rgba(46, 33, 76, 0.95), rgba(21, 17, 42, 0.95)); border: 1px solid var(--gold); border-radius: 6px 6px 2px 2px;
+}
+.skill-rows { display: grid; gap: 3px; }
+.skill-row {
+  position: relative; display: grid; grid-template-columns: 48px 26px 1fr; align-items: center; gap: 4px; height: 30px; padding: 0;
+  color: #fff4d8; font: 700 12px var(--body-font); background: none; border: 0; text-align: left;
+}
+.skill-row .use {
+  height: 100%; display: grid; place-items: center; border-radius: 6px; font: 800 12px var(--body-font); color: #fff4d8;
+  background: rgba(14, 11, 28, 0.72); border: 1px solid rgba(217, 166, 74, 0.55);
+}
+.skill-row kbd {
+  height: 100%; display: grid; place-items: center; border-radius: 6px; font: 900 14px var(--body-font); color: #ffe9b3;
+  background: linear-gradient(180deg, #4a3424, #24170d); border: 1px solid var(--gold);
+}
+.skill-row .name {
+  position: relative; height: 100%; display: flex; align-items: center; gap: 6px; padding: 0 8px; border-radius: 6px; overflow: hidden; white-space: nowrap;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fruit, #6a4a2a) 38%, rgba(14, 11, 28, 0.9)), rgba(14, 11, 28, 0.85));
+  border: 1px solid color-mix(in srgb, var(--fruit, #d9a64a) 70%, #000);
+}
+.skill-row .name small { margin-left: auto; font: 800 10px var(--body-font); color: #d7a2ff; }
+.skill-row .name .cd {
+  position: absolute; inset: 0; background: rgba(10, 6, 20, 0.7); transform-origin: right; transform: scaleX(var(--cd, 0)); pointer-events: none;
+}
+.skill-row .name .sec { position: absolute; right: 8px; font: 800 12px var(--body-font); color: #fff; text-shadow: 0 1px 2px #000; }
+.skill-row.locked .name { color: rgba(255, 244, 216, 0.4); }
+.skill-row.locked kbd { color: transparent; }
+.skill-row.locked kbd::after { content: '🔒'; position: absolute; color: #fff; font-size: 13px; filter: grayscale(1) brightness(1.5); }
+.skill-row .req { position: absolute; left: 50%; transform: translateX(-50%); font: 800 12px var(--body-font); color: #ffe9b3; text-shadow: 0 1px 2px #000; }
+.skill-row.low .name { filter: saturate(0.4) brightness(0.75); }
+.skill-row.casting .name { border-color: #fff1b8; box-shadow: 0 0 8px rgba(255, 241, 184, 0.6); }
+.skill-row.down .use, .skill-row:active .use { background: linear-gradient(180deg, #ffe38f, #d9a03a); color: #2b1805; }
+.skill-note { justify-self: end; font-size: 11px; color: rgba(255, 244, 216, 0.75); text-shadow: 0 1px 2px #000; text-align: right; }
+
+/* posições que mudaram com o HUD embaixo */
+.state { display: none; }
+body:not(.touch) .state { display: block; left: calc(16px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); transform: none; }
+.keys { bottom: calc(178px + var(--safe-b)); }
+.interact { bottom: calc(176px + var(--safe-b)); }
+body.touch .tracker { top: calc(10px + var(--safe-t)); }
+body.has-energy.touch .tracker, body.has-energy.touch.lefty .tracker { top: calc(10px + var(--safe-t)); }
+.stats { top: calc(10px + var(--safe-t)); left: auto; right: calc(150px + var(--safe-r)); top: calc(64px + var(--safe-t)); }
+.icon-btn.glider { opacity: 0.55; }
+.icon-btn.glider.on { opacity: 1; color: #ffb38f; }
+
+/* celular: botões de ação embaixo à direita; habilidades logo acima, sob o minimapa */
+body.touch .skill-list { bottom: calc(140px + var(--safe-b)); right: calc(8px + var(--safe-r)); width: 200px; }
+body.touch .skill-row { height: 24px; grid-template-columns: 40px 22px 1fr; font-size: 11px; }
+body.touch .skill-row .use { font-size: 10.5px; }
+body.touch .skill-row kbd { font-size: 12px; }
+.act.jump { width: calc(80px * var(--btn)); height: calc(80px * var(--btn)); right: calc(14px + var(--safe-r)); bottom: calc(14px + var(--safe-b)); }
+.act.attack { width: calc(72px * var(--btn)); height: calc(72px * var(--btn)); right: calc(102px * var(--btn) + var(--safe-r)); bottom: calc(10px + var(--safe-b)); }
+.act.block { width: calc(52px * var(--btn)); height: calc(52px * var(--btn)); right: calc(116px * var(--btn) + var(--safe-r)); bottom: calc(88px * var(--btn) + var(--safe-b)); }
+.act.dash { width: calc(52px * var(--btn)); height: calc(52px * var(--btn)); right: calc(182px * var(--btn) + var(--safe-r)); bottom: calc(14px + var(--safe-b)); }
+.act.crouch { width: calc(46px * var(--btn)); height: calc(46px * var(--btn)); right: calc(186px * var(--btn) + var(--safe-r)); bottom: calc(74px * var(--btn) + var(--safe-b)); }
+.act.sprint { width: calc(46px * var(--btn)); height: calc(46px * var(--btn)); right: calc(238px * var(--btn) + var(--safe-r)); bottom: calc(100px * var(--btn) + var(--safe-b)); }
+body.lefty .act.jump { right: auto; left: calc(14px + var(--safe-l)); }
+body.lefty .act.attack { right: auto; left: calc(102px * var(--btn) + var(--safe-l)); }
+body.lefty .act.block { right: auto; left: calc(116px * var(--btn) + var(--safe-l)); }
+body.lefty .act.dash { right: auto; left: calc(182px * var(--btn) + var(--safe-l)); }
+body.lefty .act.crouch { right: auto; left: calc(186px * var(--btn) + var(--safe-l)); }
+body.lefty .act.sprint { right: auto; left: calc(238px * var(--btn) + var(--safe-l)); }
+@media (max-height: 450px) {
+  .dock { width: 290px; gap: 2px; }
+  .dock .slot { width: 42px; height: 42px; }
+  .dock-level b { font-size: 19px; }
+  .dock .bar.health { height: 16px; }
+  .dock-sub .bar { height: 11px; }
+  .dock .bar.xp { height: 12px; }
+  .mini-btn { width: 22px; height: 22px; }
+  .minimap { width: 100px; height: 100px; }
+}
+
+/* ajuste do celular: lista de habilidades logo acima de Pular/Atacar, sem cobrir o minimapa */
+body.touch .skill-list { bottom: calc(100px * var(--btn) + var(--safe-b)); gap: 2px; }
+body.touch .skill-rows { gap: 2px; }
+body.touch .skill-row { height: 24px; }
+body.touch .skill-head { font-size: 11px; padding: 1px 10px; min-width: 120px; }
+.act.dash { right: calc(182px * var(--btn) + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
+.act.block { right: calc(212px * var(--btn) + var(--safe-r)); bottom: calc(72px * var(--btn) + var(--safe-b)); }
+.act.crouch { right: calc(240px * var(--btn) + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
+.act.sprint { right: calc(214px * var(--btn) + var(--safe-r)); bottom: calc(130px * var(--btn) + var(--safe-b)); }
+body.lefty .act.dash { right: auto; left: calc(182px * var(--btn) + var(--safe-l)); }
+body.lefty .act.block { right: auto; left: calc(212px * var(--btn) + var(--safe-l)); }
+body.lefty .act.crouch { right: auto; left: calc(240px * var(--btn) + var(--safe-l)); }
+body.lefty .act.sprint { right: auto; left: calc(214px * var(--btn) + var(--safe-l)); }
+.keys { white-space: normal; text-align: center; width: min(900px, 92vw); line-height: 1.5; }

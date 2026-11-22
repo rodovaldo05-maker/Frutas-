@@ -12,7 +12,7 @@ export class Input {
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
     this.held = { jump: false, crouch: false, block: false };
-    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1 };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1 };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = false;
     this.stillTime = 0;
@@ -43,12 +43,14 @@ export class Input {
       if (!this.enabled && c !== 'Escape') return;
       if (c === 'Space') this.press('jump');
       if (c === 'ShiftLeft' || c === 'ShiftRight') this.pressed.dash = true;
-      if (c === 'KeyC') this.press('crouch');
-      if (c === 'ControlLeft' || c === 'ControlRight') this.toggleSprint();
+      if (c === 'ControlLeft' || c === 'ControlRight') this.press('crouch');
+      if (c === 'KeyR') this.toggleSprint();
       if (c === 'Escape') this.onPause();
       if (c === 'KeyU') this.onToggleGlider();
       if (c === 'KeyJ' || c === 'KeyF') this.pressed.attack = true;
-      if (c === 'Digit1' || c === 'Digit2' || c === 'Digit3') this.pressed.skill = Number(c.slice(-1)) - 1;
+      if (/^Digit[1-4]$/.test(c)) this.pressed.equip = Number(c.slice(-1)) - 1;
+      const skill = { KeyZ: 0, KeyX: 1, KeyC: 2, KeyV: 3 }[c];
+      if (skill !== undefined) this.pressed.skill = skill;
       if (c === 'KeyK' || c === 'KeyQ') this.setBlock('key', true);
       if (c === 'F3') {
         e.preventDefault();
@@ -59,7 +61,7 @@ export class Input {
       const c = code(e);
       this.keys.delete(c);
       if (c === 'Space') this.held.jump = false;
-      if (c === 'KeyC') this.held.crouch = false;
+      if (c === 'ControlLeft' || c === 'ControlRight') this.held.crouch = false;
       if (c === 'KeyK' || c === 'KeyQ') this.setBlock('key', false);
     });
     window.addEventListener('blur', () => {
@@ -190,7 +192,18 @@ export class Input {
     hold(buttons.menu, () => this.onPause());
     if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
     if (buttons.attack) hold(buttons.attack, () => (this.pressed.attack = true));
-    (buttons.skills || []).forEach((el, i) => el && hold(el, () => (this.pressed.skill = i)));
+    (buttons.equip || []).forEach((el, i) => el && hold(el, () => (this.pressed.equip = i)));
+    // linhas de habilidade mudam com o item equipado: escuta no contêiner
+    if (buttons.skillRows) {
+      buttons.skillRows.addEventListener('pointerdown', (e) => {
+        const row = e.target.closest('[data-skill]');
+        if (!row || !this.enabled) return;
+        e.preventDefault();
+        row.classList.add('down');
+        setTimeout(() => row.classList.remove('down'), 160);
+        this.pressed.skill = Number(row.dataset.skill);
+      });
+    }
     if (buttons.block) hold(buttons.block, () => this.setBlock('touch', true), () => this.setBlock('touch', false));
   }
 
@@ -221,6 +234,8 @@ export class Input {
       if (edge(14)) this.pressed.skill = 0;
       if (edge(12)) this.pressed.skill = 1;
       if (edge(15)) this.pressed.skill = 2;
+      if (edge(13)) this.pressed.skill = 3;
+      if (edge(4)) this.pressed.equip = 9; // LB: próximo item
     }
     this.setBlock('pad', this.enabled && (btn(5) || btn(6)));
     if (edge(9)) this.onPause();
@@ -283,11 +298,13 @@ export class Input {
       dashPressed: this.pressed.dash,
       attackPressed: this.pressed.attack,
       skill: this.pressed.skill,
+      equip: this.pressed.equip,
       block: this.held.block,
       sprint: this.sprint,
     };
     this.pressed.jump = this.pressed.crouch = this.pressed.dash = this.pressed.attack = false;
     this.pressed.skill = -1;
+    this.pressed.equip = -1;
     return out;
   }
 

@@ -473,3 +473,14 @@ contexto decide e o botão contextual mostra qual ação acontecerá.
 - Controle Bluetooth conectado troca os ícones da interface para os botões do controle.
 - Teclado e mouse conectados ao celular funcionam como no PC.
 - Vibração (celular e controle): leve em acertos, forte em golpes recebidos pesados, desligável.
+
+
+## Situação: HUD de jogo (novembro de 2026)
+
+| Área | Como ficou |
+|---|---|
+| Embaixo, no centro | Moedas · nível · fragmentos; barra de Vida; Fôlego e Energia lado a lado; Exp com números, botão Voltar ao início (fora de combate) e botão de Missões com "!" quando há recompensa |
+| Barra de equipar | 1 Fruta (a fruta comida) · 2 Arma (chega na atualização 4) · 3 Estilo (Combate Básico) · 4 livre · Mochila. O item equipado (borda amarela) define o combo do Atacar e a lista de habilidades |
+| Direita | Nome do item equipado e uma linha por habilidade: Usar · tecla (Z X C V) · nome, com custo de energia e recarga correndo sobre o nome; bloqueadas mostram cadeado e o domínio necessário |
+| Celular | Pular e Atacar grandes embaixo à direita; Esquiva, Agachar, Defender e Correr à esquerda deles; a lista de habilidades logo acima, sem cobrir o minimapa; asa-delta passou para os ícones do alto |
+| Teclado | 1–4 equipar · Z X C V habilidades · Ctrl agachar · R correr (o C agora é habilidade) |

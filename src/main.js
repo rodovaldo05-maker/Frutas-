@@ -270,7 +270,7 @@ async function boot() {
     hud.toast(`Domínio de ${f?.name ?? fruitId} nível ${d.level}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length ? 'gold' : 'good');
     audio.play('base', 'wing', 0.9);
     powers.domainLevel = d.level;
-    skillBar.setFruit(eatenFruit(), powers.powers, d.level);
+    refreshEquip();
     if (modals.includes('status')) statusScreen.render();
     saveNow(true);
   }
@@ -313,13 +313,46 @@ async function boot() {
   applyStatus();
   for (const r of arena.recrutas) r.onBurn = (foe, n) => floats.add({ x: foe.pos.x, y: foe.pos.y + 3, z: foe.pos.z }, String(n), 'forte');
   // fruta comida: habilidades, combo próprio e domínio
+  // Equipar (1 Fruta · 2 Arma · 3 Estilo): o item equipado define o combo do Atacar e a
+  // lista de habilidades da direita. Comer uma fruta já equipa a fruta.
+  const EQUIP_SLOTS = ['fruta', 'arma', 'estilo', 'livre'];
+  if (!EQUIP_SLOTS.includes(save.equipped)) save.equipped = save.eaten ? 'fruta' : 'estilo';
+  let lastEaten = save.eaten?.fruit ?? null;
+  function refreshEquip() {
+    const f = eatenFruit();
+    if (!f && save.equipped === 'fruta') save.equipped = 'estilo';
+    const level = f ? domainOf(save, f.id).level : 1;
+    powers.domainLevel = level;
+    const fruitOn = save.equipped === 'fruta' && !!f;
+    combat.runner.setStyle(fruitStyle(fruitOn ? f : null));
+    skillBar.setEquipped(save.equipped);
+    skillBar.setEnergyVisible(!!f);
+    if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level });
+    else skillBar.setSkills({ title: 'Combate Básico', note: 'Combo: Jab · Direto · Gancho<br>Técnicas do estilo na atualização 7' });
+  }
   const setupPowers = () => {
     const f = eatenFruit();
     const level = f ? domainOf(save, f.id).level : 1;
     powers.setFruit(f, f ? powersOf(f) : [], level);
-    combat.runner.setStyle(fruitStyle(f));
-    skillBar.setFruit(f, powers.powers, level);
+    if ((f?.id ?? null) !== lastEaten) {
+      lastEaten = f?.id ?? null;
+      if (f) save.equipped = 'fruta';
+    }
+    skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: 'Combate' });
+    refreshEquip();
   };
+  function equip(index) {
+    const order = EQUIP_SLOTS.filter((k) => k !== 'livre' && (k !== 'fruta' || eatenFruit()) && k !== 'arma');
+    let name = index === 9 ? order[(order.indexOf(save.equipped) + 1) % order.length] : EQUIP_SLOTS[index];
+    if (name === 'fruta' && !eatenFruit()) return hud.toast('Coma uma fruta para equipar os poderes (fale com o Mercador).');
+    if (name === 'arma') return hud.toast('Ainda sem arma: a espada chega na atualização 4.');
+    if (name === 'livre') return;
+    if (name === save.equipped) return;
+    if (powers.busy || combat.runner.busy) return;
+    save.equipped = name;
+    refreshEquip();
+    audio.play('base', 'step', 0.5);
+  }
 
   // evolução pela prática: deslocamento real e eventos do controlador viram experiência
   let diminishedAt = -99;
@@ -462,6 +495,7 @@ async function boot() {
       reward: `${ICONS.coin} ${fmt(TRAINING.reward.coins)} moedas · ${fmt(TRAINING.reward.xp)} exp`,
       done: mission.complete,
     });
+    hud.setQuestBadge(mission.complete && !st.claimed);
     renderMissionList();
   }
 
@@ -499,7 +533,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), skills: [$('slot-1'), $('slot-2'), $('slot-3')] },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -590,6 +624,16 @@ async function boot() {
     else if (mode === 'game') openModal('pause');
   };
   $('btn-missions').addEventListener('click', () => openModal('missions'));
+  $('btn-quest').addEventListener('click', () => openModal('missions'));
+  $('eq-bag').addEventListener('click', () => openModal('bag'));
+  // voltar ao início da ilha (fora de combate)
+  $('btn-home').addEventListener('click', () => {
+    if (mode !== 'game' || modals.length) return;
+    if (ctl.lastDamage < 4 || ctl.faint > 0) return hud.toast('Saia do combate para voltar ao início.');
+    spawn();
+    cam.snap(ctl.pos, ctl.yaw);
+    hud.toast('De volta ao início da Ilha de Treino.');
+  });
   $('btn-status').addEventListener('click', () => openModal('status'));
   $('btn-bag').addEventListener('click', () => openModal('bag'));
   // falar com o NPC perto
@@ -709,8 +753,17 @@ async function boot() {
       prev.copy(ctl.pos);
       const inp = input.consume(cam.yaw);
       combat.update(dt, inp, arena.targets);
+      if (inp.equip >= 0) equip(inp.equip);
       const canCast = combat.canFight() && !combat.runner.busy && !ctl.guarding;
-      if (inp.skill >= 0) powers.cast(inp.skill, arena.targets, canCast);
+      if (inp.skill >= 0) {
+        if (save.equipped === 'fruta') {
+          if (inp.skill === 3) hud.toast(`Despertar: domínio ${59} da fruta (próximas atualizações).`);
+          else powers.cast(inp.skill, arena.targets, canCast);
+        } else if (time - deniedAt > 1.5) {
+          deniedAt = time;
+          hud.toast(eatenFruit() ? 'Equipe a fruta (slot 1) para usar os poderes.' : 'O Combate Básico ainda não tem técnicas: coma uma fruta para ter poderes.');
+        }
+      }
       powers.update(dt, arena.targets, combat.canFight());
       ctl.step(dt, inp);
       playerProxy.alive = ctl.faint <= 0;
@@ -757,7 +810,7 @@ async function boot() {
       }
       floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
       fx.update(animDt);
-      if (mode === 'game') skillBar.update(powers);
+      if (mode === 'game') skillBar.update(powers, save.equipped === 'fruta');
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);

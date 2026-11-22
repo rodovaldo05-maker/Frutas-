@@ -41,6 +41,7 @@ export function newSave() {
     freeRespec: true, // redistribuir é grátis uma vez (doc 09)
     status: newStatus(), // pontos distribuídos: Força, Defesa, Fruta, Espada, Vitalidade
     training: newTraining(), // atributos treinados pela prática, não distribuíveis (doc 12)
+    equipped: 'estilo', // item equipado na barra de baixo: fruta, arma ou estilo
     domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,

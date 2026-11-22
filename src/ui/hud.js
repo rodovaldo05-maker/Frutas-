@@ -31,7 +31,7 @@ export class Hud {
       health: $('bar-health'), healthText: $('txt-health'),
       stamina: $('bar-stamina'), staminaText: $('txt-stamina'),
       air: $('bar-air'), airBox: $('box-air'),
-      level: $('txt-level'), name: $('txt-name'), coins: $('txt-coins'), frags: $('txt-frags'), portrait: $('portrait'),
+      level: $('txt-level'), coins: $('txt-coins'), frags: $('txt-frags'), questBadge: $('quest-badge'),
       xp: $('bar-xp'), xpText: $('txt-xp'), badge: $('status-badge'),
       state: $('state'), hint: $('hint'), hintTitle: $('hint-title'), hintText: $('hint-text'),
       toasts: $('toasts'), stats: $('stats'), sprint: $('btn-sprint'), water: $('water-overlay'),
@@ -45,20 +45,15 @@ export class Hud {
     this.keysTimer = 25;
   }
 
-  setPortrait(url) {
-    this.el.portrait.src = url;
-  }
+  // o retrato saiu do HUD (fica na tela Personagem)
+  setPortrait() {}
 
-  setProfile({ level = 1, title = 'Aprendiz', coins = 0, fragments = 0, statusPoints = 0, xpRatio = 0, fruitLabel = '', fruitColor = '' }) {
-    this.el.level.textContent = `Nv. ${level}`;
+  setProfile({ level = 1, coins = 0, fragments = 0, statusPoints = 0, xp = 0, xpRatio = 0, xpNeed = 0 }) {
+    this.el.level.textContent = String(level);
     this.el.xp.style.transform = `scaleX(${xpRatio})`;
-    this.el.xpText.textContent = `Exp ${Math.floor(xpRatio * 100)}%`;
+    this.el.xpText.textContent = xpNeed ? `Exp ${Math.floor(xp).toLocaleString('pt-BR')} / ${xpNeed.toLocaleString('pt-BR')}` : 'Exp máxima';
     this.el.badge.classList.toggle('hidden', statusPoints < 1);
     this.el.badge.textContent = statusPoints > 99 ? '99+' : String(statusPoints);
-    this.el.name.textContent = title;
-    const sub = $('txt-sub');
-    sub.textContent = fruitLabel ? `Fruta ${fruitLabel}` : 'Ilha de Treino';
-    sub.style.color = fruitColor || '';
     this.el.coins.textContent = coins.toLocaleString('pt-BR');
     this.el.frags.textContent = fragments.toLocaleString('pt-BR');
   }
@@ -87,22 +82,19 @@ export class Hud {
     this.feedTimer = setTimeout(() => feed.classList.remove('on'), 2600);
   }
 
+  setQuestBadge(on) {
+    this.el.questBadge.classList.toggle('hidden', !on);
+  }
+
   levelUp() {
-    const p = this.el.portrait.parentElement;
+    const p = $('dock-level');
     p.classList.remove('level-up');
     void p.offsetWidth; // reinicia a animação
     p.classList.add('level-up');
   }
 
-  // fruta comida no retrato (com a cor do nível) e no título
-  setFruit(info) {
-    const badge = $('fruit-badge');
-    badge.classList.toggle('hidden', !info);
-    if (!info) return;
-    $('fruit-badge-img').src = info.thumb;
-    badge.style.setProperty('--r', info.color);
-    badge.title = info.label;
-  }
+  // a fruta comida aparece no slot 1 da barra de equipar (main.js)
+  setFruit() {}
 
   setSprint(on) {
     this.el.sprint.classList.toggle('active', on);
@@ -144,8 +136,8 @@ export class Hud {
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.1;
-    el.healthText.textContent = `Vida: ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
-    el.staminaText.textContent = `Fôlego: ${Math.round(ctl.stamina.value)} / ${Math.round(ctl.stamina.max)}`;
+    el.healthText.textContent = `Vida ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
+    el.staminaText.textContent = `Fôlego ${Math.round(ctl.stamina.value)} / ${Math.round(ctl.stamina.max)}`;
     el.state.textContent = stateLabel(ctl);
 
     // placa mais próxima

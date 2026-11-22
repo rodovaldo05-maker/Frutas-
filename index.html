@@ -21,20 +21,42 @@
     <!-- ===== HUD ===== -->
     <div id="float-layer" aria-hidden="true"></div>
     <div id="hud">
-      <div class="player-card">
-        <div class="portrait"><img id="portrait" alt="" /><span class="level" id="txt-level">Nv. 1</span><span class="fruit-badge hidden" id="fruit-badge"><img id="fruit-badge-img" alt="" /></span></div>
-        <div class="player-bars">
-          <div class="player-title"><b id="txt-name">Aprendiz</b><span id="txt-sub">Ilha de Treino</span></div>
-          <div class="bar health"><i id="bar-health"></i><em data-icon="heart"><span id="txt-health">Vida: 100 / 100</span></em></div>
-          <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego: 100 / 100</span></em></div>
+      <!-- status embaixo no centro: moedas · nível · fragmentos, vida, fôlego/energia, exp -->
+      <div class="dock" id="dock">
+        <div class="bar air" id="box-air"><i id="bar-air"></i><em data-icon="bubble"><span>Ar</span></em></div>
+        <span class="xp-feed" id="xp-feed"></span>
+        <div class="dock-row">
+          <span class="dock-pill coins" data-icon="coin"><b id="txt-coins">200</b></span>
+          <span class="dock-level" id="dock-level"><small>Nv.</small><b id="txt-level">1</b></span>
+          <span class="dock-pill gems" data-icon="gem"><b id="txt-frags">0</b></span>
+        </div>
+        <div class="bar health"><i id="bar-health"></i><em data-icon="heart"><span id="txt-health">Vida 100 / 100</span></em></div>
+        <div class="dock-sub">
+          <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego 100 / 100</span></em></div>
           <div class="bar energy hidden" id="box-energy"><i id="bar-energy"></i><em data-icon="fruit"><span id="txt-energy">Energia</span></em></div>
-          <div class="bar xp"><i id="bar-xp"></i><em><span id="txt-xp">Exp 0%</span></em></div>
-          <div class="bar air" id="box-air"><i id="bar-air"></i><em data-icon="bubble"><span>Ar</span></em></div>
-          <div class="wallet-row"><div class="wallet"><span data-icon="coin"><b id="txt-coins">200</b></span><span data-icon="gem"><b id="txt-frags">0</b></span></div><span class="xp-feed" id="xp-feed"></span></div>
+        </div>
+        <div class="dock-xp">
+          <button data-btn id="btn-home" class="mini-btn" data-icon="home" aria-label="Voltar ao início da ilha"></button>
+          <div class="bar xp"><i id="bar-xp"></i><em><span id="txt-xp">Exp 0 / 130</span></em></div>
+          <button data-btn id="btn-quest" class="mini-btn" data-icon="scroll" aria-label="Missões"><span class="badge hidden" id="quest-badge">!</span></button>
+        </div>
+        <div class="hotbar" id="hotbar">
+          <button data-btn class="slot equip" id="eq-1" data-equip="0" aria-label="Fruta"><i>1</i></button>
+          <button data-btn class="slot equip" id="eq-2" data-equip="1" aria-label="Arma"><i>2</i></button>
+          <button data-btn class="slot equip" id="eq-3" data-equip="2" aria-label="Estilo de luta"><i>3</i></button>
+          <button data-btn class="slot equip" id="eq-4" data-equip="3" aria-label="Espaço livre"><i>4</i></button>
+          <button data-btn class="slot bag-slot" id="eq-bag" data-icon="bag" aria-label="Mochila"></button>
         </div>
       </div>
 
+      <!-- habilidades do item equipado (Usar · tecla · nome; cadeado com o domínio) -->
+      <div class="skill-list" id="skill-list">
+        <div class="skill-head" id="skill-title">Combate Básico</div>
+        <div class="skill-rows" id="skill-rows"></div>
+      </div>
+
       <div class="top-actions">
+        <button data-btn id="btn-glider" class="icon-btn glider on" data-icon="glider" aria-label="Asa-delta: ligar ou desligar"></button>
         <button data-btn id="btn-status" class="icon-btn" data-icon="person" aria-label="Personagem e treinamento"><span class="badge hidden" id="status-badge"></span></button>
         <button data-btn id="btn-bag" class="icon-btn" data-icon="bag" aria-label="Mochila"></button>
         <button data-btn id="btn-missions" class="icon-btn" data-icon="scroll" aria-label="Missões"></button>
@@ -63,17 +85,13 @@
       <div id="state" class="state">Parado</div>
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
-      <div class="hotbar">
-        <button data-btn class="slot" id="slot-1" aria-label="Habilidade 1"><i>1</i></button><button data-btn class="slot" id="slot-2" aria-label="Habilidade 2"><i>2</i></button><button data-btn class="slot" id="slot-3" aria-label="Habilidade 3"><i>3</i></button><button data-btn class="slot" id="slot-4" aria-label="Despertar"><i>4</i></button><div class="slot"><i>5</i></div>
-      </div>
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · 1 2 3 poderes da fruta · Shift esquiva · C agachar · Ctrl correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
         <button data-btn id="btn-crouch" class="act crouch" data-icon="crouch" aria-label="Agachar"></button>
         <button data-btn id="btn-dash" class="act dash" data-icon="dash" aria-label="Esquiva"></button>
         <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
-        <button data-btn id="btn-glider" class="act glider on" data-icon="glider" aria-label="Asa-delta: ligar ou desligar"></button>
         <button data-btn id="btn-attack" class="act attack" data-icon="fist" aria-label="Atacar"></button>
         <button data-btn id="btn-block" class="act block" data-icon="shield" aria-label="Defender (segurar)"></button>
       </div>
@@ -119,14 +137,15 @@
                 <tr><th>Ação</th><th>Celular</th><th>PC</th><th>Controle</th></tr>
                 <tr><td>Mover</td><td>Joystick (lado esquerdo)</td><td>WASD</td><td>Analógico esquerdo</td></tr>
                 <tr><td>Câmera</td><td>Arrastar a tela</td><td>Arrastar o mouse</td><td>Analógico direito</td></tr>
-                <tr><td>Correr (alterna)</td><td>Botão do corredor</td><td>Ctrl</td><td>Apertar analógico esquerdo</td></tr>
+                <tr><td>Correr (alterna)</td><td>Botão do corredor</td><td>R</td><td>Apertar analógico esquerdo</td></tr>
                 <tr><td>Pular · salto duplo · planar</td><td>Seta grande (segure caindo)</td><td>Espaço</td><td>A / ✕</td></tr>
                 <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
                 <tr><td>Atacar (Jab → Direto → Gancho)</td><td>Punho</td><td>Clique ou J</td><td>X / ▢ ou RT</td></tr>
                 <tr><td>Defender (segurar; no tempo certo: defesa perfeita)</td><td>Escudo</td><td>Botão direito ou K</td><td>RB / R1 ou LT</td></tr>
-                <tr><td>Poderes da fruta 1 · 2 · 3</td><td>Slots 1, 2 e 3 da barra</td><td>1 · 2 · 3</td><td>Direcional ← ↑ →</td></tr>
+                <tr><td>Equipar (Fruta · Arma · Estilo)</td><td>Barra de baixo</td><td>1 · 2 · 3 · 4</td><td>LB / L1</td></tr>
+                <tr><td>Habilidades do item equipado</td><td>Botões Usar (direita)</td><td>Z · X · C · V</td><td>Direcional ← ↑ → ↓</td></tr>
                 <tr><td>Asa-delta (liga/desliga)</td><td>Botão da asa</td><td>U</td><td>—</td></tr>
-                <tr><td>Agachar · deslizar · mergulhar</td><td>Agachar</td><td>C</td><td>Apertar analógico direito</td></tr>
+                <tr><td>Agachar · deslizar · mergulhar</td><td>Agachar</td><td>Ctrl</td><td>Apertar analógico direito</td></tr>
                 <tr><td>Personagem · Mochila · Missões · Mapa</td><td>Ícones no alto</td><td>P · B · L · M</td><td>—</td></tr>
                 <tr><td>Falar (Mercador, Trocador)</td><td>Botão Falar</td><td>E</td><td>Y / △</td></tr>
                 <tr><td>Escalar</td><td colspan="3">Ir contra pedra escura, troncos ou barrancos</td></tr>

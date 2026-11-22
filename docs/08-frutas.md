@@ -400,3 +400,37 @@ cor da fruta). O conjunto completo de efeitos do laboratório pode ser trazido d
 Código: `src/fruits/powers.js` (formato de cada habilidade), `src/combat/powers.js`
 (energia, recargas e liberação), `src/vfx/powerFx.js` (efeitos), `src/progression/domain.js`
 (domínio), `src/ui/skillBar.js` (slots e Energia); testes em `tests/powers.test.js`.
+
+
+## Efeitos visuais das habilidades (atualização 18)
+
+Os efeitos vêm do **Laboratório Voxel** (`FRUTO_Laboratorio_Voxel_Edicao_18.html`): o módulo
+`createFruitFX` (com onda/olho da maré, furacão de areia e tempestade) e `FRUTOMythFX` foram
+trazidos sem mudanças para `src/vfx/fruto-fx.js`. A ponte `src/vfx/labFx.js` escolhe, para cada
+fruta e formato de golpe, o efeito que o laboratório usa; a lógica de acerto continua no
+`powers.js`.
+
+| Fruta | Golpe 1 | Golpe 2 | Golpe 3 |
+|---|---|---|---|
+| Impacto | Pistão cinético | Explosão cinética + rastro | Faixa de ruptura cinética |
+| Brasa | Cometa de fogo | Chamas e fogueira no rastro | Rachaduras e pilares de fogo |
+| Geada | Fila de espinhos de gelo | Muralha de gelo | Anel de espinhos, rachaduras e neve |
+| Tormenta | Raios em cadeia | Investida com raio | Nuvem de tempestade com descargas |
+| Lobo | Garras | Garras | Investida com garras |
+| Eclipse | Orbe sombrio | Portais | Vórtice sombrio |
+| Maré | Onda gigante | Redemoinho | Olho da maré |
+| Cristal | Lasca de cristal | Anel de prismas | Geodo (prisma, rachaduras) |
+| Eco | Ressonância | Ondas de ressonância | Ressonância em volta |
+| Falcão | Pena | Penas em fila | Penas e pulso |
+| Duna | Pedra de areia | Investida de areia | Furacão de areia |
+| Ímã | Linhas magnéticas | Pulso e repulsão | Anéis e raios magnéticos |
+| Besta, Fênix, Dragões | Marcas míticas com garras, fogo, raios e pulsos | | |
+
+Também: carga na mão durante o gesto (`focus`), aviso no chão antes dos golpes marcados,
+contato dos socos com a fruta equipada (`basicContact`), aura da fruta em volta do corpo com o
+slot da fruta equipado (mais forte no despertar) e partículas no formato do laboratório.
+
+Melhorias em cima do laboratório: o laboratório usa câmera de perto; no jogo os raios, o
+pistão, as penas e as faixas ficavam finos, então ganham reforço de brilho (halo no
+projétil, raio brilhante, clarões no impacto). O `FRUTOMythFX` buscava o THREE global e não
+desenhava nada no jogo; agora usa o módulo `three`.

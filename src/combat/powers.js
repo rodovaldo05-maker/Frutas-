@@ -14,9 +14,10 @@ const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 export class FruitPowers {
   // stats(): { fruit, domain }   onEvent(name, data)
-  constructor({ ctl, fx = null, stats, onEvent = () => {} }) {
+  constructor({ ctl, fx = null, lab = null, stats, onEvent = () => {} }) {
     this.ctl = ctl;
     this.fx = fx;
+    this.lab = lab; // efeitos do Laboratório Voxel por fruta (atualização 18); null = efeitos genéricos
     this.stats = stats;
     this.onEvent = onEvent;
     this.powers = [];
@@ -66,6 +67,7 @@ export class FruitPowers {
     this.domainLevel = domainLevel;
     if (changed) {
       this.cooldown = powers.map(() => 0);
+      this.endFocus();
       this.casting = null;
       if (this.awakened) {
         this.awakened = false;
@@ -118,10 +120,27 @@ export class FruitPowers {
     // aviso no chão para golpes em ponto marcado e faixas
     const dest = this.destination(p, target, dir);
     this.casting.dest = dest;
-    if (p.kind === 'alvo') this.fx?.mark(dest, p.color, p.params.radius, tm.release + (p.params.delay ?? 0) + (p.params.pulses ?? 1) * (p.params.interval ?? 0));
-    if (p.kind === 'faixa' && !p.params.travel) this.fx?.lane(c.pos, dir, p.params.length, p.params.halfWidth, p.color, tm.release + 0.1);
+    if (this.lab) {
+      // laboratório: carga na mão durante o gesto, marca/nuvem/faixa cinética antes do golpe
+      this.casting.focus = this.lab.focus(p.fruit, p.slot, this.handPos(dir));
+      this.lab.cast(p, { pos: c.pos, dir, dest, release: tm.release });
+      if (p.kind === 'faixa' && !p.params.travel && p.fruit !== 'impacto') this.fx?.lane(c.pos, dir, p.params.length, p.params.halfWidth, p.color, tm.release + 0.1);
+    } else {
+      if (p.kind === 'alvo') this.fx?.mark(dest, p.color, p.params.radius, tm.release + (p.params.delay ?? 0) + (p.params.pulses ?? 1) * (p.params.interval ?? 0));
+      if (p.kind === 'faixa' && !p.params.travel) this.fx?.lane(c.pos, dir, p.params.length, p.params.halfWidth, p.color, tm.release + 0.1);
+    }
     this.onEvent('cast', { power: p });
     return true;
+  }
+
+  handPos(dir) {
+    const c = this.ctl.pos;
+    return new THREE.Vector3(c.x + dir.x * 0.9, c.y + 2.4, c.z + dir.z * 0.9);
+  }
+
+  endFocus() {
+    this.casting?.focus?.remove?.();
+    if (this.casting) this.casting.focus = null;
   }
 
   aim(targets, range) {
@@ -169,13 +188,17 @@ export class FruitPowers {
 
     const k = this.casting;
     if (k) {
-      if (!canAct && c.state !== 'ground') this.casting = null;
-      else {
+      if (!canAct && c.state !== 'ground') {
+        this.endFocus();
+        this.casting = null;
+      } else {
         k.t += dt;
+        k.focus?.seek?.(this.handPos(k.dir), Math.min(1, k.t / k.tm.release));
         c.attackLock = Math.max(c.attackLock, 0.05);
         c.action = { clip: k.p.clip, t: k.t };
         if (!k.released && k.t >= k.tm.release) {
           k.released = true;
+          this.endFocus();
           this.release(k, targets);
         }
         if (k.t >= k.tm.duration) {
@@ -219,6 +242,7 @@ export class FruitPowers {
       // clarão e faíscas no corpo de quem apanhou (revisão visual dos efeitos)
       const at = { x: target.pos.x, y: target.pos.y + 1.6, z: target.pos.z };
       this.fx?.flash?.(at, p.color, p.slot === 2 ? 4.2 : 3, 0.26);
+      this.lab?.hitTarget(p, at, { x: target.pos.x - origin.x, y: 0, z: target.pos.z - origin.z });
       this.fx?.spark?.(at, p.color, { count: p.slot === 2 ? 10 : 6, speed: 5.5, size: 0.8, up: 3.5, life: 0.42 });
       this.onEvent('hit', { target, power: p, damage: r.damage, result: r.result });
     }
@@ -245,23 +269,29 @@ export class FruitPowers {
     const q = p.params;
     const c = this.ctl;
     const hand = new THREE.Vector3(c.pos.x + dir.x * 0.9, c.pos.y + 2.4, c.pos.z + dir.z * 0.9);
-    const fx = this.fx;
+    const L = this.lab;
+    const fx = L ? null : this.fx; // com o laboratório, os efeitos genéricos ficam de fora
     const color = p.color;
+    const near = (list) => list.map((t) => ({ x: t.pos.x, y: t.pos.y, z: t.pos.z }));
     this.onEvent('release', { power: p });
     switch (p.kind) {
-      case 'projetil':
-        this.shots.push({ p, pos: hand.clone(), dir: dir.clone(), speed: q.speed, left: q.range, obj: fx?.orb(color, 0.5) });
-        fx?.burst(hand, color, { count: 8, speed: 3, up: 1.5 });
+      case 'projetil': {
+        const vis = L?.projectile(p, hand, dir) ?? null;
+        this.shots.push({ p, pos: hand.clone(), dir: dir.clone(), speed: q.speed, left: q.range, vis, obj: vis ? null : this.fx?.orb(color, 0.5) });
+        if (!vis) this.fx?.burst(hand, color, { count: 8, speed: 3, up: 1.5 });
         break;
+      }
       case 'investida': {
         const speed = q.distance / 0.3;
         c.shove(dir.x * speed, dir.z * speed, 0.3);
         c.invulnerable = Math.max(c.invulnerable, 0.32);
-        this.dashes.push({ p, t: 0, hit: new Set(), last: c.pos.clone() });
+        this.dashes.push({ p, t: 0, hit: new Set(), last: c.pos.clone(), dir: dir.clone() });
+        L?.dash(p, c.pos, c.pos.clone().addScaledVector(dir, 1), dir, 'start');
         fx?.burst(c.pos, color, { count: 12, speed: 4, up: 2 });
         break;
       }
       case 'area': {
+        L?.release(p, { pos: c.pos, dir, targets: near(this.inRadius(targets, c.pos, q.radius)) });
         fx?.ring(c.pos, color, q.radius, 0.5);
         fx?.burst({ x: c.pos.x, y: c.pos.y + 0.5, z: c.pos.z }, color, { count: 26, speed: q.radius * 1.6, up: 4 });
         if (q.heal) {
@@ -280,12 +310,14 @@ export class FruitPowers {
       case 'alvo': {
         const pulses = q.pulses ?? 1;
         const at = k.dest.clone();
+        const total = (q.delay ?? 0) + pulses * (q.interval ?? 0);
         for (let i = 0; i < pulses; i++) {
           const last = i === pulses - 1;
           this.timers.push({
             at: (q.delay ?? 0) + i * (q.interval ?? 0),
             fn: () => {
               const r = q.radius * (last && pulses > 1 ? 1.15 : 1);
+              L?.alvoPulse(p, at, i, total, dir);
               if (q.pull) fx?.vortex(at, color, r, 0.5);
               else fx?.pillar(at, color, r * 0.8, 9, 0.5);
               fx?.ring(at, color, r, 0.4);
@@ -308,6 +340,7 @@ export class FruitPowers {
           this.timers.push({
             at: i * (q.interval ?? 0),
             fn: () => {
+              L?.faixaPulse(p, start, dir);
               fx?.lane(start, dir, q.length, q.halfWidth, color, 0.45);
               const end = start.clone().addScaledVector(dir, q.length);
               fx?.line({ x: start.x, y: start.y + 0.6, z: start.z }, { x: end.x, y: end.y + 0.6, z: end.z }, color, { count: 18, up: 4, speed: 2 });
@@ -332,12 +365,17 @@ export class FruitPowers {
         const half = (q.angle * Math.PI) / 360;
         const eff = this.effects(p);
         if (q.pull) eff.pull = c.pos.clone();
+        const inCone = [];
         for (const t of targets) {
           if (!t.alive) continue;
           const d = flat(t.pos, c.pos);
           if (d > q.range + (t.radius ?? 0.8) || Math.abs(t.pos.y - c.pos.y) > 4) continue;
           const off = Math.abs(wrapAngle(Math.atan2(t.pos.x - c.pos.x, t.pos.z - c.pos.z) - c.yaw));
           if (off > half && d > 1.5) continue;
+          inCone.push(t);
+        }
+        L?.release(p, { pos: c.pos, dir, targets: near(inCone) });
+        for (const t of inCone) {
           this.hit(t, p, { effect: eff });
           if (q.mark) this.marks.set(t, this.time + q.mark);
         }
@@ -347,6 +385,7 @@ export class FruitPowers {
         const at = c.pos.clone().addScaledVector(dir, 2.4);
         this.wallUntil = this.time + q.duration;
         this.wallYaw = c.yaw;
+        L?.release(p, { pos: c.pos, dir, yaw: c.yaw });
         fx?.wall(at, c.yaw, color, q.duration);
         fx?.burst(at, color, { count: 18, speed: 3, up: 4 });
         break;
@@ -354,12 +393,14 @@ export class FruitPowers {
       case 'teleporte': {
         const t = k.target ?? this.aim(targets, q.range);
         if (!t) {
+          L?.release(p, { pos: c.pos, yaw: c.yaw });
           fx?.burst(c.pos, color, { count: 14, speed: 3, up: 3 });
           break;
         }
         const back = Math.atan2(t.pos.x - c.pos.x, t.pos.z - c.pos.z);
         const bx = t.pos.x + Math.sin(back) * 2.2;
         const bz = t.pos.z + Math.cos(back) * 2.2;
+        L?.release(p, { pos: c.pos.clone(), to: { x: bx, y: t.pos.y, z: bz }, yaw: back + Math.PI });
         fx?.burst(c.pos, color, { count: 18, speed: 3, up: 3 });
         this.onEvent('teleport', { x: bx, z: bz, yaw: back + Math.PI });
         fx?.burst({ x: bx, y: t.pos.y, z: bz }, color, { count: 18, speed: 3, up: 3 });
@@ -372,6 +413,7 @@ export class FruitPowers {
         const done = new Set();
         for (let n = 0; n < q.jumps && cur; n++) {
           const to = new THREE.Vector3(cur.pos.x, cur.pos.y + 2.2, cur.pos.z);
+          L?.chainJump(p, from, to);
           fx?.bolt(from, to, color, 0.3);
           fx?.burst(to, color, { count: 8, speed: 3, up: 2 });
           this.hit(cur, p, { mult: n === 0 ? 1 : 0.7, origin: from });
@@ -389,16 +431,21 @@ export class FruitPowers {
           }
           cur = next;
         }
-        if (!done.size) fx?.bolt(hand, hand.clone().addScaledVector(dir, 8), color, 0.25);
+        if (!done.size) {
+          L?.chainJump(p, hand, hand.clone().addScaledVector(dir, 3.2));
+          fx?.bolt(hand, hand.clone().addScaledVector(dir, 8), color, 0.25);
+        }
         break;
       }
       case 'pilares': {
         const near = this.inRadius(targets, c.pos, q.radius);
         const spots = near.length ? near.map((t) => t.pos.clone()) : [c.pos.clone().addScaledVector(dir, 4)];
         for (const at of spots) fx?.mark(at, color, q.pillar, q.delay);
+        L?.pilaresMark(p, spots, q.delay);
         this.timers.push({
           at: q.delay,
           fn: () => {
+            L?.pilaresStrike(p, spots);
             for (const at of spots) {
               fx?.pillar(at, color, q.pillar, 10, 0.7);
               fx?.burst(at, color, { count: 14, speed: 3, up: 8 });
@@ -419,6 +466,7 @@ export class FruitPowers {
       s.pos.addScaledVector(s.dir, step);
       s.left -= step;
       if (s.obj) s.obj.position.copy(s.pos);
+      if (s.vis) this.lab.travel(s.vis, s.pos, dt);
       let hitT = null;
       for (const t of targets) {
         if (!t.alive) continue;
@@ -430,9 +478,10 @@ export class FruitPowers {
       if (hitT || s.left <= 0) {
         const q = s.p.params;
         if (s.obj) this.fx?.kill(s.obj);
-        this.fx?.burst(s.pos, s.p.color, { count: 16, speed: 5, up: 3 });
+        if (s.vis) this.lab.projectileEnd(s.vis, s.pos, q.explode ?? 0);
+        else this.fx?.burst(s.pos, s.p.color, { count: 16, speed: 5, up: 3 });
         if (q.explode) {
-          this.fx?.ring(s.pos, s.p.color, q.explode, 0.4);
+          if (!s.vis) this.fx?.ring(s.pos, s.p.color, q.explode, 0.4);
           const eff = this.effects(s.p);
           if (q.pull) eff.pull = s.pos.clone();
           for (const t of this.inRadius(targets, s.pos, q.explode)) this.hit(t, s.p, { mult: t === hitT ? 1 : 0.6, origin: s.pos, effect: eff });
@@ -447,7 +496,8 @@ export class FruitPowers {
     for (let i = this.dashes.length - 1; i >= 0; i--) {
       const d = this.dashes[i];
       d.t += dt;
-      this.fx?.line({ x: d.last.x, y: d.last.y + 0.8, z: d.last.z }, { x: c.pos.x, y: c.pos.y + 0.8, z: c.pos.z }, d.p.color, { count: 2, up: 1.5 });
+      if (this.lab) this.lab.dash(d.p, d.last, c.pos, d.dir, d.t > 0.36 ? 'end' : 'trail');
+      else this.fx?.line({ x: d.last.x, y: d.last.y + 0.8, z: d.last.z }, { x: c.pos.x, y: c.pos.y + 0.8, z: c.pos.z }, d.p.color, { count: 2, up: 1.5 });
       d.last.copy(c.pos);
       for (const t of targets) {
         if (!t.alive || d.hit.has(t)) continue;

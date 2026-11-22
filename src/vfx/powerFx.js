@@ -133,6 +133,21 @@ export class PowerFx {
     this.spark(pos, color, { count: Math.max(1, Math.round(count / 2)), speed: speed * 0.8, size: size * 3.6, life: life * 0.9, up, gravity: gravity * 0.5, spread });
   }
 
+  // partículas no formato do laboratório (emit do createFruitFX): velocidade aleatória em
+  // todas as direções, gravidade puxando para baixo, cubos pequenos
+  labEmit(pos, color, count = 18, speed = 3, o = {}) {
+    const n = this.light ? Math.ceil(count * 0.6) : count;
+    const spread = o.spread ?? 0;
+    for (let i = 0; i < n && this.pool.length < MAX_PARTS; i++) {
+      this.pool.push({
+        x: pos.x + (Math.random() - 0.5) * spread, y: pos.y + Math.random() * spread * 0.2, z: pos.z + (Math.random() - 0.5) * spread,
+        vx: (Math.random() - 0.5) * speed, vy: Math.random() * speed, vz: (Math.random() - 0.5) * speed,
+        size: (o.size ?? 0.05) * 2.2, life: o.life ? o.life * (0.7 + Math.random() * 0.4) : 0.35 + Math.random() * 0.55, t: 0,
+        gravity: -(o.gravity ?? 4), color: new THREE.Color(color), spin: Math.random() * 6,
+      });
+    }
+  }
+
   // linha de partículas (rastro de investida, faixa)
   line(from, to, color, { count = 16, ...opts } = {}) {
     for (let i = 0; i < count; i++) {

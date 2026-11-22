@@ -108,6 +108,11 @@ Visual: guarda-roupa com 8 roupas (3 cores cada) e moradores vestidos; armaduras
 por peça com frisos pela qualidade; efeitos das habilidades com brilho, clarões de impacto,
 anéis duplos, pilares com miolo e orbes com rastro.
 
+Efeitos do Laboratório Voxel (atualização 18): os efeitos das frutas do HTML do laboratório
+nas habilidades do jogo — onda gigante e olho da maré, furacão de areia, nuvem de tempestade,
+espinhos e muralha de gelo, pilares de fogo, prismas, ímã, garras, portais, marcas míticas,
+carga na mão, contato dos socos e aura da fruta — com reforço de brilho onde ficavam finos.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

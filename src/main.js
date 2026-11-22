@@ -59,6 +59,7 @@ import { SkillBar } from './ui/skillBar.js';
 import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
 import { makeSword } from './weapons/swordModel.js';
 import { Fleet } from './ships/fleet.js';
+import { LabFx } from './vfx/labFx.js';
 import { SellItemsUi } from './ui/sellItemsUi.js';
 import { shipLoot, repairCost, NAVAL } from './ships/naval.js';
 import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
@@ -388,6 +389,8 @@ async function boot() {
             break;
           }
           floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
+          // soco com a fruta equipada: contato do laboratório na cor da fruta
+          if (save.equipped === 'fruta' && eatenFruit() && !d.attack.id?.startsWith('espada')) lab.punch(eatenFruit().id, at, { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) }, d.attack.heavy ? 2 : 0);
           // faíscas do golpe (espada na cor do fio, soco em tom claro)
           {
             const c = d.attack.id?.startsWith('espada') ? WEAPONS[save.weapon]?.cores?.fio ?? '#ffffff' : '#fff0c8';
@@ -561,6 +564,20 @@ async function boot() {
   // ===== Poderes das frutas (atualização 3): energia, habilidades 1–3 e domínio =====
   const fx = new PowerFx(renderer.scene, { ground: (x, z) => world.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
   fx.viewH = () => renderer.renderer.domElement.height;
+  // efeitos das frutas do Laboratório Voxel (atualização 18): coreografia por fruta e golpe
+  const lab = new LabFx({
+    scene: renderer.scene,
+    ground: (x, z) => world.sample(x, z),
+    fruits: DATA.fruits,
+    emit: (pos, c, count, speed, o) => fx.labEmit(pos, c, count, speed, o),
+    glow: fx,
+    mobile: window.matchMedia('(pointer: coarse)').matches,
+    level: () => ({ alta: 0, media: 1, leve: 2 })[renderer.qualityId] ?? 1,
+    calm: () => !!settings.reduceFx,
+    shake: (amount) => {
+      if (!settings.reduceMotion) shake = Math.max(shake, amount * 3);
+    },
+  });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
   // Forma híbrida (frutas de fera; atualização 13): partes no corpo e números próprios
@@ -617,6 +634,7 @@ async function boot() {
   powers = new FruitPowers({
     ctl,
     fx,
+    lab,
     stats: () => ({ fruit: damageMultipliers(save.status).fruit * raceSys.mods.fruitDamage, domain: domainBonus(powers.domainLevel) }),
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -1995,6 +2013,9 @@ async function boot() {
       }
       floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
       fx.update(animDt);
+      lab.update(animDt);
+      // aura da fruta do laboratório: com o slot da fruta equipado; mais forte no despertar
+      lab.aura(mode === 'game' && save.equipped === 'fruta' && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened, animDt);
       if (mode === 'game') {
         skillBar.update(powers, true, save.equipped === 'arma' ? blade : save.equipped === 'estilo' ? art : powers);
         const learned = save.vontade.armadura || save.vontade.percepcao;
@@ -2041,13 +2062,7 @@ async function boot() {
           m.material.emissive.set(c);
           m.material.emissiveIntensity = k;
         }
-        playerTint = 'desperto';
-        auraT -= animDt;
-        if (auraT <= 0) {
-          auraT = 0.2;
-          const a = Math.random() * Math.PI * 2;
-          fx.burst({ x: view.x + Math.cos(a) * 1.1, y: view.y + 0.6 + Math.random() * 3, z: view.z + Math.sin(a) * 1.1 }, c, { count: 3, speed: 1.2, up: 2.5 });
-        }
+        playerTint = 'desperto'; // as faíscas em volta agora vêm da aura do laboratório (lab.aura)
       }
       if (save.race && mode === 'game') {
         const rb = $('btn-race');

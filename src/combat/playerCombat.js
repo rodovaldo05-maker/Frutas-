@@ -109,7 +109,7 @@ export class PlayerCombat {
       if (!t.alive) continue;
       if (!inReach(me, { x: t.pos.x, y: t.pos.y, z: t.pos.z }, attack, { radius: t.radius ?? 0.9, arc: attack.arc ?? 0.45 })) continue;
       // espada: pontos de Espada × proficiência; soco e combo de fruta: pontos de Força
-      const mult = attack.weapon ? s.weapon * (s.prof ?? 1) : s.melee;
+      const mult = (attack.weapon ? s.weapon * (s.prof ?? 1) : s.melee * (attack.styleMult ?? 1)) * (s.armor ?? 1);
       const damage = computeDamage(attack.damage, { mult, defense: t.defense ?? 0 });
       const r = t.receiveHit({ attacker: me, attack, damage, from: 'jogador' });
       if (!r) continue;
@@ -128,6 +128,11 @@ export class PlayerCombat {
     // esquiva no tempo certo: o golpe ia acertar, mas o jogador está invulnerável
     if (c.invulnerable > 0) {
       this.onEvent('dodge', { source, life });
+      return { result: 'dodge' };
+    }
+    // Vontade de Percepção: esquiva sozinha dos primeiros golpes
+    if (this.vontade?.autoDodge()) {
+      this.onEvent('senseDodge', { source, life, left: this.vontade.dodgesLeft });
       return { result: 'dodge' };
     }
     // muralha de gelo ativa: segura golpes que vêm de frente

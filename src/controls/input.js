@@ -12,7 +12,7 @@ export class Input {
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
     this.held = { jump: false, crouch: false, block: false };
-    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false, armor: false, sense: false };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = false;
     this.stillTime = 0;
@@ -49,6 +49,8 @@ export class Input {
       if (c === 'KeyU') this.onToggleGlider();
       if (c === 'KeyJ') this.pressed.attack = true;
       if (c === 'KeyF') this.pressed.race = true;
+      if (c === 'KeyG') this.pressed.armor = true;
+      if (c === 'KeyH') this.pressed.sense = true;
       if (/^Digit[1-4]$/.test(c)) this.pressed.equip = Number(c.slice(-1)) - 1;
       const skill = { KeyZ: 0, KeyX: 1, KeyC: 2, KeyV: 3 }[c];
       if (skill !== undefined) this.pressed.skill = skill;
@@ -195,6 +197,8 @@ export class Input {
     if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
     if (buttons.attack) hold(buttons.attack, () => (this.pressed.attack = true));
     if (buttons.race) hold(buttons.race, () => (this.pressed.race = true));
+    if (buttons.armor) hold(buttons.armor, () => (this.pressed.armor = true));
+    if (buttons.sense) hold(buttons.sense, () => (this.pressed.sense = true));
     (buttons.equip || []).forEach((el, i) => el && hold(el, () => (this.pressed.equip = i)));
     // linhas de habilidade mudam com o item equipado: escuta no contêiner
     if (buttons.skillRows) {
@@ -304,6 +308,8 @@ export class Input {
       skill: this.pressed.skill,
       equip: this.pressed.equip,
       racePressed: this.pressed.race,
+      armorPressed: this.pressed.armor,
+      sensePressed: this.pressed.sense,
       block: this.held.block,
       sprint: this.sprint,
     };
@@ -311,6 +317,7 @@ export class Input {
     this.pressed.skill = -1;
     this.pressed.equip = -1;
     this.pressed.race = false;
+    this.pressed.armor = this.pressed.sense = false;
     return out;
   }
 

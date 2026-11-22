@@ -47,6 +47,11 @@ jogador queimando, congelado, lento ou com choque (3 cargas atordoam) e marcam c
 para esquivar; a água apaga o fogo. Resistência Elemental e Voo (planando com a asa-delta)
 agora treinam pela prática.
 
+Vontade e estilos (atualização 7): o Mestre de Luta ensina estilos de luta para o slot 3
+(Combate Básico, Corpo Voltaico, Caratê das Marés: combo, 4 técnicas por maestria e passiva) e
+a Vontade de Armadura (+dano, −dano recebido, braços escuros) e de Percepção (esquiva
+automática, aviso de ataque), com barra própria (G e H no PC).
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com
@@ -106,6 +111,7 @@ npm run apk        # build + sync + gradle assembleDebug
 | Falar (Mercador, Trocador) | Botão Falar | E | Y / △ |
 | Asa-delta (liga/desliga) | Botão da asa | U | — |
 | Habilidade da raça | Botão da raça | F | Back / Select |
+| Vontade de Armadura · Percepção | Botões 🛡 · 👁 | G · H | — |
 | Pausa | Engrenagem | Esc | Start |
 
 ## Estrutura
@@ -125,6 +131,7 @@ src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
 src/combat      regras do combate, combate do jogador, poderes, bonecos e Recrutas
 src/weapons     espadas (dados, combo, habilidades) e modelo voxel
 src/races       quatro raças: dados, passivas, ativas, maestria e partes visuais
+src/styles      estilos de luta e Vontade
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática

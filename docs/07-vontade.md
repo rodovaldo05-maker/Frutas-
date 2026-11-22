@@ -53,3 +53,19 @@
   físico (Impacto, Lobo, Besta).
 - Percepção funciona em todas as formas, inclusive animais.
 - Soberana não pode ser usada na água por usuários de fruta.
+
+
+## 6. Situação no jogo (atualização 7)
+
+- O **Mestre de Luta** (barraca a leste do início da Ilha de Treino) ensina a Vontade de
+  Armadura (5.000 moedas, nível 4) e a de Percepção (8.000 moedas, nível 6). Soberana:
+  desbloqueio raro (missão especial, futuro).
+- Barra de Vontade (100) no status, volta 8/s com tudo desligado; botões 🛡 e 👁 perto do
+  Correr no celular, teclas G e H no PC.
+- **Armadura (6/s):** +15% de dano corpo a corpo e com armas (até +25% com a maestria),
+  −10% de dano físico recebido; braços escuros com brilho arroxeado.
+- **Percepção (4/s):** esquiva sozinha de 3 golpes (+1 a cada 20 níveis de maestria), que só
+  recarregam 10 s depois de desligar; anel vermelho quando um inimigo vai atacar; nomes e
+  barras de inimigos visíveis de longe; tela levemente dessaturada.
+- Maestria (1 a 100) de cada uma: Armadura sobe acertando inimigos com ela ligada; Percepção
+  sobe com as esquivas automáticas (teto por oponente).

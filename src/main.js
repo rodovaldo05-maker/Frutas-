@@ -47,6 +47,9 @@ import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
 import { makeSword } from './weapons/swordModel.js';
 import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
 import { Armory } from './ui/armory.js';
+import { STYLES, styleCombo, stylePowers } from './styles/styles.js';
+import { Vontade } from './styles/vontade.js';
+import { Dojo } from './ui/dojo.js';
 import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
@@ -201,13 +204,29 @@ async function boot() {
   // ===== Combate (atualização 2): golpes, defesa, inimigos da arena e treino =====
   const floats = new FloatText($('float-layer'));
   let shake = 0;
+  // Vontade (atualização 7): Armadura e Percepção
+  let willDenyAt = -9;
+  const vontade = new Vontade({
+    save,
+    onEvent: (name, d) => {
+      if (name === 'denied' && time - willDenyAt > 1.5) {
+        willDenyAt = time;
+        hud.toast(d.message);
+      }
+      if (name === 'toggle') {
+        audio.play('base', d.on ? 'wing' : 'step', 0.6);
+        hud.toast(`${d.kind === 'armor' ? 'Vontade de Armadura' : 'Vontade de Percepção'} ${d.on ? 'ligada' : 'desligada'}`, d.on ? 'good' : '');
+      }
+      if (name === 'empty') hud.toast('Vontade esgotada: espere recuperar.', 'bad');
+    },
+  });
   const combat = new PlayerCombat({
     ctl,
     stats: () => {
       const b = bonuses(save.training);
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
-      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation, elementalMit: b.elementalMit, stunMult: rm.stunMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation, elementalMit: b.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -238,6 +257,17 @@ async function boot() {
           audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
           shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
           if (t.hostile) raceSys.onHostileHit(d.attack.weapon ? 'espada' : d.attack.fruit ? 'fruta' : 'soco');
+          if (d.attack.style) grantStyle(d.attack.style, t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
+          if (vontade.armor && t.hostile) grantMastery('vontade:armadura', 'Vontade de Armadura', 1, 'arm', true, t);
+          if (d.attack.chain && t.hostile) {
+            // Corpo Voltaico: o 3º golpe salta um raio para outro inimigo
+            const other = arena.targets.find((o) => o !== t && o.alive && o.hostile && Math.hypot(o.pos.x - t.pos.x, o.pos.z - t.pos.z) < 8);
+            if (other) {
+              fx.bolt({ x: t.pos.x, y: t.pos.y + 2.2, z: t.pos.z }, { x: other.pos.x, y: other.pos.y + 2.2, z: other.pos.z }, '#ffe45a', 0.3);
+              const r2 = other.receiveHit({ attacker: { x: t.pos.x, y: t.pos.y, z: t.pos.z, yaw: 0 }, attack: { id: 'raio-voltaico', posture: 6, knock: 1, reaction: 'leve' }, damage: 8 });
+              if (r2) floats.add({ x: other.pos.x, y: other.pos.y + 3.2, z: other.pos.z }, String(r2.damage), 'dano');
+            }
+          }
           if (d.attack.weapon) grantProf(t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           else tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
           if (d.attack.fruit) grantDomain(d.attack.fruit, t.hostile ? 1 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
@@ -262,6 +292,11 @@ async function boot() {
           tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: false }, p);
           break;
         case 'wall': floats.add(head, 'Muralha!', 'esquiva'); audio.play('base', 'land', 0.5); break;
+        case 'senseDodge':
+          floats.add(head, `Percepção! (${d.left})`, 'esquiva');
+          audio.play('base', 'dash', 0.6);
+          grantMastery('vontade:percepcao', 'Vontade de Percepção', 2, 'sense', true, { id: d.source, life: d.life });
+          break;
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           floats.add(head, `−${d.damage}`, 'jogador');
@@ -294,6 +329,11 @@ async function boot() {
     return r;
   }
   arena.hitPlayer = (enemy, attack, damage) => enemyHit(enemy, attack, damage);
+  combat.vontade = vontade;
+  // Percepção: aviso vermelho quando um inimigo vai atacar
+  arena.onWindup = (enemy) => {
+    if (vontade.sense) fx.ring(enemy.pos, '#ff3a3a', 2.4, 0.5);
+  };
   // ataque marcado dos Recrutas elementais: aviso no chão e resolução depois de 0,9 s
   arena.onSpecial = (enemy, at, sp) => {
     fx.mark(at, enemy.def.cor, sp.radius, sp.telegraph);
@@ -387,10 +427,11 @@ async function boot() {
           audio.play(d.power.fruit, 'acerto', 0.8);
           shake = Math.max(shake, d.power.slot === 2 ? 0.2 : 0.1);
           if (t.hostile) {
-            raceSys.onHostileHit(d.power.weapon ? 'espada' : 'fruta');
-            if (!d.power.weapon) raceSys.onFruitHit(d.power.slot);
+            raceSys.onHostileHit(d.power.weapon ? 'espada' : d.power.style ? 'soco' : 'fruta');
+            if (!d.power.weapon && !d.power.style) raceSys.onFruitHit(d.power.slot);
           }
-          if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
+          if (d.power.style) grantStyle(d.power.fruit, t.hostile ? (d.power.slot >= 2 ? 4 : 3) : 1, `${t.id}:t${d.power.slot}`, t.hostile, t);
+          else if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
           else grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
           break;
         }
@@ -407,7 +448,7 @@ async function boot() {
   });
   combat.powers = {
     get busy() {
-      return powers.busy || blade.busy;
+      return powers.busy || blade.busy || art?.busy;
     },
     wallBlocks: (a) => powers.wallBlocks(a),
   };
@@ -431,6 +472,39 @@ async function boot() {
     refreshEquip();
     saveNow(true);
   }
+  // maestria genérica (estilos e Vontade): teto por oponente, bonecos rendem pouco
+  const masteryBudget = new Map();
+  function grantMastery(type, label, xp, key, hostile, foe, unlocks = () => []) {
+    let amount = xp;
+    if (hostile) {
+      const k = `${type}:${foe.id}:${foe.life}`;
+      const used = masteryBudget.get(k) || 0;
+      amount = Math.max(0, Math.min(xp, 20 - used));
+      masteryBudget.set(k, used + amount);
+      if (masteryBudget.size > 300) masteryBudget.delete(masteryBudget.keys().next().value);
+    } else amount *= tracker.farm.repetition(`m:${type}:${key}`, ctl.pos, tracker.now);
+    if (amount <= 0) return;
+    const before = profOf(save, type).level;
+    if (!addProfXp(save, type, amount)) return;
+    const lv = profOf(save, type).level;
+    const opened = unlocks(before, lv);
+    hud.toast(`Maestria em ${label} nível ${lv}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length ? 'gold' : 'good');
+    audio.play('base', 'wing', 0.9);
+    refreshEquip();
+    saveNow(true);
+  }
+  function grantStyle(id, xp, key, hostile, foe) {
+    const st = STYLES[id];
+    if (!st) return;
+    grantMastery(`estilo:${id}`, st.nome, xp, key, hostile, foe, (b, lv) => stylePowers(st).filter((p) => p.unlock > b && p.unlock <= lv).map((p) => p.nome));
+  }
+  // técnicas do estilo equipado (mesmo sistema dos poderes, sem energia)
+  const art = new FruitPowers({
+    ctl,
+    fx,
+    stats: () => ({ fruit: damageMultipliers(save.status).melee * vontade.damageMult * (STYLES[save.style]?.meleeMult ?? 1), domain: profBonus(profOf(save, `estilo:${save.style}`).level) }),
+    onEvent: (name, d) => powers.onEvent(name, d),
+  });
   const swords = new Map();
   const swordOf = (id) => {
     if (!swords.has(id)) swords.set(id, makeSword(WEAPONS[id]));
@@ -456,14 +530,17 @@ async function boot() {
     const prof = profOf(save, 'espada').level;
     const cdMult = raceSys.mods.swordCooldown;
     blade.setFruit(w, w ? weaponPowers(w).map((p) => ({ ...p, recarga: Math.round(p.recarga * cdMult * 10) / 10 })) : [], prof);
-    combat.runner.setStyle(swordOn ? weaponStyle(w) : fruitStyle(fruitOn ? f : null));
+    const st = STYLES[save.style] ?? STYLES.basico;
+    const stLv = profOf(save, `estilo:${st.id}`).level;
+    art.setFruit(st, stylePowers(st), stLv);
+    combat.runner.setStyle(swordOn ? weaponStyle(w) : fruitOn ? fruitStyle(f) : styleCombo(st));
     player.setWeapon(swordOn ? swordOf(w.id) : null);
-    skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: 'Combate', weapon: w });
+    skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: st.curto, weapon: w });
     skillBar.setEquipped(save.equipped);
     skillBar.setEnergyVisible(!!f);
     if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level });
     else if (swordOn) skillBar.setSkills({ title: w.nome, color: w.cor, powers: blade.powers, domainLevel: prof, lockLabel: 'Prof.', awaken: false });
-    else skillBar.setSkills({ title: 'Combate Básico', note: 'Combo: Jab · Direto · Gancho<br>Técnicas do estilo na atualização 7' });
+    else skillBar.setSkills({ title: st.nome, color: st.cor, powers: art.powers, domainLevel: stLv, lockLabel: 'Maest.', awaken: false });
   }
   const setupPowers = () => {
     const f = eatenFruit();
@@ -561,6 +638,23 @@ async function boot() {
       save.weapon = id;
       save.equipped = 'arma';
       refreshEquip();
+      saveNow(true);
+    },
+  });
+  const dojo = new Dojo({
+    save,
+    toast: (text, kind) => hud.toast(text, kind),
+    onStyle: (id, bought) => {
+      save.style = id;
+      save.equipped = 'estilo';
+      refreshEquip();
+      refreshProfile();
+      if (bought) audio.play('base', 'wing', 1);
+      saveNow(true);
+    },
+    onLearn: () => {
+      refreshProfile();
+      audio.play('base', 'wing', 1);
       saveNow(true);
     },
   });
@@ -693,7 +787,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), armor: $('btn-armor'), sense: $('btn-sense'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -745,6 +839,7 @@ async function boot() {
     if (id === 'bag') shop.renderBag();
     if (id === 'trader') shop.renderTrader();
     if (id === 'armory') armory.render();
+    if (id === 'dojo') dojo.render();
     if (id === 'catalog') catalog.render();
     if (id === 'pause' && mode === 'game') saveNow(true);
     setGameActive();
@@ -802,7 +897,7 @@ async function boot() {
   let nearNpc = null;
   const talk = () => {
     if (!nearNpc || modals.length || mode !== 'game') return;
-    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory' }[nearNpc.id] || 'trader');
+    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[nearNpc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
@@ -927,13 +1022,15 @@ async function boot() {
           else powers.cast(inp.skill, arena.targets, canCast);
         } else if (save.equipped === 'arma') {
           if (inp.skill < 3) blade.cast(inp.skill, arena.targets, canCast);
-        } else if (time - deniedAt > 1.5) {
-          deniedAt = time;
-          hud.toast(eatenFruit() ? 'Equipe a fruta (slot 1) para usar os poderes.' : 'O Combate Básico ainda não tem técnicas: coma uma fruta para ter poderes.');
-        }
+        } else art.cast(inp.skill, arena.targets, canCast);
       }
       powers.update(dt, arena.targets, combat.canFight());
       blade.update(dt, arena.targets, combat.canFight());
+      art.update(dt, arena.targets, combat.canFight());
+      if (inp.armorPressed) vontade.toggle('armor');
+      if (inp.sensePressed) vontade.toggle('sense');
+      vontade.update(dt);
+      arena.tagRange = vontade.sense ? 70 : 26;
       ctl.step(dt, inp);
       conditions.update(dt, ctl);
       playerProxy.alive = ctl.faint <= 0;
@@ -980,7 +1077,20 @@ async function boot() {
       }
       floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
       fx.update(animDt);
-      if (mode === 'game') skillBar.update(powers, save.equipped !== 'estilo', save.equipped === 'arma' ? blade : powers);
+      if (mode === 'game') {
+        skillBar.update(powers, true, save.equipped === 'arma' ? blade : save.equipped === 'estilo' ? art : powers);
+        const learned = save.vontade.armadura || save.vontade.percepcao;
+        $('box-will').classList.toggle('hidden', !learned);
+        if (learned) {
+          $('bar-will').style.transform = `scaleX(${vontade.value / 100})`;
+          $('txt-will').textContent = `Vontade ${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`;
+        }
+        $('btn-armor').classList.toggle('hidden', !save.vontade.armadura);
+        $('btn-sense').classList.toggle('hidden', !save.vontade.percepcao);
+        $('btn-armor').classList.toggle('on', vontade.armor);
+        $('btn-sense').classList.toggle('on', vontade.sense);
+        document.body.classList.toggle('sense', vontade.sense);
+      }
       if (player.weapon) player.weapon.visible = !player.heldFruit;
       if (mode === 'game') {
         condTimer -= animDt;
@@ -989,11 +1099,15 @@ async function boot() {
           const v = conditions.view();
           $('cond-list').innerHTML = v.map((c) => `<span class="cond" style="--cc:${c.cor}" title="${c.dica ?? ''}">${c.icone} ${c.nome}${c.stacks > 1 ? ` ×${c.stacks}` : ''} <i>${Math.ceil(c.t)}s</i></span>`).join('');
           const tint = conditions.has('congelado') ? '#2f8fff' : conditions.has('queimando') ? (Math.sin(clock * 12) > 0 ? '#ff5a14' : '#7a2a08') : conditions.has('choque') ? (Math.sin(clock * 20) > 0.5 ? '#ffe45a' : '#000000') : '#000000';
-          if (tint !== playerTint) {
-            playerTint = tint;
-            for (const m of Object.values(player.body.meshes)) if (m.material.emissive) {
-              m.material.emissive.set(tint);
-              m.material.emissiveIntensity = tint === '#000000' ? 1 : 0.45;
+          const key = tint + (vontade.armor ? '|armadura' : '');
+          if (key !== playerTint) {
+            playerTint = key;
+            for (const [part, m] of Object.entries(player.body.meshes)) if (m.material.emissive) {
+              // Armadura: braços escuros com brilho metálico arroxeado
+              const arm = vontade.armor && tint === '#000000' && /^(braco|antebraco|mao)_/.test(part);
+              m.material.emissive.set(arm ? '#3a1a5a' : tint);
+              m.material.emissiveIntensity = arm ? 0.9 : tint === '#000000' ? 1 : 0.45;
+              m.material.color.offsetHSL(0, 0, 0);
             }
           }
         }
@@ -1204,7 +1318,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade, conditions,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade, conditions, vontade, art,
     start: startGame,
     saveNow,
     openModal,

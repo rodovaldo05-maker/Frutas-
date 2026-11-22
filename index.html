@@ -35,6 +35,7 @@
         <div class="dock-sub">
           <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego 100 / 100</span></em></div>
           <div class="bar energy hidden" id="box-energy"><i id="bar-energy"></i><em data-icon="fruit"><span id="txt-energy">Energia</span></em></div>
+          <div class="bar will hidden" id="box-will"><i id="bar-will"></i><em><span id="txt-will">Vontade</span></em></div>
         </div>
         <div class="dock-xp">
           <button data-btn id="btn-home" class="mini-btn" data-icon="home" aria-label="Voltar ao início da ilha"></button>
@@ -86,7 +87,7 @@
       <div id="state" class="state">Parado</div>
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · G Armadura · H Percepção · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
@@ -95,6 +96,8 @@
         <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
         <button data-btn id="btn-block" class="act block" data-icon="shield" aria-label="Defender (segurar)"></button>
         <button data-btn id="btn-race" class="act race hidden" data-icon="person" aria-label="Habilidade da raça"><span class="cdr"></span></button>
+        <button data-btn id="btn-armor" class="act will-btn armor hidden" aria-label="Vontade de Armadura (liga/desliga)">🛡</button>
+        <button data-btn id="btn-sense" class="act will-btn sense hidden" aria-label="Vontade de Percepção (liga/desliga)">👁</button>
       </div>
     </div>
 
@@ -143,6 +146,7 @@
                 <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
                 <tr><td>Atacar (Jab → Direto → Gancho)</td><td>Tocar na tela</td><td>Clique ou J</td><td>X / ▢ ou RT</td></tr>
                 <tr><td>Defender (segurar; no tempo certo: defesa perfeita)</td><td>Escudo</td><td>Botão direito ou K</td><td>RB / R1 ou LT</td></tr>
+                <tr><td>Vontade de Armadura · Percepção</td><td>Botões 🛡 e 👁 (perto do Correr)</td><td>G · H</td><td>—</td></tr>
                 <tr><td>Habilidade da raça</td><td>Botão da raça (perto do Correr)</td><td>F</td><td>Back / Select</td></tr>
                 <tr><td>Equipar (Fruta · Arma · Estilo)</td><td>Barra de baixo</td><td>1 · 2 · 3 · 4</td><td>LB / L1</td></tr>
                 <tr><td>Habilidades do item equipado</td><td>Botões Usar (direita)</td><td>Z · X · C · V</td><td>Direcional ← ↑ → ↓</td></tr>
@@ -256,6 +260,17 @@
         <div class="frame-title" data-icon="person">Escolha seu tipo corporal</div>
         <p class="muted small race-intro">Cada raça tem visual, passivas, uma habilidade ativa e maestria própria. A escolha fica para o resto do jogo.</p>
         <div class="race-grid" id="race-grid"></div>
+      </div>
+    </div>
+
+    <!-- ===== Mestre de Luta: estilos e Vontade ===== -->
+    <div id="dojo" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="fist">Mestre de Luta</div>
+        <button class="close" data-close="dojo" data-icon="close" aria-label="Fechar"></button>
+        <div class="armory-top"><div class="wallet big"><span data-icon="coin"><b id="d-coins">0</b></span></div><span class="muted small">Estilos ficam no slot 3. A Vontade liga e desliga com G / H (ou os botões perto do Correr).</span></div>
+        <div class="top-tabs" id="dojo-tabs"><button data-dtab="estilos" class="active">Estilos de luta</button><button data-dtab="vontade">Vontade</button></div>
+        <div class="armory-list" id="dojo-list"></div>
       </div>
     </div>
 

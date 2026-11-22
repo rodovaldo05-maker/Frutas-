@@ -525,6 +525,7 @@ export class Recruta {
 
   startAttack(id) {
     this.attack = { id, t: 0, struck: false, tm: timing(id) };
+    this.arenaRef?.onWindup?.(this);
     this.set('windup');
     this.drawTag();
   }
@@ -550,7 +551,7 @@ export class Recruta {
     const body = this.body;
     const visible = this.state !== 'gone';
     body.root.visible = visible;
-    this.tag.sprite.visible = visible && this.alive && playerPos.distanceTo(this.pos) < 26;
+    this.tag.sprite.visible = visible && this.alive && playerPos.distanceTo(this.pos) < (this.arenaRef?.tagRange ?? 26);
     if (!visible) return;
     const sink = this.state === 'down' ? Math.max(0, this.t - 3) * 1.4 : 0;
     body.root.position.set(this.pos.x, this.pos.y - sink, this.pos.z);

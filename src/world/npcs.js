@@ -31,6 +31,12 @@ const NPCS = [
     hint: 'Espadas para comprar e equipar no slot 2. A proficiência com espadas libera as habilidades.',
     awning: ['lonaRoxa', 'lonaOuro'],
   },
+  {
+    id: 'mestre', name: 'Mestre de Luta', x: 12, z: 56, yaw: -Math.PI / 2,
+    look: { skin: '#8a5a3c', hair: '#e8e8e8', shirt: '#f2efe6', shorts: '#2a2a33', shoes: '#2a1f18' },
+    hint: 'Ensina estilos de luta (slot 3) e a Vontade de Armadura e de Percepção.',
+    awning: ['lonaOuro', 'lonaRoxa'],
+  },
 ];
 
 const PART = {
@@ -106,7 +112,19 @@ export function buildMarket({ scene, physics, field, data }) {
     const props = new THREE.Group();
     props.position.set(cx, ground + 1.5, cz);
     props.rotation.y = rot;
-    if (def.id === 'armeiro') {
+    if (def.id === 'mestre') {
+      // faixas de treino e um saco de pancada no balcão
+      const belt = new THREE.MeshStandardMaterial({ color: '#2a2a33', roughness: 0.8 });
+      const red = new THREE.MeshStandardMaterial({ color: '#b8321e', roughness: 0.8 });
+      [belt, red, new THREE.MeshStandardMaterial({ color: '#e8c070', roughness: 0.8 })].forEach((m, k) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.5), m);
+        b.position.set(-1.3 + k * 0.5, 0.06 + k * 0.12, 0);
+        props.add(b);
+      });
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.9, 0.55), red);
+      bag.position.set(1.1, 0.45, 0);
+      props.add(bag);
+    } else if (def.id === 'armeiro') {
       // espadas expostas no balcão
       ['lamina-treino', 'sabre-rubro', 'lamina-mares'].forEach((id, k) => {
         const sw = makeSword(WEAPONS[id]);

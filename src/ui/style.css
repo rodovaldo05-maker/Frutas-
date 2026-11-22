@@ -1060,3 +1060,17 @@ body.lefty .act.race { left: auto; right: calc(207px * var(--btn) + var(--safe-r
   background: color-mix(in srgb, var(--cc) 35%, rgba(14, 11, 28, 0.85)); border: 1px solid var(--cc); text-shadow: 0 1px 2px #000;
 }
 .cond i { font-style: normal; color: rgba(255, 255, 255, 0.8); }
+
+/* ===== Vontade ===== */
+.bar.will i { background: linear-gradient(180deg, #4a3a2a, #120c08); box-shadow: inset 0 0 6px #ffcf5a; }
+.bar.will { border-color: #8a6a3a; }
+.act.will-btn {
+  width: calc(42px * var(--btn)); height: calc(42px * var(--btn)); right: auto; font-size: calc(18px * var(--btn)); opacity: 0.75;
+  bottom: calc(154px * var(--btn) + var(--safe-b)); background: radial-gradient(circle at 40% 30%, #4a3a5a, #120e22 80%);
+}
+.act.will-btn.armor { left: calc(204px * var(--btn) + var(--safe-l)); }
+.act.will-btn.sense { left: calc(252px * var(--btn) + var(--safe-l)); }
+.act.will-btn.on { opacity: 1; border-color: #ffcf5a; box-shadow: 0 0 0 2px #2a1906, 0 0 14px rgba(255, 207, 90, 0.8); }
+body.sense #game { filter: saturate(0.65) contrast(1.05); }
+#dojo-tabs { margin: 0 40px 8px 0; position: relative; z-index: 1; }
+.weapon-card .tag { font: 800 11px var(--body-font); color: #b9f2a8; }

@@ -4,6 +4,7 @@ import { normalizeDomain } from '../progression/domain.js';
 import { normalizeProficiency } from '../progression/proficiency.js';
 import { WEAPON_IDS } from '../weapons/weapons.js';
 import { normalizeRace } from '../races/races.js';
+import { STYLE_IDS } from '../styles/styles.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -47,6 +48,9 @@ export function newSave() {
     race: null, // tipo corporal escolhido no começo (humano, aquatico, ghoul, ceu)
     raceMastery: { level: 1, xp: 0 }, // maestria racial (1 a 100)
     equipped: 'estilo', // item equipado na barra de baixo: fruta, arma ou estilo
+    styles: ['basico'], // estilos de luta aprendidos
+    style: 'basico', // estilo do slot 3
+    vontade: { armadura: false, percepcao: false }, // Vontade aprendida
     weapons: [], // espadas compradas (ids)
     weapon: null, // espada do slot 2
     proficiency: {}, // proficiência por tipo de arma { espada: { level, xp } }
@@ -102,6 +106,9 @@ export function migrate(save) {
   out.domain = normalizeDomain(out.domain);
   out.proficiency = normalizeProficiency(out.proficiency);
   normalizeRace(out);
+  out.styles = ['basico', ...(Array.isArray(out.styles) ? out.styles : [])].filter((id, i, a) => STYLE_IDS.includes(id) && a.indexOf(id) === i);
+  if (!out.styles.includes(out.style)) out.style = 'basico';
+  out.vontade = { armadura: !!out.vontade?.armadura, percepcao: !!out.vontade?.percepcao };
   out.weapons = Array.isArray(out.weapons) ? out.weapons.filter((id, i, a) => WEAPON_IDS.includes(id) && a.indexOf(id) === i) : [];
   if (!out.weapons.includes(out.weapon)) out.weapon = out.weapons[0] ?? null;
   for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];

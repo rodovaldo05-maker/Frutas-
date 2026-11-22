@@ -180,3 +180,18 @@ Estilo de maestria final. **Obtenção:** Templo da Aurora, nível 2000, requer 
 
 Código: `src/weapons/weapons.js`, `src/weapons/swordModel.js`, `src/progression/proficiency.js`,
 `src/ui/armory.js`; testes em `tests/weapons.test.js`.
+
+
+## 5. Situação: estilos de luta (atualização 7)
+
+| Estilo | Preço | Combo | Técnicas (maestria 1 · 8 · 17 · 34) | Passiva |
+|---|---|---|---|---|
+| Combate Básico | já tem | 10 · 12 · 16 | Sequência de Punhos · Chute Ascendente · Investida Corporal · Impacto Concentrado | +5% de dano corpo a corpo |
+| Corpo Voltaico | 8.000 (Nv. 5) | 12 · 14 · 19 | Punho Elétrico (paralisa) · Passo Voltaico · Garra Elétrica (salta) · Descarga Circular | 3º golpe solta raio num segundo inimigo |
+| Caratê das Marés | 12.000 (Nv. 8) | 13 · 15 · 20 | Punho de Pressão · Palma Aquática · Corrente Circular (puxa) · Onda Devastadora | Combo empurra 40% mais |
+
+- Vendidos pelo Mestre de Luta; o estilo fica no slot 3 (Z X C V usam as técnicas, só recarga).
+- Maestria por estilo (1 a 100, equivale a 0/50/100/200 de 600): sobe acertando inimigos com
+  o combo e as técnicas do estilo (teto por oponente). Golpes de estilo treinam a Força.
+- Os gestos vêm do laboratório: Corpo Voltaico usa os golpes da Tormenta e o Caratê das Marés
+  os da Maré (o laboratório não tem chutes, por isso a Perna Rubra ficou para depois).

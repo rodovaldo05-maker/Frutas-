@@ -85,7 +85,7 @@
       <div id="state" class="state">Parado</div>
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
@@ -93,6 +93,7 @@
         <button data-btn id="btn-dash" class="act dash" data-icon="dash" aria-label="Esquiva"></button>
         <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
         <button data-btn id="btn-block" class="act block" data-icon="shield" aria-label="Defender (segurar)"></button>
+        <button data-btn id="btn-race" class="act race hidden" data-icon="person" aria-label="Habilidade da raça"><span class="cdr"></span></button>
       </div>
     </div>
 
@@ -141,6 +142,7 @@
                 <tr><td>Esquiva</td><td>Redemoinho</td><td>Shift</td><td>B / ◯</td></tr>
                 <tr><td>Atacar (Jab → Direto → Gancho)</td><td>Tocar na tela</td><td>Clique ou J</td><td>X / ▢ ou RT</td></tr>
                 <tr><td>Defender (segurar; no tempo certo: defesa perfeita)</td><td>Escudo</td><td>Botão direito ou K</td><td>RB / R1 ou LT</td></tr>
+                <tr><td>Habilidade da raça</td><td>Botão da raça (perto do Correr)</td><td>F</td><td>Back / Select</td></tr>
                 <tr><td>Equipar (Fruta · Arma · Estilo)</td><td>Barra de baixo</td><td>1 · 2 · 3 · 4</td><td>LB / L1</td></tr>
                 <tr><td>Habilidades do item equipado</td><td>Botões Usar (direita)</td><td>Z · X · C · V</td><td>Direcional ← ↑ → ↓</td></tr>
                 <tr><td>Asa-delta (liga/desliga)</td><td>Botão da asa</td><td>U</td><td>—</td></tr>
@@ -171,7 +173,8 @@
             <div class="status-summary" id="status-summary"></div>
           </div>
           <div class="status-list">
-            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button></div>
+            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button><button data-ttab="raca">Raça</button></div>
+            <div id="pane-race" class="pane-race hidden"></div>
             <div id="pane-status" class="pane-status">
               <p class="muted small train-intro">Pontos de nível: cada nível de aventureiro dá 3 pontos e <b>você escolhe</b> onde colocar. O treino é separado e soma por cima.</p>
               <div class="status-head"><span>Pontos disponíveis <b id="status-points">0</b></span><button id="btn-respec" class="btn" data-icon="home">Redistribuir</button></div>
@@ -246,6 +249,15 @@
     </div>
 
     <!-- ===== Trocador de Fragmentos ===== -->
+    <!-- ===== Escolha da raça (tipo corporal) ===== -->
+    <div id="race-select" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="person">Escolha seu tipo corporal</div>
+        <p class="muted small race-intro">Cada raça tem visual, passivas, uma habilidade ativa e maestria própria. A escolha fica para o resto do jogo.</p>
+        <div class="race-grid" id="race-grid"></div>
+      </div>
+    </div>
+
     <!-- ===== Mestre de Armas ===== -->
     <div id="armory" class="overlay hidden">
       <div class="frame window wide">

@@ -3,6 +3,7 @@ import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../prog
 import { normalizeDomain } from '../progression/domain.js';
 import { normalizeProficiency } from '../progression/proficiency.js';
 import { WEAPON_IDS } from '../weapons/weapons.js';
+import { normalizeRace } from '../races/races.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -43,6 +44,8 @@ export function newSave() {
     freeRespec: true, // redistribuir é grátis uma vez (doc 09)
     status: newStatus(), // pontos distribuídos: Força, Defesa, Fruta, Espada, Vitalidade
     training: newTraining(), // atributos treinados pela prática, não distribuíveis (doc 12)
+    race: null, // tipo corporal escolhido no começo (humano, aquatico, ghoul, ceu)
+    raceMastery: { level: 1, xp: 0 }, // maestria racial (1 a 100)
     equipped: 'estilo', // item equipado na barra de baixo: fruta, arma ou estilo
     weapons: [], // espadas compradas (ids)
     weapon: null, // espada do slot 2
@@ -98,6 +101,7 @@ export function migrate(save) {
   out.status = normalizeStatus(out.status);
   out.domain = normalizeDomain(out.domain);
   out.proficiency = normalizeProficiency(out.proficiency);
+  normalizeRace(out);
   out.weapons = Array.isArray(out.weapons) ? out.weapons.filter((id, i, a) => WEAPON_IDS.includes(id) && a.indexOf(id) === i) : [];
   if (!out.weapons.includes(out.weapon)) out.weapon = out.weapons[0] ?? null;
   for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];

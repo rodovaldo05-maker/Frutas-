@@ -100,3 +100,24 @@ Código: `src/progression/training.js` (curva, atributos, bônus, antifarm, rast
 `src/progression/status.js` (pontos distribuídos e totais), `src/ui/statusScreen.js`
 (Personagem › Status, Treinamento e Ganhos recentes), testes em `tests/status.test.js` e
 `tests/movement.sim.test.js`.
+
+
+## 8. Situação: quatro raças (atualização 5)
+
+| Raça | Passivas no jogo | Ativa (recarga) | Maestria sobe com |
+|---|---|---|---|
+| Humano | +15% de XP nos atributos físicos (tetos valem); +10% de fôlego fora de combate; −10% de recarga nas habilidades de espada | Adaptação Tática (40 s): 10 s de troca de item instantânea e fôlego +50% | Acertar inimigos alternando fruta, espada e soco; defender; descobrir áreas |
+| Aquático | Sem o dano da água do usuário de fruta (afundar continua); respira embaixo d'água; +35% nadando; +20% de resistência física (≈ −5% de dano físico, −8% no Nv. 20) | Impulso Abissal (6 s): arrancada na água; passo firme em terra | Experiência de Natação (só deslocamento real) |
+| Ghoul | +20% de dano das habilidades de fruta (soco e espada não); +15% de energia; −10% de atordoamento | Sifão de Essência (12 s): golpe curto; em inimigo devolve 18 de energia | Habilidades de fruta que acertam inimigos (variar rende mais); Sifão que acerta |
+| Homem do Céu | 3 saltos extras (4 impulsos), cada um gasta fôlego; 5 impulsos no Nv. 60; +20% de controle no ar; +15% de altura; menos dano de queda | Passo Celeste (5 s): deslocamento curto no ar | Saltos extras que levam mais alto (2,2) ou mais longe (8) |
+
+- Escolha obrigatória no começo (salvos antigos também escolhem), com prévia 3D de cada raça,
+  passivas, ativa e limitação lado a lado. A aparência não muda a cor da pele.
+- Partes visuais presas ao corpo: nadadeiras e brânquias (Aquático), marcas que brilham
+  (Ghoul), asas de penas que batem nos saltos extras (Homem do Céu).
+- Maestria racial de 1 a 100 (curva × 1,25), marcos nos níveis 20, 40, 60, 80 e 100 (aba
+  Raça em Personagem). Especializações (Nv. 40/80) e o despertar com prova racial ficam para
+  a atualização 13.
+
+Código: `src/races/races.js`, `src/races/raceSystem.js`, `src/races/raceParts.js`; testes em
+`tests/races.test.js`.

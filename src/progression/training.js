@@ -194,7 +194,7 @@ export class TrainingTracker {
     const a = this.t.attrs[attr];
     const rep = repeat ? this.farm.repetition(key, pos, this.now) : 1;
     const cap = this.farm.softCap(attr, a.level, base * rep, this.now);
-    const xp = base * rep * cap;
+    const xp = base * rep * cap * (this.raceMult ?? 1); // Humano: +15% (os tetos continuam valendo)
     if (rep * cap < 0.3) this.onDiminished(attr);
     const r = addXp(this.t, attr, xp);
     this.t.history.push({ attr, xp: Math.round(xp * 10) / 10, key, at: Date.now() });

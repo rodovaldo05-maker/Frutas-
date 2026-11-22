@@ -1,0 +1,108 @@
+// Quatro tipos corporais (documento mestre 4.0, seções 16–24): Humano, Aquático, Ghoul e
+// Homem do Céu. Cada um tem visual próprio, passivas, uma habilidade ativa, maestria racial
+// (1 a 100, curva dos atributos × 1,25) com marcos e limitações. A escolha é feita no começo
+// do jogo; a aparência não determina gênero, cor de pele ou personalidade.
+
+import { xpToNext } from '../progression/training.js';
+
+export const RACE_MULT = 1.25;
+export const raceXpToNext = (L) => Math.round(xpToNext(L) * RACE_MULT);
+export const RACE_MAX = 100;
+
+export const RACES = {
+  humano: {
+    id: 'humano', nome: 'Humano', titulo: 'O Adaptável', cor: '#e8c070', icone: 'person',
+    fantasia: 'Versátil: aprende técnicas e alterna estilos com facilidade.',
+    passivas: ['+15% de experiência nos atributos físicos (com os mesmos tetos)', '+10% de recuperação de fôlego fora de combate', '−10% de recarga nas habilidades de espada (manuseio)'],
+    ativa: { nome: 'Adaptação Tática', desc: 'Por 10 s: trocar de item é instantâneo (cancela o golpe) e o fôlego volta 50% mais rápido.', recarga: 40 },
+    treino: 'Acertar inimigos alternando fruta, espada e combate; defender; descobrir áreas.',
+    limitacao: 'Sem respiração na água, sem drenagem e sem saltos extras.',
+    marcos: { 20: 'Aprendiz Universal', 40: 'Técnica Composta', 60: 'Corpo Preparado', 80: 'Mestre da Adaptação', 100: 'Versatilidade Suprema' },
+  },
+  aquatico: {
+    id: 'aquatico', nome: 'Aquático', titulo: 'O Anfíbio Resistente', cor: '#3fc8c0', icone: 'bubble',
+    fantasia: 'Corpo adaptado à água, com nadadeiras e membranas.',
+    passivas: ['Sem o dano da água para usuários de fruta (a fraqueza de afundar continua)', 'Respira embaixo d\'água', '+35% de velocidade nadando', '+20% de resistência física (≈ −5% de dano físico)'],
+    ativa: { nome: 'Impulso Abissal', desc: 'Arrancada forte na água (gasta fôlego). Fora d\'água, um passo firme mais fraco.', recarga: 6 },
+    treino: 'Nadar e mergulhar se deslocando de verdade. Boiar parado não conta.',
+    limitacao: 'Os bônus dependem da água; fora dela não supera as outras raças.',
+    marcos: { 20: 'Escamas Reforçadas', 40: 'Caçador de Correntes', 60: 'Pressão Profunda', 80: 'Guardião das Marés', 100: 'Soberania Oceânica' },
+  },
+  ghoul: {
+    id: 'ghoul', nome: 'Ghoul', titulo: 'O Ressonante', cor: '#b46bff', icone: 'fruit',
+    fantasia: 'Corpo sobrenatural que canaliza a energia das frutas.',
+    passivas: ['+20% de dano das habilidades de fruta (não do soco nem da espada)', '+15% de recuperação de energia', '−10% de tempo atordoado (guarda quebrada)'],
+    ativa: { nome: 'Sifão de Essência', desc: 'Golpe curto que, se acertar um inimigo, devolve 18 de energia.', recarga: 12 },
+    treino: 'Acertar inimigos com habilidades de fruta diferentes; o Sifão que acerta.',
+    limitacao: 'Sem fruta, os bônus de fruta não viram dano físico. Sem vantagens na água ou no ar.',
+    marcos: { 20: 'Canalização Estável', 40: 'Sifão Refinado', 60: 'Núcleo Ressonante', 80: 'Predador Arcano', 100: 'Ressonância Absoluta' },
+  },
+  ceu: {
+    id: 'ceu', nome: 'Homem do Céu', titulo: 'O Acrobata Aéreo', cor: '#9fd0ff', icone: 'glider',
+    fantasia: 'Corpo leve com asas pequenas: saltos múltiplos e pousos precisos.',
+    passivas: ['3 saltos extras no ar (4 impulsos sem tocar o chão), cada um gasta fôlego', '+20% de controle no ar', '+15% de altura do salto', 'Menos dano de queda'],
+    ativa: { nome: 'Passo Celeste', desc: 'No ar: deslocamento curto para onde aponta, separado dos saltos extras.', recarga: 5 },
+    treino: 'Saltos extras que levam a um lugar mais alto ou mais longe; Passo Celeste útil.',
+    limitacao: 'O fôlego limita os saltos; não é voo: as asas não sustentam o corpo.',
+    marcos: { 20: 'Pouso Leve', 40: 'Dança dos Ventos', 60: 'Quinto Impulso', 80: 'Senhor das Alturas', 100: 'Ascensão Celeste' },
+  },
+};
+export const RACE_IDS = Object.keys(RACES);
+
+// Efeitos de jogo das passivas (lidos pelo controlador, combate, poderes e treino)
+export function raceMods(raceId, level = 1) {
+  const m = {
+    xpPhysical: 1, staminaRegenCalm: 1, swordCooldown: 1, noWaterDamage: false, breathesWater: false, swimSpeed: 1,
+    physicalMitigation: 0, fruitDamage: 1, energyRegen: 1, stunMult: 1, extraJumps: 0, airControl: 1, jumpMult: 1, fallMult: 1,
+  };
+  switch (raceId) {
+    case 'humano':
+      m.xpPhysical = 1.15;
+      m.staminaRegenCalm = 1.1;
+      m.swordCooldown = 0.9;
+      break;
+    case 'aquatico':
+      m.noWaterDamage = true;
+      m.breathesWater = true;
+      m.swimSpeed = 1.35;
+      m.physicalMitigation = level >= 20 ? 0.08 : 0.05;
+      break;
+    case 'ghoul':
+      m.fruitDamage = 1.2;
+      m.energyRegen = 1.15;
+      m.stunMult = 0.9;
+      break;
+    case 'ceu':
+      m.extraJumps = level >= 60 ? 3 : 2; // + o salto duplo de todos = 3 saltos extras (4 com o 5º impulso)
+      m.airControl = 1.2;
+      m.jumpMult = Math.sqrt(1.15);
+      m.fallMult = level >= 20 ? 0.65 : 0.75;
+      break;
+    default:
+  }
+  return m;
+}
+
+export function normalizeRace(save) {
+  if (!RACE_IDS.includes(save.race)) save.race = null;
+  const r = save.raceMastery;
+  const level = Math.min(RACE_MAX, Math.max(1, Math.floor(Number(r?.level)) || 1));
+  save.raceMastery = { level, xp: level >= RACE_MAX ? 0 : Math.max(0, Number(r?.xp) || 0) };
+  return save;
+}
+
+// Soma experiência racial; devolve os marcos atingidos
+export function addRaceXp(save, amount) {
+  const r = save.raceMastery;
+  if (!save.race || !(amount > 0) || r.level >= RACE_MAX) return [];
+  r.xp += amount;
+  const reached = [];
+  while (r.level < RACE_MAX && r.xp >= raceXpToNext(r.level)) {
+    r.xp -= raceXpToNext(r.level);
+    r.level += 1;
+    const nome = RACES[save.race].marcos[r.level];
+    reached.push({ level: r.level, nome });
+  }
+  if (r.level >= RACE_MAX) r.xp = 0;
+  return reached;
+}

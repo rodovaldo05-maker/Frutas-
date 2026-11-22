@@ -109,6 +109,8 @@ export class CharacterController {
     this.hangHold = 0;
     this.speed = 0;
     this.busyT = 0; // ocupado (comendo): sem movimento
+    // passivas da raça (races/races.js → raceMods): saltos extras, altura, queda e água
+    this.race ??= { extraJumps: 0, jumpMult: 1, fallMult: 1, noWaterDamage: false, breathesWater: false }; // reaparecer não apaga
     // combate (atualização 2): golpe em andamento, defesa e empurrões
     this.attackLock = 0; // golpeando: sem andar nem pular (a esquiva pode cancelar)
     this.action = null; // { clip, t } para a animação
@@ -335,7 +337,7 @@ export class CharacterController {
     this.stamina.update(dt);
 
     // ar embaixo d'água
-    if (this.state === 'dive' && this.submerged > 0.9) {
+    if (this.state === 'dive' && this.submerged > 0.9 && !this.race.breathesWater) {
       this.breath = Math.max(0, this.breath - dt);
       if (this.breath <= 0) {
         this.damageCooldown -= dt;
@@ -458,7 +460,7 @@ export class CharacterController {
 
     // pular
     if (this.gate.ready() && this.lockT <= 0) {
-      this.jump(MOVE.jumpVelocity);
+      this.jump(MOVE.jumpVelocity * (this.race.jumpMult ?? 1));
       return;
     }
 
@@ -599,7 +601,7 @@ export class CharacterController {
 
     // coyote time: pular logo depois de sair da borda
     if (this.gate.ready()) {
-      this.jump(MOVE.jumpVelocity);
+      this.jump(MOVE.jumpVelocity * (this.race.jumpMult ?? 1));
       return;
     }
 
@@ -616,14 +618,15 @@ export class CharacterController {
         this.wallJump(horizontal(wall.normal), 0);
         return;
       }
-      if (this.unlocks.doubleJump && this.airJumps < 1 && this.stamina.spend(STAMINA.doubleJump)) {
+      const maxAir = (this.unlocks.doubleJump ? 1 : 0) + (this.race.extraJumps ?? 0);
+      if (this.airJumps < maxAir && this.stamina.spend(STAMINA.doubleJump)) {
         this.airJumps += 1;
         this.vel.y = MOVE.doubleJumpVelocity;
         this.jumpCut = true;
         this.glideArmed = true;
         this.airSpeed = Math.max(this.airSpeed, Math.hypot(this.vel.x, this.vel.z));
         this.gate.buffer = 0;
-        this.emit('doubleJump', {});
+        this.emit('doubleJump', { n: this.airJumps, y: this.pos.y });
       } else {
         this.glideArmed = true;
       }
@@ -757,21 +760,22 @@ export class CharacterController {
   land(vy) {
     const fall = this.peakY - this.pos.y;
     const rolled = this.rollBuffer > 0 || this.input.crouch;
-    const dmg = this.invulnerable > 0 ? 0 : fallDamage(fall, rolled);
+    const fallEff = fall * (this.race.fallMult ?? 1);
+    const dmg = this.invulnerable > 0 ? 0 : fallDamage(fallEff, rolled);
     this.landing = Math.min(1, Math.abs(vy) / 8.5);
     this.grounded = true;
     this.vel.y = 0;
     this.fallTime = 0;
     this.glideArmed = false;
     this.setState('ground');
-    if (fall > MOVE.safeFall * 0.55 && rolled) {
+    if (fallEff > MOVE.safeFall * 0.55 && rolled) {
       this.startRoll();
-    } else if (fall > MOVE.safeFall) {
+    } else if (fallEff > MOVE.safeFall) {
       this.lockT = MOVE.hardLandingLock;
       this.landingHard = 1;
     }
     if (dmg > 0) this.damage(dmg, 'queda');
-    this.emit('land', { strength: this.landing, fall, hard: fall > MOVE.safeFall && !rolled });
+    this.emit('land', { strength: this.landing, fall, hard: fallEff > MOVE.safeFall && !rolled });
   }
 
   // ===== Escalada =====
@@ -1137,7 +1141,7 @@ export class CharacterController {
         this.sinkTick -= dt;
         if (this.sinkTick <= 0) {
           this.sinkTick = 0.5;
-          this.damage(this.maxHealth * 0.07, 'água');
+          if (!this.race.noWaterDamage) this.damage(this.maxHealth * 0.07, 'água');
         }
       }
     } else {

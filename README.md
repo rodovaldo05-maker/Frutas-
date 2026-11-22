@@ -37,6 +37,11 @@ Treino 500, Sabre Rubro 4.000, Lâmina das Marés 15.000). A espada vai para o s
 de três cortes com rastro e três habilidades (Z X C) que abrem com a proficiência com espadas,
 que é do tipo de arma e não se perde ao trocar de espada. Pontos de Espada aumentam o dano.
 
+Raças (atualização 5): no começo o jogador escolhe Humano, Aquático, Ghoul ou Homem do Céu,
+cada um com passivas reais (ex.: 3 saltos extras do Homem do Céu, respirar na água do
+Aquático, +20% de dano de fruta do Ghoul, +15% de experiência física do Humano), habilidade
+ativa (F ou botão da raça), maestria racial com marcos e partes visuais próprias.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com
@@ -95,6 +100,7 @@ npm run apk        # build + sync + gradle assembleDebug
 | Status · Mochila · Missões · Mapa | Ícones no alto | P · B · L · M | — |
 | Falar (Mercador, Trocador) | Botão Falar | E | Y / △ |
 | Asa-delta (liga/desliga) | Botão da asa | U | — |
+| Habilidade da raça | Botão da raça | F | Back / Select |
 | Pausa | Engrenagem | Esc | Start |
 
 ## Estrutura
@@ -113,6 +119,7 @@ src/controls    toque, teclado, mouse e controle
 src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
 src/combat      regras do combate, combate do jogador, poderes, bonecos e Recrutas
 src/weapons     espadas (dados, combo, habilidades) e modelo voxel
+src/races       quatro raças: dados, passivas, ativas, maestria e partes visuais
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática

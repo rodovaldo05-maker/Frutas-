@@ -12,7 +12,7 @@ export class Input {
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
     this.held = { jump: false, crouch: false, block: false };
-    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1 };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = false;
     this.stillTime = 0;
@@ -47,7 +47,8 @@ export class Input {
       if (c === 'KeyR') this.toggleSprint();
       if (c === 'Escape') this.onPause();
       if (c === 'KeyU') this.onToggleGlider();
-      if (c === 'KeyJ' || c === 'KeyF') this.pressed.attack = true;
+      if (c === 'KeyJ') this.pressed.attack = true;
+      if (c === 'KeyF') this.pressed.race = true;
       if (/^Digit[1-4]$/.test(c)) this.pressed.equip = Number(c.slice(-1)) - 1;
       const skill = { KeyZ: 0, KeyX: 1, KeyC: 2, KeyV: 3 }[c];
       if (skill !== undefined) this.pressed.skill = skill;
@@ -193,6 +194,7 @@ export class Input {
     hold(buttons.menu, () => this.onPause());
     if (buttons.glider) hold(buttons.glider, () => this.onToggleGlider());
     if (buttons.attack) hold(buttons.attack, () => (this.pressed.attack = true));
+    if (buttons.race) hold(buttons.race, () => (this.pressed.race = true));
     (buttons.equip || []).forEach((el, i) => el && hold(el, () => (this.pressed.equip = i)));
     // linhas de habilidade mudam com o item equipado: escuta no contêiner
     if (buttons.skillRows) {
@@ -237,6 +239,7 @@ export class Input {
       if (edge(15)) this.pressed.skill = 2;
       if (edge(13)) this.pressed.skill = 3;
       if (edge(4)) this.pressed.equip = 9; // LB: próximo item
+      if (edge(8)) this.pressed.race = true; // Back: habilidade da raça
     }
     this.setBlock('pad', this.enabled && (btn(5) || btn(6)));
     if (edge(9)) this.onPause();
@@ -300,12 +303,14 @@ export class Input {
       attackPressed: this.pressed.attack,
       skill: this.pressed.skill,
       equip: this.pressed.equip,
+      racePressed: this.pressed.race,
       block: this.held.block,
       sprint: this.sprint,
     };
     this.pressed.jump = this.pressed.crouch = this.pressed.dash = this.pressed.attack = false;
     this.pressed.skill = -1;
     this.pressed.equip = -1;
+    this.pressed.race = false;
     return out;
   }
 

@@ -11,6 +11,7 @@ import { STATUS_KEYS, STATUS_INFO, TRAINED_TWIN, allocate, resetStatus, maxHealt
 import { ICONS } from './icons.js';
 import { fruitName } from '../fruits/catalog.js';
 import { domainProgress } from '../progression/domain.js';
+import { RACES, raceXpToNext } from '../races/races.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString('pt-BR');
@@ -63,14 +64,17 @@ export class StatusScreen {
     const eaten = s.eaten?.fruit;
     const dom = eaten ? s.domain?.[eaten] ?? { level: 1, xp: 0 } : null;
     const domLine = dom ? `<span>Domínio de ${fruitName(eaten)} <b>Nv. ${dom.level}</b> (${Math.floor(domainProgress(dom) * 100)}%)</span>` : '';
-    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t))}</b></span>${domLine}<span>Tipo corporal <b>Humano</b></span>`;
+    const race = RACES[s.race];
+    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t))}</b></span>${domLine}<span>Tipo corporal <b>${race ? race.nome : 'a escolher'}</b></span>`;
     const badge = $('tab-points');
     badge.classList.toggle('hidden', points < 1);
     badge.textContent = points > 99 ? '99+' : String(points);
 
     $('pane-status').classList.toggle('hidden', this.tab !== 'status');
-    $('pane-train').classList.toggle('hidden', this.tab === 'status');
+    $('pane-train').classList.toggle('hidden', this.tab !== 'atributos' && this.tab !== 'historico');
+    $('pane-race').classList.toggle('hidden', this.tab !== 'raca');
     if (this.tab === 'status') this.renderStatus(status, points);
+    else if (this.tab === 'raca') this.renderRace();
     else this.renderTraining(t);
   }
 
@@ -124,6 +128,28 @@ export class StatusScreen {
         ? list.map((h) => `<div><span>${ATTRS[h.attr]?.nome ?? h.attr} · ${this.reason(h.key)}</span><i>+${String(h.xp).replace('.', ',')} exp</i></div>`).join('')
         : '<p class="muted">Ainda não há ganhos. Ande, nade, escale, salte e lute na arena.</p>';
     }
+  }
+
+  // Raça: maestria, marcos, passivas, ativa, como treinar e limitação
+  renderRace() {
+    const s = this.save;
+    const r = RACES[s.race];
+    if (!r) {
+      $('pane-race').innerHTML = '<p class="muted">Você ainda não escolheu um tipo corporal.</p>';
+      return;
+    }
+    const m = s.raceMastery;
+    const p = m.level >= 100 ? 1 : m.xp / raceXpToNext(m.level);
+    const marcos = Object.entries(r.marcos).map(([lv, nome]) => `<li class="${m.level >= lv ? 'on' : ''}"><i>Nv. ${lv}</i> ${nome}${lv === '100' ? ' <small>(despertar com prova racial)</small>' : ''}</li>`).join('');
+    $('pane-race').innerHTML = `
+      <div class="race-head" style="--rc:${r.cor}"><b>${r.nome}</b><span>${r.titulo}</span></div>
+      <div class="race-mastery"><span>Maestria racial <b>Nv. ${m.level}</b></span><div class="bar xp"><i style="transform:scaleX(${p})"></i><em><span>${Math.floor(p * 100)}% · ${fmt(Math.floor(m.xp))}/${fmt(raceXpToNext(m.level))}</span></em></div></div>
+      <div class="race-cols">
+        <div><h4>Passivas</h4><ul>${r.passivas.map((x) => `<li>${x}</li>`).join('')}</ul>
+          <h4>Ativa: ${r.ativa.nome} <small>(${r.ativa.recarga} s)</small></h4><p>${r.ativa.desc}</p></div>
+        <div><h4>Marcos</h4><ul class="race-marcos">${marcos}</ul>
+          <h4>Como treinar</h4><p>${r.treino}</p><p class="muted">${r.limitacao}</p></div>
+      </div>`;
   }
 
   reason(key) {

@@ -46,6 +46,9 @@ import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
 import { makeSword } from './weapons/swordModel.js';
 import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
 import { Armory } from './ui/armory.js';
+import { RACES } from './races/races.js';
+import { RaceSystem } from './races/raceSystem.js';
+import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { buildArena } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
@@ -142,11 +145,15 @@ async function boot() {
 
   function onMoveEvent(name, data) {
     switch (name) {
-      case 'jump': audio.play('base', 'jump', data.climb ? 0.6 : 0.8); break;
-      case 'doubleJump': audio.play('base', 'wing', 0.8); break;
+      case 'jump': audio.play('base', 'jump', data.climb ? 0.6 : 0.8); raceSys.onJumpStart(); break;
+      case 'doubleJump':
+        audio.play('base', 'wing', 0.8);
+        raceSys.onExtraJump(data.n);
+        if (save.race === 'ceu') wingBurst = 1;
+        break;
       case 'wallJump': audio.play('base', 'jump', 1); break;
       case 'dash': audio.play('base', 'dash', 0.8); break;
-      case 'land': if (data.strength > 0.15) audio.play('base', 'land', Math.min(1, 0.3 + data.strength)); if (data.hard) hud.toast('Queda forte! Agache antes de tocar o chão para rolar.'); break;
+      case 'land': raceSys.onLand(); if (data.strength > 0.15) audio.play('base', 'land', Math.min(1, 0.3 + data.strength)); if (data.hard) hud.toast('Queda forte! Agache antes de tocar o chão para rolar.'); break;
       case 'roll': audio.play('base', 'dash', 0.5); hud.toast('Rolamento: sem dano de queda', 'good'); break;
       case 'splash': audio.play('base', 'splash', data.strength); break;
       case 'grab': audio.play('base', 'step', 0.5); break;
@@ -162,13 +169,23 @@ async function boot() {
     }
   }
 
+  // raça (tipo corporal): passivas, ativa e maestria (atualização 5)
+  let raceDenyAt = -9;
+  let wingBurst = 0;
+  let raceParts = save.race ? addRaceParts(player.body, save.race) : null;
+  const raceSys = new RaceSystem({ ctl, save, onEvent: (name, d) => onRaceEvent(name, d) });
+  let baseRegen = 1;
+
   // vida, fôlego e bônus de movimento: pontos distribuídos + treino pela prática
   // (cada ponto de Força e cada nível de treino de Força: +1 de fôlego)
   const applyStatus = () => {
     const b = bonuses(save.training);
     ctl.stamina.setMax(maxStamina(save.status, save.training));
     ctl.stamina.regenMult = b.staminaRegen;
-    ctl.mods = { response: b.response, airControl: b.airControl, swimSpeed: b.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime };
+    baseRegen = b.staminaRegen;
+    const rm = raceSys.mods;
+    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime };
+    ctl.race = { extraJumps: rm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = maxHealth(save.status);
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
@@ -185,7 +202,8 @@ async function boot() {
     stats: () => {
       const b = bonuses(save.training);
       const m = damageMultipliers(save.status);
-      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      const rm = raceSys.mods;
+      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation, stunMult: rm.stunMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -215,6 +233,7 @@ async function boot() {
           floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
           audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
           shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
+          if (t.hostile) raceSys.onHostileHit(d.attack.weapon ? 'espada' : d.attack.fruit ? 'fruta' : 'soco');
           if (d.attack.weapon) grantProf(t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           else tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
           if (d.attack.fruit) grantDomain(d.attack.fruit, t.hostile ? 1 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
@@ -226,12 +245,14 @@ async function boot() {
           tracker.combat('esquiva', { source: d.source, life: d.life, hostile: true }, p);
           break;
         case 'perfect':
+          raceSys.onDefend();
           floats.add(head, 'Defesa perfeita!', 'perfeita');
           audio.play('base', 'wing', 1);
           shake = Math.max(shake, 0.15);
           tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: true }, p);
           break;
         case 'block':
+          raceSys.onDefend();
           floats.add(head, d.damage > 0 ? `Defendeu −${d.damage}` : 'Defendeu', 'bloqueio');
           audio.play('base', 'land', 0.5);
           tracker.combat('defesa', { source: d.source, life: d.life, hostile: true, perfect: false }, p);
@@ -294,7 +315,7 @@ async function boot() {
   powers = new FruitPowers({
     ctl,
     fx,
-    stats: () => ({ fruit: damageMultipliers(save.status).fruit, domain: domainBonus(powers.domainLevel) }),
+    stats: () => ({ fruit: damageMultipliers(save.status).fruit * raceSys.mods.fruitDamage, domain: domainBonus(powers.domainLevel) }),
     onEvent: (name, d) => {
       const p = ctl.pos;
       switch (name) {
@@ -319,6 +340,10 @@ async function boot() {
           if (d.damage > 0) floats.add(at, String(d.damage), d.power.slot === 2 ? 'forte' : 'dano');
           audio.play(d.power.fruit, 'acerto', 0.8);
           shake = Math.max(shake, d.power.slot === 2 ? 0.2 : 0.1);
+          if (t.hostile) {
+            raceSys.onHostileHit(d.power.weapon ? 'espada' : 'fruta');
+            if (!d.power.weapon) raceSys.onFruitHit(d.power.slot);
+          }
           if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
           else grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
           break;
@@ -383,7 +408,8 @@ async function boot() {
     const fruitOn = save.equipped === 'fruta' && !!f;
     const swordOn = save.equipped === 'arma' && !!w;
     const prof = profOf(save, 'espada').level;
-    blade.setFruit(w, w ? weaponPowers(w) : [], prof);
+    const cdMult = raceSys.mods.swordCooldown;
+    blade.setFruit(w, w ? weaponPowers(w).map((p) => ({ ...p, recarga: Math.round(p.recarga * cdMult * 10) / 10 })) : [], prof);
     combat.runner.setStyle(swordOn ? weaponStyle(w) : fruitStyle(fruitOn ? f : null));
     player.setWeapon(swordOn ? swordOf(w.id) : null);
     skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: 'Combate', weapon: w });
@@ -410,7 +436,12 @@ async function boot() {
     if (name === 'arma' && !WEAPONS[save.weapon]) return hud.toast('Sem arma: compre uma espada com o Mestre de Armas (barraca ao lado do Trocador).');
     if (name === 'livre') return;
     if (name === save.equipped) return;
-    if (powers.busy || combat.runner.busy) return;
+    if (powers.busy || blade.busy) return;
+    if (combat.runner.busy) {
+      if (raceSys.adapt <= 0) return;
+      combat.runner.cancel(); // Adaptação Tática: troca instantânea
+      ctl.action = null;
+    }
     save.equipped = name;
     refreshEquip();
     audio.play('base', 'step', 0.5);
@@ -419,7 +450,10 @@ async function boot() {
   // evolução pela prática: deslocamento real e eventos do controlador viram experiência
   let diminishedAt = -99;
   const tracker = new TrainingTracker(save.training, {
-    onGain: (attr, xp, p) => hud.xpGain(ATTRS[attr].nome, xp, p),
+    onGain: (attr, xp, p) => {
+      hud.xpGain(ATTRS[attr].nome, xp, p);
+      if (attr === 'natacao') raceSys.onSwimXp(xp);
+    },
     onLevel: (attr, level, marcos) => {
       const m = marcos.length ? ` · ${marcos[marcos.length - 1].nome}` : '';
       hud.toast(`${ATTRS[attr].nome} nível ${level}${m}`, marcos.length ? 'gold' : 'good');
@@ -492,7 +526,7 @@ async function boot() {
       saveNow(true);
     },
   });
-  statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true }));
+  statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true, race: save.race }));
   let thumbList = null;
   const thumbs = () => (thumbList ??= fruitThumbs(renderer.renderer, DATA.fruits));
   thumbs();
@@ -613,7 +647,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
+    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -671,6 +705,7 @@ async function boot() {
   }
   function closeModal(id = modals[modals.length - 1]) {
     if (!id) return;
+    if (id === 'race-select' && !save.race) return; // a escolha da raça é obrigatória
     const i = modals.indexOf(id);
     if (i >= 0) modals.splice(i, 1);
     if (id === 'pause') menu.setOpen(false);
@@ -800,6 +835,7 @@ async function boot() {
       if (save.visited.includes(sign.title)) continue;
       if (Math.abs(ctl.pos.y - sign.y) > 7 || Math.hypot(sign.x - ctl.pos.x, sign.z - ctl.pos.z) > 7.5) continue;
       save.visited.push(sign.title);
+      raceSys.onDiscover();
       hud.toast(`Área descoberta: ${sign.title} · +${AREA_XP} exp`, 'good');
       grantXp(AREA_XP);
     }
@@ -835,6 +871,9 @@ async function boot() {
       const inp = input.consume(cam.yaw);
       combat.update(dt, inp, arena.targets);
       if (inp.equip >= 0) equip(inp.equip);
+      if (inp.racePressed) raceSys.activate({ targets: arena.targets, powers, fx });
+      raceSys.update(dt);
+      ctl.stamina.regenMult = baseRegen * (ctl.lastDamage > 5 ? raceSys.mods.staminaRegenCalm : 1) * (raceSys.adapt > 0 ? 1.5 : 1);
       const canCast = combat.canFight() && !combat.runner.busy && !ctl.guarding;
       if (inp.skill >= 0) {
         if (save.equipped === 'fruta') {
@@ -896,6 +935,14 @@ async function boot() {
       fx.update(animDt);
       if (mode === 'game') skillBar.update(powers, save.equipped !== 'estilo', save.equipped === 'arma' ? blade : powers);
       if (player.weapon) player.weapon.visible = !player.heldFruit;
+      if (raceParts?.wings) {
+        wingBurst = Math.max(0, wingBurst - animDt * 2.2);
+        flapWings(raceParts, clock, wingBurst);
+      }
+      if (save.race && mode === 'game') {
+        const rb = $('btn-race');
+        rb.style.setProperty('--cd', String(raceSys.cooldown / RACES[save.race].ativa.recarga));
+      }
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);
@@ -952,6 +999,88 @@ async function boot() {
     setGameActive();
     loop.paused = false;
   }
+  // ===== Raça: escolha, aplicação e eventos =====
+  function applyRace() {
+    tracker.raceMult = raceSys.mods.xpPhysical;
+    powers.regenMult = raceSys.mods.energyRegen;
+    applyStatus();
+    refreshEquip();
+    const r = RACES[save.race];
+    const rb = $('btn-race');
+    rb.classList.toggle('hidden', !r);
+    if (r) {
+      rb.style.setProperty('--rc', r.cor);
+      rb.innerHTML = `${ICONS[r.icone] || ICONS.person}<span class="cdr"></span>`;
+      rb.setAttribute('aria-label', `${r.ativa.nome} (habilidade da raça)`);
+    }
+  }
+  function onRaceEvent(name, d) {
+    const p = ctl.pos;
+    switch (name) {
+      case 'denied':
+        if (time - raceDenyAt > 1.5) {
+          raceDenyAt = time;
+          hud.toast(d.message);
+        }
+        break;
+      case 'active': {
+        const r = RACES[d.race];
+        fx.burst({ x: p.x, y: p.y + 1.5, z: p.z }, r.cor, { count: 18, speed: 4, up: 3 });
+        fx.ring(p, r.cor, 3, 0.4);
+        audio.play('base', d.race === 'aquatico' ? 'splash' : d.race === 'ceu' ? 'wing' : 'dash', 0.9);
+        if (d.race === 'ceu') wingBurst = 1;
+        if (d.race === 'humano') hud.toast('Adaptação Tática: troca de item instantânea por 10 s', 'good');
+        break;
+      }
+      case 'siphon':
+        if (d.hit) floats.add({ x: d.hit.target.pos.x, y: d.hit.target.pos.y + 3.2, z: d.hit.target.pos.z }, String(d.hit.damage), 'dano');
+        floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, d.gained ? `+${d.gained} energia` : 'Sifão sem alvo', d.gained ? 'info' : 'bloqueio');
+        break;
+      case 'mastery':
+        hud.xpGain(`Maestria ${RACES[save.race].nome}`, d.xp, d.progress);
+        for (const m of d.reached) {
+          hud.toast(`Maestria racial nível ${m.level}${m.nome ? ` · ${m.nome}` : ''}`, m.nome ? 'gold' : 'good');
+          applyRace();
+        }
+        if (d.reached.length) saveNow(true);
+        if (modals.includes('status')) statusScreen.render();
+        break;
+      default:
+    }
+  }
+  function chooseRace(id) {
+    if (!RACES[id]) return;
+    save.race = id;
+    save.raceMastery = { level: 1, xp: 0 };
+    removeRaceParts(raceParts);
+    raceParts = addRaceParts(player.body, id);
+    applyRace();
+    statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true, race: id }));
+    closeModal('race-select');
+    hud.toast(`Você é ${RACES[id].nome}: ${RACES[id].titulo}! Habilidade: ${RACES[id].ativa.nome} (F ou botão da raça).`, 'gold');
+    audio.play('base', 'wing', 1);
+    saveNow(true);
+  }
+  let raceCards = null;
+  function openRaceSelect() {
+    if (!raceCards) {
+      raceCards = Object.values(RACES).map((r) => {
+        const img = renderPortrait(renderer.renderer, DATA, 220, { full: true, race: r.id });
+        return `<div class="race-card" style="--rc:${r.cor}"><img src="${img}" alt="" /><b>${r.nome}</b><small>${r.titulo}</small>
+          <ul>${r.passivas.map((x) => `<li>${x}</li>`).join('')}</ul>
+          <p><b style="font-size:12px">${r.ativa.nome}:</b> ${r.ativa.desc}</p><p>${r.limitacao}</p>
+          <button class="btn gold" data-race="${r.id}">Escolher ${r.nome}</button></div>`;
+      }).join('');
+      $('race-grid').innerHTML = raceCards;
+    }
+    openModal('race-select');
+  }
+  $('race-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-race]');
+    if (b) chooseRace(b.dataset.race);
+  });
+  applyRace();
+
   async function startGame() {
     if (mode === 'game') return;
     mode = 'game';
@@ -960,6 +1089,7 @@ async function boot() {
     cam.snap(ctl.pos, ctl.yaw);
     prev.copy(ctl.pos);
     setGameActive();
+    if (!save.race) openRaceSelect();
     if (!native() && isTouch()) {
       try {
         await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
@@ -1011,7 +1141,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade,
     start: startGame,
     saveNow,
     openModal,

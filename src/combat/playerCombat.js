@@ -150,7 +150,7 @@ export class PlayerCombat {
       this.onEvent('block', { source, life, damage: r.damage });
     }
     if (r.result === 'break') {
-      c.stunned = GUARD.breakStun;
+      c.stunned = GUARD.breakStun * (s.stunMult ?? 1);
       this.onEvent('guardBreak', { source, life });
     }
     if (r.damage > 0) {

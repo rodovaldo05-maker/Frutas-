@@ -3,11 +3,13 @@
 
 import * as THREE from 'three';
 import { createPlayer } from '../characters/player.js';
+import { addRaceParts } from '../races/raceParts.js';
 
 // full: corpo inteiro (tela de Status); senão, só o rosto (HUD)
-export function renderPortrait(renderer, data, size = 192, { full = false } = {}) {
+export function renderPortrait(renderer, data, size = 192, { full = false, race = null } = {}) {
   const scene = new THREE.Scene();
   const player = createPlayer(scene, data);
+  if (race) addRaceParts(player.body, race);
   player.blob.visible = false;
   player.setGlider(0);
   player.face.update(1, { expression: 'feliz', look: { x: -0.25, y: 0.1 } });

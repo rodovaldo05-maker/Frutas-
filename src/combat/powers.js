@@ -121,7 +121,7 @@ export class FruitPowers {
     const c = this.ctl;
     for (let i = 0; i < 3; i++) this.cooldown[i] = Math.max(0, this.cooldown[i] - dt);
     this.idle += dt;
-    if (this.idle >= ENERGY.delay) this.energy = Math.min(this.energyMax, this.energy + ENERGY.regen * dt);
+    if (this.idle >= ENERGY.delay) this.energy = Math.min(this.energyMax, this.energy + ENERGY.regen * (this.regenMult ?? 1) * dt);
 
     const k = this.casting;
     if (k) {

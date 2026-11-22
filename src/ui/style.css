@@ -1003,3 +1003,52 @@ body.touch #hud #tracker .tracker-body b { font-size: 12px; }
   .weapon-card { padding: 8px; gap: 4px; }
   .weapon-card p { display: none; }
 }
+
+/* ===== Raças ===== */
+.race-intro { margin: 0 44px 8px 0; position: relative; z-index: 1; }
+.race-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; overflow: auto; min-height: 0; position: relative; z-index: 1; }
+.race-card {
+  display: grid; gap: 6px; align-content: start; padding: 10px; border-radius: 12px; border: 2px solid var(--rc);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 22%, rgba(20, 14, 32, 0.9)), rgba(14, 10, 26, 0.92));
+}
+.race-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: radial-gradient(circle at 50% 35%, #4b3a7a, #1b1430 75%); }
+.race-card b { font: 700 16px var(--title-font); color: #fff1cf; }
+.race-card small { color: var(--rc); font-weight: 800; font-size: 11px; }
+.race-card ul { margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.35; display: grid; gap: 2px; }
+.race-card p { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.race-card .btn { min-height: 34px; font-size: 13px; }
+.pane-race { display: grid; gap: 8px; overflow: auto; min-height: 0; font-size: 12.5px; }
+.race-head { display: flex; gap: 10px; align-items: baseline; }
+.race-head b { font: 700 18px var(--title-font); color: var(--rc); }
+.race-head span { color: var(--muted); }
+.race-mastery { display: grid; gap: 4px; }
+.race-mastery b { color: var(--gold-hi); }
+.race-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.race-cols h4 { margin: 4px 0; font: 700 13px var(--title-font); color: var(--gold-hi); }
+.race-cols ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; }
+.race-cols p { margin: 2px 0; line-height: 1.35; }
+.race-marcos { list-style: none; padding: 0 !important; }
+.race-marcos li { opacity: 0.6; }
+.race-marcos li.on { opacity: 1; color: #b9f2a8; }
+.race-marcos i { font-style: normal; font-weight: 800; color: var(--gold-hi); }
+.act.race {
+  width: calc(50px * var(--btn)); height: calc(50px * var(--btn)); right: auto; left: calc(207px * var(--btn) + var(--safe-l)); bottom: calc(96px * var(--btn) + var(--safe-b));
+  background: radial-gradient(circle at 40% 30%, color-mix(in srgb, var(--rc, #9fd0ff) 70%, #fff), color-mix(in srgb, var(--rc, #9fd0ff) 60%, #120e22) 80%);
+}
+.act.race .cdr { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(10, 6, 20, 0.7) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; }
+body.lefty .act.race { left: auto; right: calc(207px * var(--btn) + var(--safe-r)); }
+@media (max-height: 450px) {
+  .race-grid { gap: 6px; }
+  .race-card { padding: 6px; gap: 4px; }
+  .race-card img { aspect-ratio: 1.6; }
+  .race-card ul { font-size: 10px; }
+  .race-card p { display: none; }
+  .race-cols { grid-template-columns: 1fr; }
+}
+.race-card img { object-fit: cover; object-position: 50% 12%; }
+@media (max-height: 450px) {
+  .race-card img { aspect-ratio: auto; height: 88px; }
+  .race-card b { font-size: 14px; }
+  .race-card ul { gap: 1px; padding-left: 13px; }
+  .race-intro { font-size: 11px; margin-bottom: 4px; }
+}

@@ -10,6 +10,7 @@ import { Face } from '../characters/face.js';
 import { ATTACKS, Guard, computeDamage, inReach, isFrontal, reactionTime, timing } from './rules.js';
 import { MOVE } from '../movement/config.js';
 import { clamp, damp, lerp, lerpAngle, wrapAngle } from '../core/math.js';
+import { trimShadows, LOD_FAR, LOD_FACE } from '../characters/shadows.js';
 
 export const ARENA = { x: -16, z: -10, radius: 15 };
 
@@ -189,6 +190,7 @@ export class Recruta {
     this.knock = new THREE.Vector3();
     this.phase = 0;
     this.stride = 0;
+    this.speed = 0; // definido antes do primeiro desenho (senão o passo vira NaN e o corpo some)
     this.clock = Math.random() * 10;
     this.hurtAmount = 0;
     this.strafe = Math.random() < 0.5 ? 1 : -1;
@@ -215,6 +217,7 @@ export class Recruta {
     band.position.set(0, 0.62, 0);
     body.joints.cabeca.add(band);
     this.face = new Face(body.joints.cabeca, { hair: def.look.hair, skin: def.look.skin });
+    trimShadows(body);
     this.body = body;
     scene.add(body.root);
     this.tag = makeTag();
@@ -549,16 +552,20 @@ export class Recruta {
     if (!this.body) return;
     if (this.frozen > 0) dt = 0; // congelado: a pose para
     const body = this.body;
-    const visible = this.state !== 'gone';
+    // longe do jogador não desenha nem anima (desempenho); de perto mostra o rosto inteiro
+    const far = Math.abs(playerPos.x - this.pos.x) > LOD_FAR || Math.abs(playerPos.z - this.pos.z) > LOD_FAR;
+    const visible = this.state !== 'gone' && !far;
     body.root.visible = visible;
     this.tag.sprite.visible = visible && this.alive && playerPos.distanceTo(this.pos) < (this.arenaRef?.tagRange ?? 26);
     if (!visible) return;
+    this.face.setDetail(playerPos.distanceTo(this.pos) < LOD_FACE);
     const sink = this.state === 'down' ? Math.max(0, this.t - 3) * 1.4 : 0;
     body.root.position.set(this.pos.x, this.pos.y - sink, this.pos.z);
     body.root.rotation.set(0, this.yaw, 0);
     this.tag.sprite.position.set(this.pos.x, this.pos.y + 5.4, this.pos.z);
-    this.stride = lerp(this.stride, clamp(this.speed / MOVE.run, 0, 1.15), damp(12, dt));
-    this.phase += dt * this.speed * 2.9;
+    const speed = Number.isFinite(this.speed) ? this.speed : 0;
+    this.stride = lerp(Number.isFinite(this.stride) ? this.stride : 0, clamp(speed / MOVE.run, 0, 1.15), damp(12, dt));
+    this.phase = (Number.isFinite(this.phase) ? this.phase : 0) + dt * speed * 2.9;
     const data = this.data;
     if (this.state === 'down') {
       FRUTOMotion.apply(THREE, body, data, { id: 'death', t: Math.min(this.t, 1.55) });

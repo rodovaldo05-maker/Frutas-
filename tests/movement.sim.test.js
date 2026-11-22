@@ -167,11 +167,25 @@ describe('movimento na Ilha de Treino', () => {
     expect(climb(17.5)).toBeLessThan(1.5);
   });
 
-  it('deslize: correndo, Agachar desliza', () => {
+  it('deslize: correndo, Agachar desliza mais rápido que a corrida', () => {
     sim.place(0, 71, N);
     sim.run(1.5, () => ({ moveY: 1, sprint: true }));
-    sim.run(0.2, (t) => ({ moveY: 1, sprint: true, crouchPressed: t === 0, crouch: true }));
+    let top = 0;
+    sim.run(0.2, (t, c) => {
+      if (c.state === 'slide') top = Math.max(top, c.speed);
+      return { moveY: 1, sprint: true, crouchPressed: t === 0, crouch: true };
+    });
     expect(sim.states).toContain('slide');
+    expect(top).toBeGreaterThan(MOVE.sprint * 1.35);
+  });
+
+  it('esquiva leva o personagem cerca de 8–10 unidades', () => {
+    sim.place(-8, 62, N);
+    const p0 = sim.ctl.pos.clone();
+    sim.run(0.6, (t) => ({ dashPressed: t === 0 }));
+    const d = Math.hypot(sim.ctl.pos.x - p0.x, sim.ctl.pos.z - p0.z);
+    expect(d).toBeGreaterThan(7.5);
+    expect(d).toBeLessThan(11);
   });
 
   it('salto na parede sobe a chaminé', () => {

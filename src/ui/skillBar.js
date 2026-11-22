@@ -87,9 +87,9 @@ export class SkillBar {
       const p = this.powers[i];
       const el = this.rowEls[i];
       if (!el || el.classList.contains('locked')) continue;
-      const cd = powers.cooldown[i];
+      const cd = powers.cooldown[i] || 0; // slot sem recarga registrada = pronto
       const ready = cd <= 0;
-      el.style.setProperty('--cd', ready ? '0' : String(cd / p.recarga));
+      el.style.setProperty('--cd', ready ? '0' : String(Math.min(1, cd / (p.recarga || 1))));
       const sec = el.querySelector('.sec');
       if (sec) sec.textContent = ready ? '' : cd >= 1 ? String(Math.ceil(cd)) : cd.toFixed(1).replace('.', ',');
       el.classList.toggle('low', ready && powers.energy < p.custo);

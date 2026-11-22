@@ -13,7 +13,7 @@ export const BOAT = {
   seat: -2.1, // posição do jogador ao longo do bote (atrás do centro, no leme)
   speed: 13, // velocidade normal (≈ 6 m/s)
   fast: 19, // com Correr ligado
-  accel: 5.5,
+  accel: 7.5,
   brake: 8,
   turn: 1.3, // rad/s em velocidade de cruzeiro
   boardRange: 5.6, // distância para embarcar

@@ -13,6 +13,7 @@ import { makeFruit } from '../fruits/fruitArt.js';
 import { makeSword } from '../weapons/swordModel.js';
 import { WEAPONS } from '../weapons/weapons.js';
 import { clamp, damp, lerp, wrapAngle } from '../core/math.js';
+import { trimShadows, LOD_FAR, LOD_FACE } from '../characters/shadows.js';
 
 const NPCS = [
   {
@@ -77,6 +78,7 @@ export function makeNpcBody(scene, data, look) {
   const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
   for (const [id, mesh] of Object.entries(body.meshes)) mesh.material.color.set(look[PART[id] || 'skin']);
   const face = new Face(body.joints.cabeca, { hair: look.hair, skin: look.skin });
+  trimShadows(body);
   scene.add(body.root);
   return { body, face };
 }
@@ -113,6 +115,7 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
     const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
     for (const [id, mesh] of Object.entries(body.meshes)) mesh.material.color.set(def.look[PART[id] || 'skin']);
     const face = new Face(body.joints.cabeca, { hair: def.look.hair, skin: def.look.skin });
+    trimShadows(body);
     body.root.position.set(def.x, ground, def.z);
     body.root.rotation.y = def.yaw;
     scene.add(body.root);
@@ -198,11 +201,14 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
     update(dt, playerPos, data2 = data) {
       for (const n of npcs) {
         n.clock += dt;
-        // longe do jogador (outra ilha): não anima
-        if (Math.abs(playerPos.x - n.x) > 90 || Math.abs(playerPos.z - n.z) > 90) {
+        // longe do jogador: não desenha nem anima (desempenho)
+        const far = Math.abs(playerPos.x - n.x) > LOD_FAR || Math.abs(playerPos.z - n.z) > LOD_FAR;
+        n.body.root.visible = !far;
+        if (far) {
           n.tag.visible = false;
           continue;
         }
+        n.face.setDetail(Math.hypot(playerPos.x - n.x, playerPos.z - n.z) < LOD_FACE);
         FRUTOMotion.apply(THREE, n.body, data2, { id: 'idle', t: n.clock, clock: n.clock, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
         // vira a cabeça para o jogador quando ele chega perto
         const dx = playerPos.x - n.x;

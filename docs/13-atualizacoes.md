@@ -24,6 +24,20 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | Porto das Origens | Segunda ilha, a leste, com a vila gerada pela semente 2026: praça com chafariz, 4 avenidas (uma até o cais), anel de ruas, 19 casas com porta (Prefeitura, Mercado, Taverna, Ferreiro, Loja de Frutas e residências), postes, cais nas duas ilhas e Barqueiros que levam de uma à outra; mapa e minimapa trocam de ilha e mostram ruas e casas — Atualização 9 |
 | Poderes das frutas | Energia, 3 habilidades por fruta com gesto do laboratório e efeito real (congelar, queimar, puxar, empurrar, lançar), combo próprio da fruta, domínio por fruta que libera as habilidades — Atualização 3 |
 
+## Revisão geral (antes da atualização 12)
+
+| Problema | Causa | Correção |
+|---|---|---|
+| Inimigos ficavam invisíveis (só nome e barra de vida) | O Recruta era desenhado antes da primeira atualização (já na tela inicial) com a velocidade ainda indefinida; o passo da caminhada virava NaN para sempre e as peças do corpo iam para posição inválida. Nos golpes e ao apanhar (clipes sem passo) ele reaparecia | Velocidade começa em 0 e a animação ignora valores inválidos |
+| Esquiva curta | 4,6 unidades | 10 unidades em 0,28 s |
+| Deslize lento | Saía a no máximo 9 e terminava a 3,8 | Sai a pelo menos 11 (até 16) e termina na velocidade de Correr |
+| Recargas zeravam ao trocar de slot | Atualizar o equipamento recriava espada e estilo com recarga 0 e cancelava a técnica | Recarga e técnica só zeram quando o item muda de verdade |
+| 4ª técnica de estilo presa na recarga | Só os slots 1–3 recarregavam; ao liberar a 4ª (maestria 34) a barra de habilidades quebrava a cada quadro | Todos os slots recarregam; a barra trata slot sem recarga |
+| Desmaiar dentro do bote travava o jogador com 0 de vida | O bote recolocava o estado "no bote" por cima do desmaio | Desmaiou no bote: desce no lugar mais perto e o desmaio segue normal |
+| Trocar de slot no meio de uma técnica de estilo | Só fruta e espada bloqueavam | Os três bloqueiam |
+| Muitas chamadas de desenho (celular) | 12 personagens de 37 peças desenhados mesmo longe | Personagens a mais de 80 não são desenhados; de longe o rosto fica só com o cabelo; só as peças grandes fazem sombra (616 → 401 na área inicial, 341 → 221 na vila) |
+| Partes lentas | Nado 2,45, escalada 2,2, agachado 1,7, escorregar 6, bote acelerando devagar | Nado 3,0 (Correr 5,4), escalada 3,0, agachado 2,0, escorregar 9, bote acelera mais rápido |
+
 ## Roteiro
 
 | Nº | Atualização | Entrega | Pronto quando | Situação |

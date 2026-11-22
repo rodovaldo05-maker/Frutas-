@@ -605,7 +605,7 @@ async function boot() {
     if (name === 'arma' && !WEAPONS[save.weapon]) return hud.toast('Sem arma: compre uma espada com o Mestre de Armas (barraca ao lado do Trocador).');
     if (name === 'livre') return;
     if (name === save.equipped) return;
-    if (powers.busy || blade.busy) return;
+    if (powers.busy || blade.busy || art.busy) return; // não troca no meio de uma técnica
     if (combat.runner.busy) {
       if (raceSys.adapt <= 0) return;
       combat.runner.cancel(); // Adaptação Tática: troca instantânea
@@ -1261,6 +1261,15 @@ async function boot() {
       if (inp.sensePressed) vontade.toggle('sense');
       vontade.update(dt);
       arena.tagRange = vontade.sense ? 70 : 26;
+      if (boat.aboard && ctl.faint > 0) {
+        // desmaiou no bote (ex.: queimando): desce no lugar mais perto e o desmaio segue normal
+        const spot = boat.landing();
+        boat.aboard = false;
+        boat.s.speed = 0;
+        ctl.pos.set(spot.x, spot.y + 0.05, spot.z);
+        ctl.syncCollider();
+        ctl.setState('faint');
+      }
       if (boat.aboard) {
         // o analógico aponta o rumo em relação à câmera (igual a andar); Correr acelera
         const fx = Math.sin(inp.camYaw);

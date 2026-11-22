@@ -34,12 +34,18 @@ export class FruitPowers {
     this.domainLevel = 1;
   }
 
+  // Atualiza fruta/espada/estilo. Recargas e golpe em andamento só zeram quando o item muda
+  // de verdade (atualizar o equipamento ou subir de nível não pode zerar recarga nem cancelar)
   setFruit(fruit, powers, domainLevel = 1) {
+    const changed = (fruit?.id ?? null) !== (this.fruit?.id ?? null);
     this.fruit = fruit;
     this.powers = powers;
     this.domainLevel = domainLevel;
-    this.cooldown = [0, 0, 0];
-    this.casting = null;
+    if (changed) {
+      this.cooldown = powers.map(() => 0);
+      this.casting = null;
+    }
+    while (this.cooldown.length < Math.max(3, powers.length)) this.cooldown.push(0);
   }
 
   setEnergyMax(max) {
@@ -119,7 +125,7 @@ export class FruitPowers {
   update(dt, targets, canAct) {
     this.time += dt;
     const c = this.ctl;
-    for (let i = 0; i < 3; i++) this.cooldown[i] = Math.max(0, this.cooldown[i] - dt);
+    for (let i = 0; i < this.cooldown.length; i++) this.cooldown[i] = Math.max(0, (this.cooldown[i] || 0) - dt); // todos os slots (estilos têm 4)
     this.idle += dt;
     if (this.idle >= ENERGY.delay) this.energy = Math.min(this.energyMax, this.energy + ENERGY.regen * (this.regenMult ?? 1) * dt);
 

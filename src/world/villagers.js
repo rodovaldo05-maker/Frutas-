@@ -5,11 +5,12 @@
 import * as THREE from 'three';
 import { FRUTOMotion } from '../animation/fruto-motion.js';
 import { makeNpcBody, label } from './npcs.js';
+import { LOD_FACE } from '../characters/shadows.js';
 import { buildStreetGraph, makeVillagers, activityAt, sleepingAt, placeOf, route } from './villageLife.js';
 import { clamp, damp, lerp, lerpAngle, wrapAngle } from '../core/math.js';
 
 const WALK = 2.4; // unidades/s (≈ 1,1 m/s)
-const SHOW = 75; // distância para desenhar e animar
+const SHOW = 64; // distância para desenhar e animar
 
 export class Villagers {
   constructor({ scene, data, village, offset, physics, baseY }) {
@@ -103,6 +104,7 @@ export class Villagers {
         continue;
       }
       m.clock += dt;
+      m.face.setDetail(Math.hypot(playerPos.x - m.x - this.o.x, playerPos.z - m.z - this.o.z) < LOD_FACE);
       m.gait = lerp(m.gait, m.moving ? 1 : 0, damp(8, dt));
       if (m.moving) m.phase += dt * WALK * 2.9;
       const wp = this.world(m);

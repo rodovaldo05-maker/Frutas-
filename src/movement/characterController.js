@@ -1266,7 +1266,7 @@ export class CharacterController {
   startSlide() {
     this.setCrouched(true, true);
     const hs = Math.hypot(this.vel.x, this.vel.z) || 1;
-    this.slide = { dir: new THREE.Vector3(this.vel.x / hs, 0, this.vel.z / hs), speed: Math.min(hs * MOVE.slideBoost, 9), t: 0 };
+    this.slide = { dir: new THREE.Vector3(this.vel.x / hs, 0, this.vel.z / hs), speed: Math.min(Math.max(hs * MOVE.slideBoost, MOVE.slideStart), MOVE.slideMax), t: 0 };
     this.setState('slide');
     this.emit('slide', {});
   }
@@ -1280,7 +1280,7 @@ export class CharacterController {
     // descida acelera, subida freia
     const downhill = n.x * s.dir.x + n.z * s.dir.z; // sen da inclinação na direção do deslize
     s.speed += (GRAVITY * downhill * 0.85 - MOVE.slideFriction * (downhill > 0.08 ? 0.4 : 1)) * dt;
-    s.speed = Math.min(s.speed, 14);
+    s.speed = Math.min(s.speed, MOVE.slideMax + 2);
     if (this.wish.mag > 0.2) {
       const target = yawOf(this.wish.x, this.wish.z);
       const cur = yawOf(s.dir.x, s.dir.z);
@@ -1308,8 +1308,10 @@ export class CharacterController {
     if (done) {
       this.setState('ground');
       if (!input.crouch) this.setCrouched(false);
-      this.vel.x = s.dir.x * Math.min(s.speed, MOVE.run);
-      this.vel.z = s.dir.z * Math.min(s.speed, MOVE.run);
+      // sai do deslize na velocidade de correr (ou de Correr ligado), sem perder o embalo
+      const cap = input.sprint ? MOVE.sprint : MOVE.run;
+      this.vel.x = s.dir.x * Math.min(s.speed, cap);
+      this.vel.z = s.dir.z * Math.min(s.speed, cap);
     }
   }
 
@@ -1327,9 +1329,10 @@ export class CharacterController {
       return;
     }
     const down = horizontal(n);
-    this.vel.x = lerp(this.vel.x, down.x * 6 + this.wish.x * 1.2, damp(3, dt));
-    this.vel.z = lerp(this.vel.z, down.z * 6 + this.wish.z * 1.2, damp(3, dt));
-    this.vel.y = -6;
+    // revisão: escorrega mais rápido (9) e pega embalo logo
+    this.vel.x = lerp(this.vel.x, down.x * 9 + this.wish.x * 1.4, damp(5, dt));
+    this.vel.z = lerp(this.vel.z, down.z * 9 + this.wish.z * 1.4, damp(5, dt));
+    this.vel.y = -8;
     this.turnToward(down.x, down.z, 6, dt);
     if (this.gate.ready()) {
       this.jump(MOVE.jumpVelocity * 0.75);

@@ -177,3 +177,25 @@ describe('domínio da fruta', () => {
     expect(UNLOCK).toEqual([1, 5, 13]);
   });
 });
+
+describe('recargas (revisão)', () => {
+  it('atualizar o mesmo item não zera a recarga nem cancela o golpe', () => {
+    const s = setup('geada');
+    const t = dummyAt(0, 4, true);
+    expect(s.p.cast(0, [t], true)).toBe(true);
+    const cd = s.p.cooldown[0];
+    expect(cd).toBeGreaterThan(0);
+    s.p.setFruit(fruit('geada'), powersOf(fruit('geada')), 100); // como trocar de slot ou subir de nível
+    expect(s.p.cooldown[0]).toBe(cd);
+    expect(s.p.casting).not.toBeNull();
+    s.p.setFruit(fruit('brasa'), powersOf(fruit('brasa')), 100); // fruta nova: zera
+    expect(s.p.cooldown[0]).toBe(0);
+  });
+
+  it('a 4ª técnica (estilos) também sai da recarga', () => {
+    const s = setup('geada');
+    s.p.cooldown[3] = 2;
+    run(s, [], 2.1);
+    expect(s.p.cooldown[3]).toBe(0);
+  });
+});

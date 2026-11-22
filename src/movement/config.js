@@ -14,11 +14,11 @@ export const MOVE = {
   walk: 2.3,
   run: 3.8, // velocidade base do laboratório
   sprint: 7.6, // botão Correr (alterna): +100% sobre os 3,8 de andar (antes era 6,0, +58%)
-  crouch: 1.7,
-  swim: 2.45,
-  swimSprint: 4.4, // Correr nadando: +80%
+  crouch: 2.0,
+  swim: 3.0,
+  swimSprint: 5.4, // Correr nadando: +80%
   diveSprint: 1.6, // Correr mergulhando: ×1,6
-  dive: 2.2,
+  dive: 2.6,
   glideForward: 8.0, // planar não freia quem vem correndo
   glideFall: 2.6,
 
@@ -38,17 +38,19 @@ export const MOVE = {
   coyoteTime: 0.12,
   jumpBuffer: 0.15,
 
-  // Esquiva / dash
-  dashDistance: 4.6,
-  dashTime: 0.24,
+  // Esquiva / dash (revisão: o dobro do alcance, ≈ 4 m)
+  dashDistance: 10,
+  dashTime: 0.28,
   dashCooldown: 0.8,
   dashInvulnerable: 0.2,
 
-  // Deslize
+  // Deslize (revisão: sai mais rápido que a corrida e freia aos poucos)
   slideMinSpeed: 4.4,
-  slideBoost: 1.25,
+  slideBoost: 1.6,
+  slideStart: 11, // velocidade mínima ao começar a deslizar
+  slideMax: 16,
   slideTime: 0.85,
-  slideFriction: 2.2,
+  slideFriction: 4.2,
   slopeSlideAngle: 50, // acima disso o personagem escorrega
 
   // Rampas e degraus
@@ -57,12 +59,12 @@ export const MOVE = {
   snapDistance: 0.6,
 
   // Escalada e bordas
-  climbSpeed: 2.2,
+  climbSpeed: 3.0,
   climbReach: 1.0, // distância máxima da parede para agarrar
   hangReachMin: 3.0, // altura da borda (acima dos pés) que permite agarrar
   hangReachMax: 4.7,
   hangOffset: 4.15, // dos pés até a borda, pendurado
-  shimmySpeed: 1.6,
+  shimmySpeed: 2.2,
   vaultMax: 2.6, // obstáculos até esta altura são escalados direto (sem pendurar)
   mantleTime: 0.55,
   wallJumpOut: 6.2,

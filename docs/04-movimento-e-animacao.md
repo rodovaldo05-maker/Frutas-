@@ -157,11 +157,14 @@ O jogo usa a escala do FRUTO Laboratório: o corpo base mede cerca de 4,1 unidad
 | Degrau automático | 0,55 | |
 | Coyote time / buffer de salto | 0,12 s / 0,15 s | |
 | Agarrar borda | topo entre 3,0 e 4,7 acima dos pés | Obstáculos até 2,6 são subidos direto |
-| Escalada | 2,2/s, gasta 9–13 de fôlego por segundo | Pedra escura, troncos e barrancos |
+| Escalada | 3,0/s (lados 2,2/s), gasta 9–13 de fôlego por segundo | Pedra escura, troncos e barrancos |
 | Corrida na parede | 1,2 s, exige pulo com Correr ligado | |
 | Planar (asa-delta) | 8,0 à frente, cai 2,6/s | Segurar Pular caindo, depois do salto duplo. A asa-delta (vela listrada, tubos e barra de controle) abre da mochila nas costas; o piloto voa deitado segurando a barra e inclina nas curvas. Botão da asa (celular), tecla U ou Configurações ligam e desligam |
 | Queda | sem dano até 12; rolando, até 26 | Agachar logo antes de tocar o chão |
-| Nado / mergulho | 2,45 (Correr 4,4) / 2,2 (Correr ×1,6), ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
+| Esquiva | 10 unidades (≈ 4,5 m) em 0,28 s, invulnerável nos primeiros 0,2 s, recarga 0,8 s | Revisão: o dobro do alcance anterior (4,6) |
+| Deslize | começa a pelo menos 11 (1,6× a corrida, até 16) e freia 4,2/s; termina na velocidade de Correr se estiver ligado | Revisão: antes saía a no máximo 9 e voltava para 3,8 |
+| Escorregar em rampa íngreme | até 9 de velocidade descendo | Revisão: antes 6 |
+| Nado / mergulho | 3,0 (Correr 5,4) / 2,6 (Correr ×1,6), ar 30 s | Boia com os valores do laboratório (3,28 parado, 1,94 nadando) |
 
 A animação reaproveita o FRUTOMotion (passada ligada à velocidade real) e o FRUTOBalance
 (pés no chão) do laboratório; as poses novas usam a IK de dois ossos do próprio laboratório.

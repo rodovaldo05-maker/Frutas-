@@ -79,8 +79,13 @@ export class Face {
       const m = box(w, h, d, hairMat);
       m.position.set(x, y, z);
       m.castShadow = true;
+      m.userData.hair = true;
       this.group.add(m);
     }
+
+    // detalhes do rosto (olhos, sobrancelhas, nariz, boca, bochechas): somem de longe
+    this.details = this.group.children.filter((o) => !o.userData.hair);
+    this.detail = true;
 
     this.current = { ...EXPRESSIONS.neutro };
     this.blinkTimer = 2 + Math.random() * 2;
@@ -88,6 +93,13 @@ export class Face {
     this.blinkPhase = -1;
     this.doubleBlink = false;
     this.look = { x: 0, y: 0 };
+  }
+
+  // Nível de detalhe (desempenho): de longe ficam só o cabelo e a cabeça
+  setDetail(on) {
+    if (on === this.detail) return;
+    this.detail = on;
+    for (const o of this.details) o.visible = on;
   }
 
   update(dt, { expression = 'neutro', look = { x: 0, y: 0 } } = {}) {

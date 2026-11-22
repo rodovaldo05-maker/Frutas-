@@ -1074,3 +1074,6 @@ body.lefty .act.race { left: auto; right: calc(207px * var(--btn) + var(--safe-r
 body.sense #game { filter: saturate(0.65) contrast(1.05); }
 #dojo-tabs { margin: 0 40px 8px 0; position: relative; z-index: 1; }
 .weapon-card .tag { font: 800 11px var(--body-font); color: #b9f2a8; }
+
+/* botões do alto no canto superior esquerdo (mesmo lado da janela da missão) */
+#hud .top-actions { left: calc(12px + var(--safe-l)); right: auto; top: calc(10px + var(--safe-t)); }

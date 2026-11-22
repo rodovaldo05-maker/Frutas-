@@ -484,4 +484,5 @@ contexto decide e o botão contextual mostra qual ação acontecerá.
 | Direita | Nome do item equipado e uma linha por habilidade: Usar · tecla (Z X C V) · nome, com custo de energia e recarga correndo sobre o nome; bloqueadas mostram cadeado e o domínio necessário |
 | Celular | Sem botão de ataque: um toque rápido na tela ataca (arrastar só gira a câmera). Correr ao lado do joystick; Pular grande embaixo à direita com Esquiva e Agachar colados nele e Defender ao lado; a lista de habilidades logo acima, sem cobrir o minimapa; asa-delta nos ícones do alto |
 | Missão rastreada | Janela à esquerda, centralizada na altura da tela (celular e PC), mais compacta no celular |
+| Botões do alto | Asa-delta, Personagem, Mochila, Missões, Mapa e Pausa no canto superior esquerdo, no mesmo lado da missão |
 | Teclado | 1–4 equipar · Z X C V habilidades · Ctrl agachar · R correr (o C agora é habilidade) |

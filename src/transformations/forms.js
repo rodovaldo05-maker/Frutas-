@@ -166,3 +166,120 @@ export function showForm(body, rig) {
 export function disposeFormRig(rig) {
   rig?.root.removeFromParent();
 }
+
+// ===== Corpo do personagem na forma híbrida (atualização 22) =====
+// No laboratório a parte humana das híbridas é uma "pele" cinza-esverdeada. Aqui ela vira o
+// corpo do personagem atual: peças quase todas cinza (tronco, cintura, cabeça, pernas do
+// Oriental) são trocadas pelas peças do corpo do jogador, com a cor da roupa, o rosto, o
+// cabelo, a roupa e a armadura; peças só em parte cinza recebem as cores do jogador no lugar
+// do cinza. O resto (pelos, penas, escamas, chifres, cauda, asas) fica como no laboratório.
+const isLabSkin = (r, g, b) => Math.max(r, g, b) - Math.min(r, g, b) < 0.075 && g > b + 0.004 && g >= r;
+const humanCache = new Map();
+function humanBody(lod) {
+  if (!humanCache.has(lod)) humanCache.set(lod, FRUTOModels.body(THREE, DATA, '#ffffff', 1, lod));
+  return humanCache.get(lod);
+}
+// fração cinza de cada segmento humanoide da híbrida (calculada uma vez por corpo)
+export function greyMap(rig) {
+  if (rig.greyMap) return rig.greyMap;
+  // pela área das faces (faces grandes contam mais que detalhes pequenos)
+  const out = {};
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  for (const s of DATA.segments) {
+    const g = rig.meshes[s.id]?.geometry;
+    const col = g?.attributes?.color;
+    if (!col || !g.index) continue;
+    const p = g.attributes.position;
+    const idx = g.index.array;
+    let total = 0;
+    let grey = 0;
+    for (let i = 0; i < idx.length; i += 3) {
+      a.fromBufferAttribute(p, idx[i]);
+      b.fromBufferAttribute(p, idx[i + 1]).sub(a);
+      c.fromBufferAttribute(p, idx[i + 2]).sub(a);
+      const area = b.cross(c).length() / 2;
+      total += area;
+      const k = idx[i];
+      if (isLabSkin(col.getX(k), col.getY(k), col.getZ(k))) grey += area;
+    }
+    if (total > 0) out[s.id] = grey / total;
+  }
+  rig.greyMap = out;
+  return out;
+}
+
+// look: { colorOf(segmentId) → cor, skin, hair, dress(joints) → peças de roupa/armadura, Face }
+export function dressHybrid(rig, look, lod = 1) {
+  undressHybrid(rig);
+  if (rig.shape !== 'hibrida') return null;
+  const grey = greyMap(rig);
+  const human = humanBody(lod);
+  const added = [];
+  const hidden = [];
+  const recolored = [];
+  const replaced = new Set();
+  for (const [id, frac] of Object.entries(grey)) {
+    const mesh = rig.meshes[id];
+    if (frac >= 0.95 && human.meshes[id]) {
+      // troca pela peça do corpo do personagem
+      const src = human.meshes[id];
+      const mat = src.material.clone();
+      mat.color.set(look.colorOf(id));
+      const m = new THREE.Mesh(src.geometry, mat);
+      m.position.copy(src.position);
+      m.rotation.copy(src.rotation);
+      m.scale.copy(src.scale);
+      m.castShadow = m.receiveShadow = true;
+      m.name = `${id}_personagem`;
+      rig.joints[id].add(m);
+      added.push(m);
+      mesh.visible = false;
+      hidden.push(mesh);
+      replaced.add(id);
+    } else if (frac >= 0.2) {
+      // só o cinza muda de cor (cinto e detalhes do laboratório ficam)
+      const geo = mesh.geometry.clone();
+      const c = geo.attributes.color;
+      const tint = new THREE.Color(look.colorOf(id));
+      for (let i = 0; i < c.count; i++) {
+        const r = c.getX(i);
+        const g = c.getY(i);
+        const b = c.getZ(i);
+        if (!isLabSkin(r, g, b)) continue;
+        const shade = Math.min(1.25, (r + g + b) / 3 / 0.79); // mantém o claro-escuro do laboratório
+        c.setXYZ(i, tint.r * shade, tint.g * shade, tint.b * shade);
+      }
+      c.needsUpdate = true;
+      recolored.push([mesh, mesh.geometry]);
+      mesh.geometry = geo;
+    }
+  }
+  // roupa, armadura, rosto e cabelo só nas peças trocadas
+  const sink = new THREE.Group();
+  const joints = new Proxy(rig.joints, { get: (o, k) => (replaced.has(k) ? o[k] : sink) });
+  if (look.dress) added.push(...(look.dress(joints) ?? []).filter((p) => p && p.parent && p.parent !== sink));
+  let face = null;
+  // cabeça humana (trocada ou com a pele recolorida): rosto e cabelo do personagem
+  if ((grey.cabeca ?? 0) >= 0.6 && look.Face) {
+    face = new look.Face(rig.joints.cabeca, { hair: look.hair, skin: look.skin });
+    added.push(face.group);
+  }
+  rig.dressing = { added, hidden, recolored, face };
+  rig.face = face;
+  return rig.dressing;
+}
+
+export function undressHybrid(rig) {
+  const d = rig?.dressing;
+  if (!d) return;
+  for (const o of d.added) o.removeFromParent();
+  for (const m of d.hidden) m.visible = true;
+  for (const [mesh, geo] of d.recolored) {
+    mesh.geometry.dispose();
+    mesh.geometry = geo;
+  }
+  rig.dressing = null;
+  rig.face = null;
+}

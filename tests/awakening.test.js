@@ -198,7 +198,7 @@ describe('formas híbridas', () => {
     }
     const serpent = createFormRig('oriental', 'completa', 2);
     expect(serpent.serpent).toBe(true);
-    expect(Object.keys(serpent.joints).filter((k) => k.startsWith('corpo_')).length).toBe(12);
+    expect(Object.keys(serpent.joints).filter((k) => k.startsWith('corpo_')).length).toBe(10);
     expect(serpent.joints.cabeca && serpent.joints.mandibula && serpent.joints.bigode_E && serpent.joints.orelha_E).toBeTruthy();
     // a garra anterior sobe a pata dianteira no preparo e corta no impacto
     const pose = (t) => {

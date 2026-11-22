@@ -25,7 +25,8 @@ import { NODE_TYPES } from './crafting/professions.js';
 import { MATERIALS, TOOLS, addMaterial, materialDrop } from './crafting/materials.js';
 import { ForgeUi } from './ui/forgeUi.js';
 import { AWAKEN, awakenState, trialHit, trialProgress } from './fruits/awakening.js';
-import { FORM_TIME, formMods, formBlock, hasForm, formInfo, nextShape, createFormRig, showForm, disposeFormRig, WINGED } from './transformations/forms.js';
+import { FORM_TIME, formMods, formBlock, hasForm, formInfo, nextShape, createFormRig, showForm, disposeFormRig, WINGED, dressHybrid, undressHybrid } from './transformations/forms.js';
+import { Face } from './characters/face.js';
 import { SPECS, SPEC_LEVEL, SPEC_CHANGE_COST } from './races/races.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
@@ -290,6 +291,7 @@ async function boot() {
   // Visual do personagem: roupa (cores dos segmentos + peças) e armadura; tudo entra na
   // malha única do corpo de novo (as peças da roupa no encaixe de uma armadura somem)
   function refreshLook() {
+    if (form?.shape === 'hibrida') dressHybrid(form.rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
     const pal = outfitPalette(save.outfit?.id, save.outfit?.cor);
     for (const [id, mesh] of Object.entries(player.body.meshes)) {
       const part = SEGMENT_PART[id] || 'skin';
@@ -644,11 +646,28 @@ async function boot() {
     if (!formRigs.has(key)) formRigs.set(key, createFormRig(species, shape, renderer.quality === 'leve' ? 2 : 1));
     return formRigs.get(key);
   }
+  // aparência atual do personagem para vestir a híbrida
+  function hybridLook() {
+    const pal = outfitPalette(save.outfit?.id, save.outfit?.cor);
+    return {
+      colorOf: (id) => {
+        const part = SEGMENT_PART[id] || 'skin';
+        return part === 'skin' ? BASE_LOOK.skin : pal[part] ?? BASE_LOOK[part];
+      },
+      skin: BASE_LOOK.skin,
+      hair: BASE_LOOK.hair,
+      Face,
+      dress: (joints) => [...buildOutfit({ joints }, save.outfit?.id, pal, { hide: gearSlots(save) }), ...applyGearVisual({ joints }, save, [])],
+    };
+  }
   function setForm(shape, quiet = false) {
     const f = eatenFruit();
     combat.runner.reset(); // transformar é ação incompatível: a sequência do M1 recomeça
     ctl.action = null;
-    if (form) disposeFormRig(form.rig);
+    if (form) {
+      undressHybrid(form.rig);
+      disposeFormRig(form.rig);
+    }
     if (!shape) {
       const had = !!form;
       form = null;
@@ -665,6 +684,8 @@ async function boot() {
       return;
     }
     const rig = rigFor(f.id, shape);
+    // híbrida: a pele cinza do laboratório vira o corpo do personagem (cores, roupa, armadura, rosto)
+    if (shape === 'hibrida') dressHybrid(rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
     form = { id: f.id, shape, rig };
     showForm(player.body, rig);
     animator.form = rig;

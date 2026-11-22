@@ -408,11 +408,20 @@ Código: `src/fruits/powers.js` (formato de cada habilidade), `src/combat/powers
   (`src/characters/fruto-animals.js`: FRUTOWolf, FRUTOFalcon, FRUTOMythBeast, FRUTOMythPhoenix,
   FRUTOMythEast, FRUTOMythWest). A forma escolhida substitui o corpo humano; o capuz de colisão
   continua o mesmo e a câmera recua (×1,12 na híbrida, ×1,45 na completa).
-- **Dragão Oriental completo (novo).** No laboratório era um quadrúpede; agora é uma serpente
-  celestial (`src/characters/orientalSerpent.js`): peito, pescoço e 12 segmentos em cadeia com
-  juba nos primeiros e espinhos dourados no resto, placas de marfim no ventre, quatro patas
-  curtas e a cabeça, a mandíbula, os chifres, os bigodes e as folhas da cauda esculpidos pelo
-  laboratório. Paira acima do chão, ondula da cabeça para a cauda e voa mais alto no ar.
+- **Dragão Oriental completo (novo, refeito na atualização 22).** No laboratório era um
+  quadrúpede; agora é um dragão celestial (`src/characters/orientalSerpent.js`): peito,
+  pescoço e 10 segmentos grossos em cadeia, com escamas em fileiras rubi e brasa, aro dourado
+  em cada segmento, placas de marfim no ventre, barbatana dorsal de chamas douradas, juba
+  farta no pescoço, quatro patas escamadas com garras douradas, nuvens sob o corpo e a pérola
+  flamejante girando à frente; a cabeça, a mandíbula, a galhada, os bigodes e as folhas da
+  cauda são do laboratório. Paira em curvas em S, ondula da cabeça para a cauda e voa mais alto.
+- **Híbridas com o corpo do personagem (atualização 22).** A parte humana das híbridas do
+  laboratório era uma pele cinza. Agora só essa parte muda: peças quase todas cinza (tronco,
+  cintura, cabeça da Fênix e do Oriental, pernas do Oriental) viram as peças do corpo do
+  personagem, com a cor da roupa, a roupa equipada, a armadura, o rosto e o cabelo; peças só
+  em parte cinza (cabeça com chifres da Besta e do Ocidental, cintos) recebem a cor do
+  personagem no lugar do cinza e o rosto. Pelos, penas, escamas, cauda e asas ficam como no
+  laboratório. A medida do cinza é pela área das faces (Lobo e Falcão não têm pele cinza).
 - **Ciclo.** Botão Forma ou H: humana → híbrida (domínio 20) → completa (domínio 50) → humana.
   Trocar de forma zera a sequência do M1 e dá 0,6 s de invulnerabilidade.
 - **Números da forma completa.** Lobo +45% de velocidade e +30% corpo a corpo; Besta +45% corpo

@@ -154,6 +154,7 @@ export class PlayerAnimator {
         air: clamp(Math.max(0, root.y - ground) / 1.08), landing: ctl.landing, swimming: inWater, runBlend: this.runBlend,
       });
       this.formPose = res.id;
+      this.form.face?.update(dt, { expression: ctl.action ? 'esforco' : 'neutro', look: { x: 0, y: 0 } });
       this.updateSounds(ctl, speed);
       this.updateBlob(ctl, root);
       return;

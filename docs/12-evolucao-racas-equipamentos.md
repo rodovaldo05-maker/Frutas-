@@ -218,3 +218,20 @@ depois.
 Código: `src/races/races.js` e `raceSystem.js` (trilhas e prova), `src/fruits/awakening.js`,
 `src/combat/powers.js` (despertar), `src/transformations/forms.js`; testes em
 `tests/awakening.test.js`.
+
+
+## Visual das armaduras e roupas (revisão visual)
+
+- Cada peça tem desenho próprio em blocos (`src/items/gearParts.js`): Bandana com nó e pontas;
+  Elmo de Ferro com cúpula que cobre o cabelo, aro, nuca, laterais, nasal e crista (Rara+);
+  Gibão de Couro com laços; Couraça de Escamas com escamas desencontradas, gola e ombreiras em
+  duas camadas; Manto de Brasa com capuz caído, manto, barra e broche; Calças Reforçadas com
+  remendo; Grevas de Aço com placas da coxa, joelheiras, caneleiras e tasset; Botas Leves com
+  cano e sola; Botas do Vento com biqueira e asinhas; amuletos com corrente e pingente que
+  brilha; braceletes com gema.
+- Friso pela qualidade: Comum sem friso, Incomum/Rara prateado, Épica+ dourado.
+- Roupas (`src/characters/outfits.js`): 8 conjuntos com 3 paletas; as peças da roupa no mesmo
+  encaixe de uma armadura somem.
+- Roupa e armadura são peças rígidas presas às juntas e entram na malha única do corpo
+  (`remergeBody`), então vestir não aumenta as chamadas de desenho; só as gemas brilhantes
+  ficam à parte.

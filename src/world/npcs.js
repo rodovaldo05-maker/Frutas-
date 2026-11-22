@@ -14,6 +14,7 @@ import { makeSword } from '../weapons/swordModel.js';
 import { WEAPONS } from '../weapons/weapons.js';
 import { clamp, damp, lerp, wrapAngle } from '../core/math.js';
 import { trimShadows, LOD_FAR, LOD_FACE } from '../characters/shadows.js';
+import { buildOutfit, npcOutfit } from '../characters/outfits.js';
 import { bakeStatic } from '../optimization/bake.js';
 
 const NPCS = [
@@ -81,10 +82,13 @@ export function label(text, scale = 1) {
 }
 
 // Corpo do laboratório com as cores de um NPC (pele, cabelo, roupa) e rosto
-export function makeNpcBody(scene, data, look) {
+export function makeNpcBody(scene, data, look, seed = JSON.stringify(look)) {
   const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
   for (const [id, mesh] of Object.entries(body.meshes)) mesh.material.color.set(look[PART[id] || 'skin']);
   const face = new Face(body.joints.cabeca, { hair: look.hair, skin: look.skin });
+  // roupa sorteada pelo morador (as peças entram na malha única do corpo)
+  const o = npcOutfit(seed, look);
+  buildOutfit(body, o.id, o.palette);
   trimShadows(body);
   scene.add(body.root);
   return { body, face };
@@ -122,6 +126,12 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
     const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
     for (const [id, mesh] of Object.entries(body.meshes)) mesh.material.color.set(def.look[PART[id] || 'skin']);
     const face = new Face(body.joints.cabeca, { hair: def.look.hair, skin: def.look.skin });
+    {
+      // roupa de cada mercador (Barqueiros de marinheiro, Mestre de Luta de kimono...)
+      const fixed = { mercador: 'pirata', trocador: 'nobre', armeiro: 'explorador', mestre: 'lutador', comprador: 'andarilho' }[def.id] ?? (def.role === 'barqueiro' ? 'marinheiro' : null);
+      const o = npcOutfit(def.id, def.look);
+      buildOutfit(body, fixed ?? o.id, o.palette);
+    }
     trimShadows(body);
     body.root.position.set(def.x, ground, def.z);
     body.root.rotation.y = def.yaw;

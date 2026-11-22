@@ -15,7 +15,7 @@ export const BASE_LOOK = {
   shoes: '#ece6d8',
 };
 
-const SEGMENT_PART = {
+export const SEGMENT_PART = {
   cabeca: 'skin',
   tronco: 'shirt',
   ombro_E: 'shirt', ombro_D: 'shirt',
@@ -28,6 +28,9 @@ const SEGMENT_PART = {
   pe_E: 'shoes', pe_D: 'shoes',
 };
 
+// junta do jogador: braços separados (brilho da Vontade de Armadura) e só peças marcadas
+export const PLAYER_MERGE = { keep: (id) => /^(braco|antebraco|mao)_/.test(id), strict: true };
+
 export function createPlayer(scene, data, { profile = 0, look = BASE_LOOK } = {}) {
   const body = FRUTOModels.body(THREE, data, '#ffffff', 1, profile);
   body.root.name = 'Jogador';
@@ -36,7 +39,7 @@ export function createPlayer(scene, data, { profile = 0, look = BASE_LOOK } = {}
   }
   const face = new Face(body.joints.cabeca, { hair: look.hair, skin: look.skin });
   // corpo e cabelo numa malha só; braços separados (brilho da Vontade de Armadura)
-  mergeBody(body, { keep: (id) => /^(braco|antebraco|mao)_/.test(id) });
+  mergeBody(body, PLAYER_MERGE);
 
   // Asa-delta: vela listrada em triângulo, tubos e barra de controle. Fica presa ao corpo
   // (nível com o chão, não gira com o tronco) e abre a partir da mochila nas costas.

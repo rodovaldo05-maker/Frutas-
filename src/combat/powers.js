@@ -215,7 +215,13 @@ export class FruitPowers {
     const eff = { ...effect };
     if (eff.pull && !(eff.pull instanceof THREE.Vector3)) eff.pull = new THREE.Vector3(origin.x, origin.y, origin.z);
     const r = target.receiveHit({ attacker: { x: origin.x, y: origin.y, z: origin.z, yaw: c.yaw }, attack, damage, effect: eff });
-    if (r) this.onEvent('hit', { target, power: p, damage: r.damage, result: r.result });
+    if (r) {
+      // clarão e faíscas no corpo de quem apanhou (revisão visual dos efeitos)
+      const at = { x: target.pos.x, y: target.pos.y + 1.6, z: target.pos.z };
+      this.fx?.flash?.(at, p.color, p.slot === 2 ? 4.2 : 3, 0.26);
+      this.fx?.spark?.(at, p.color, { count: p.slot === 2 ? 10 : 6, speed: 5.5, size: 0.8, up: 3.5, life: 0.42 });
+      this.onEvent('hit', { target, power: p, damage: r.damage, result: r.result });
+    }
     return r;
   }
 

@@ -16,31 +16,35 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const BLACK = new THREE.Color(0, 0, 0);
 
-function mergeable(mesh, jointSet, segmentSet) {
+function mergeable(mesh, jointSet, segmentSet, strict = false) {
   if (!mesh.isMesh || mesh.isSkinnedMesh || mesh.isInstancedMesh) return false;
   if (segmentSet.has(mesh)) return true;
   const m = mesh.material;
   if (!m || Array.isArray(m) || !m.isMeshStandardMaterial) return false;
   if (m.transparent || m.map || (m.emissive && !m.emissive.equals(BLACK))) return false;
-  if (mesh.userData.hair) return true;
-  // enfeites rígidos presos direto numa junta (ex.: faixa dos inimigos)
-  return jointSet.has(mesh.parent) && !mesh.userData.noMerge;
+  // cabelo e peças de roupa/armadura (userData.wear), em qualquer grupo preso ao corpo
+  if (mesh.userData.hair || mesh.userData.wear) return true;
+  // enfeites rígidos presos direto numa junta (ex.: faixa dos inimigos); no jogador (strict)
+  // só entram peças marcadas, porque as formas híbridas prendem e tiram partes às juntas
+  return !strict && jointSet.has(mesh.parent) && !mesh.userData.noMerge;
 }
 
 // keep(id): segmentos que continuam separados (ex.: braços do jogador, que brilham sozinhos
 // com a Vontade de Armadura)
-export function mergeBody(body, { keep = () => false } = {}) {
+export function mergeBody(body, { keep = () => false, strict = false } = {}) {
   if (body.merged) return body.merged;
   const root = body.root;
   const bones = Object.values(body.joints);
   const jointSet = new Set(bones);
   const segmentSet = new Set(Object.entries(body.meshes).filter(([id]) => !keep(id)).map(([, m]) => m));
   const kept = new Set(Object.entries(body.meshes).filter(([id]) => keep(id)).map(([, m]) => m));
+  // cor própria de cada segmento (guardada: depois de juntar o material passa a ser o comum)
+  for (const s of segmentSet) s.userData.tint ??= s.material.color.clone();
   root.updateMatrixWorld(true);
   const rootInv = root.matrixWorld.clone().invert();
   const parts = [];
   root.traverse((o) => {
-    if (!kept.has(o) && mergeable(o, jointSet, segmentSet)) parts.push(o);
+    if (!kept.has(o) && mergeable(o, jointSet, segmentSet, strict)) parts.push(o);
   });
   const geos = [];
   const m = new THREE.Matrix4();
@@ -59,7 +63,7 @@ export function mergeBody(body, { keep = () => false } = {}) {
     m.multiplyMatrices(rootInv, mesh.matrixWorld);
     g.applyMatrix4(m);
     const n = g.attributes.position.count;
-    tint.copy(mesh.material.color);
+    tint.copy(mesh.userData.tint ?? mesh.material.color);
     const colors = new Float32Array(n * 3);
     const src = g.attributes.color;
     for (let i = 0; i < n; i++) {
@@ -101,10 +105,33 @@ export function mergeBody(body, { keep = () => false } = {}) {
     p.visible = false;
     p.castShadow = false;
     if (segmentSet.has(p)) {
-      p.material.dispose();
+      if (p.material !== body.lastMergedMaterial) p.material.dispose();
       p.material = material;
     }
   }
-  body.merged = { mesh, material, parts };
+  body.merged = { mesh, material, parts, opts: { keep, strict } };
+  body.lastMergedMaterial = material;
   return body.merged;
+}
+
+// Junta de novo depois de trocar roupa, armadura ou cores (as peças novas entram na malha)
+export function remergeBody(body, opts) {
+  const old = body.merged;
+  if (old) {
+    old.mesh.removeFromParent();
+    old.mesh.geometry.dispose();
+    old.mesh.skeleton?.dispose?.();
+    for (const p of old.parts) if (p.parent) p.visible = true;
+    body.merged = null;
+  }
+  const merged = mergeBody(body, opts ?? old?.opts);
+  old?.material.dispose();
+  return merged;
+}
+
+// Muda a cor de um segmento (pele, camisa, calça, sapato) antes de juntar de novo
+export function tintSegment(body, mesh, color) {
+  mesh.userData.tint = new THREE.Color(color);
+  // peça que não entra na malha juntada (ex.: braços do jogador) muda a cor no material
+  if (mesh.material && mesh.material !== body.lastMergedMaterial) mesh.material.color.set(color);
 }

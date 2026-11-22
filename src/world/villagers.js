@@ -21,7 +21,7 @@ export class Villagers {
     this.data = data;
     this.graph = buildStreetGraph(village);
     this.list = makeVillagers(village).map((m) => {
-      const { body, face } = makeNpcBody(scene, data, m.look);
+      const { body, face } = makeNpcBody(scene, data, m.look, m.id ?? m.nome);
       body.root.visible = false;
       const tag = label(`${m.nome} · ${m.titulo}`, 0.85);
       tag.visible = false;

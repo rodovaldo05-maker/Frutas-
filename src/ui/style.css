@@ -1230,3 +1230,14 @@ body:has(.hull-bar:not(.hidden)) .toasts { top: calc(118px + var(--safe-t)); }
 .item-sell b { color: var(--qc); }
 .tag-eq { font: 800 11px var(--body-font); color: #ffd36b; border: 1px solid #ffd36b; border-radius: 999px; padding: 3px 10px; }
 .sell-bulk { margin: 6px 0; flex-wrap: wrap; gap: 6px; }
+
+/* ===== Guarda-roupa ===== */
+.outfit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.outfit-card { display: grid; gap: 5px; padding: 9px 10px; border-radius: 12px; background: rgba(21, 17, 42, 0.75); border: 1.5px solid rgba(217, 166, 74, 0.45); }
+.outfit-card.on { border-color: #ffd36b; box-shadow: 0 0 10px rgba(255, 211, 107, 0.35); }
+.outfit-card b { color: #ffe9b3; font-size: 13px; }
+.outfit-card small { color: #cfc6e6; font-size: 11px; line-height: 1.3; }
+.outfit-sw { display: flex; gap: 6px; }
+.outfit-sw button { width: 34px; height: 22px; border-radius: 6px; border: 2px solid rgba(255, 255, 255, 0.25); padding: 0; background: linear-gradient(90deg, var(--a) 0 50%, var(--b) 50% 100%); }
+.outfit-sw button.on { border-color: #ffd36b; }
+.outfit-sw button:disabled { opacity: 0.45; }

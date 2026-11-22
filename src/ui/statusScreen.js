@@ -19,8 +19,9 @@ const fmt = (n) => n.toLocaleString('pt-BR');
 const ICON = { forca: 'fist', defesa: 'shield', fruta: 'fruit', espada: 'sword', vitalidade: 'vital' };
 
 export class StatusScreen {
-  constructor({ save, onChange, profHtml = () => '', raceActions = {} }) {
+  constructor({ save, onChange, profHtml = () => '', raceActions = {}, outfitHtml = () => '' }) {
     this.save = save;
+    this.outfitHtml = outfitHtml; // aba Roupas (guarda-roupa)
     this.onChange = onChange;
     this.profHtml = profHtml; // aba Profissões (atualização 12)
     this.raceActions = raceActions; // especialização e prova racial (atualização 13)
@@ -93,10 +94,12 @@ export class StatusScreen {
     $('pane-race').classList.toggle('hidden', this.tab !== 'raca');
     $('pane-gear').classList.toggle('hidden', this.tab !== 'equip');
     $('pane-prof').classList.toggle('hidden', this.tab !== 'prof');
+    $('pane-outfit').classList.toggle('hidden', this.tab !== 'roupas');
     if (this.tab === 'status') this.renderStatus(status, points);
     else if (this.tab === 'raca') this.renderRace();
     else if (this.tab === 'equip') this.renderGear();
     else if (this.tab === 'prof') $('pane-prof').innerHTML = this.profHtml();
+    else if (this.tab === 'roupas') $('pane-outfit').innerHTML = this.outfitHtml?.() ?? '';
     else this.renderTraining(t);
   }
 

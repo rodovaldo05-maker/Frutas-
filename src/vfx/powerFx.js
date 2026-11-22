@@ -5,6 +5,50 @@
 import * as THREE from 'three';
 
 const MAX_PARTS = 420;
+const MAX_GLOW = 280;
+
+// textura redonda e macia para brilhos (um canvas pequeno, criado uma vez)
+let glowTex = null;
+function glowTexture() {
+  if (glowTex) return glowTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.25, 'rgba(255,255,255,0.75)');
+  grd.addColorStop(0.6, 'rgba(255,255,255,0.18)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  glowTex = new THREE.CanvasTexture(c);
+  return glowTex;
+}
+
+// pontos brilhantes (aditivos) com tamanho e cor por ponto: faíscas e halos
+const glowVertex = /* glsl */ `
+attribute float aSize;
+attribute float aAlpha;
+attribute vec3 aColor;
+uniform float uViewH;
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = aSize * projectionMatrix[1][1] * uViewH * 0.5 / max(0.5, -mv.z);
+  vColor = aColor;
+  vAlpha = aAlpha;
+}`;
+const glowFragment = /* glsl */ `
+uniform sampler2D uMap;
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  float a = texture2D(uMap, gl_PointCoord).a * vAlpha;
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(vColor * a, a);
+}`;
 
 export class PowerFx {
   constructor(scene, { ground = () => 0, light = false } = {}) {
@@ -28,6 +72,49 @@ export class PowerFx {
     this.discGeo = new THREE.CircleGeometry(1, 40);
     this.boxGeo = geo;
     this.orbGeo = new THREE.IcosahedronGeometry(1, 0);
+    this.cylGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
+    // brilhos: Points aditivos (uma chamada de desenho para todos)
+    this.glow = [];
+    const gGeo = new THREE.BufferGeometry();
+    gGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_GLOW * 3), 3));
+    gGeo.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(MAX_GLOW * 3), 3));
+    gGeo.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(MAX_GLOW), 1));
+    gGeo.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(MAX_GLOW), 1));
+    this.glowPoints = new THREE.Points(gGeo, new THREE.ShaderMaterial({
+      vertexShader: glowVertex,
+      fragmentShader: glowFragment,
+      uniforms: { uMap: { value: glowTexture() }, uViewH: { value: 800 } },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }));
+    this.glowPoints.frustumCulled = false;
+    this.glowPoints.renderOrder = 5;
+    scene.add(this.glowPoints);
+    this.viewH = () => 800; // altura da tela em pixels (main.js troca pela do renderizador)
+  }
+
+  // ===== Brilhos (faíscas e halos que somem) =====
+  spark(pos, color, { count = 6, speed = 4, size = 0.9, life = 0.5, up = 2, gravity = -6, spread = 0.6 } = {}) {
+    const n = this.light ? Math.ceil(count * 0.5) : count;
+    for (let i = 0; i < n && this.glow.length < MAX_GLOW; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = speed * (0.3 + Math.random() * 0.7);
+      this.glow.push({
+        x: pos.x + (Math.random() - 0.5) * spread, y: pos.y + Math.random() * 0.3, z: pos.z + (Math.random() - 0.5) * spread,
+        vx: Math.cos(a) * s, vy: up * (0.4 + Math.random()), vz: Math.sin(a) * s,
+        size: size * (0.6 + Math.random() * 0.8), life: life * (0.7 + Math.random() * 0.6), t: 0, gravity,
+        color: new THREE.Color(color).lerp(new THREE.Color('#ffffff'), 0.25 * Math.random()), grow: 0,
+      });
+    }
+  }
+
+  // clarão de impacto: halo grande que cresce e some rápido (mais um miolo branco)
+  flash(pos, color, size = 3.2, life = 0.3) {
+    if (this.glow.length >= MAX_GLOW - 2) return;
+    const base = { x: pos.x, y: pos.y, z: pos.z, vx: 0, vy: 0, vz: 0, t: 0, gravity: 0 };
+    this.glow.push({ ...base, size, life, color: new THREE.Color(color), grow: 1.2 });
+    this.glow.push({ ...base, size: size * 0.45, life: life * 0.7, color: new THREE.Color('#ffffff'), grow: 0.8 });
   }
 
   // ===== Partículas (cubos) =====
@@ -42,6 +129,8 @@ export class PowerFx {
         size: size * (0.6 + Math.random() * 0.8), life, t: 0, gravity, color: new THREE.Color(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.2), spin: Math.random() * 6,
       });
     }
+    // faíscas brilhantes junto com os cubos
+    this.spark(pos, color, { count: Math.max(1, Math.round(count / 2)), speed: speed * 0.8, size: size * 3.6, life: life * 0.9, up, gravity: gravity * 0.5, spread });
   }
 
   // linha de partículas (rastro de investida, faixa)
@@ -65,12 +154,24 @@ export class PowerFx {
 
   // anel de choque que cresce no chão
   ring(pos, color, radius, life = 0.45) {
+    const g = new THREE.Group();
     const m = new THREE.Mesh(this.ringGeo, this.mat(color, 0.9));
-    m.rotation.x = -Math.PI / 2;
-    m.position.set(pos.x, this.ground(pos.x, pos.z) + 0.08, pos.z);
-    return this.add(m, life, (it, u) => {
-      m.scale.setScalar(0.2 + radius * (1 - (1 - u) ** 3));
+    const inner = new THREE.Mesh(this.ringGeo, this.mat('#ffffff', 0.7));
+    const disc = new THREE.Mesh(this.discGeo, this.mat(color, 0.35));
+    for (const o of [m, inner, disc]) o.rotation.x = -Math.PI / 2;
+    inner.position.y = 0.02;
+    g.add(disc, m, inner);
+    const y = this.ground(pos.x, pos.z) + 0.08;
+    g.position.set(pos.x, y, pos.z);
+    this.flash({ x: pos.x, y: y + 0.4, z: pos.z }, color, radius * 0.9, life * 0.6);
+    return this.add(g, life, (it, u) => {
+      const e = 1 - (1 - u) ** 3;
+      m.scale.setScalar(0.2 + radius * e);
+      inner.scale.setScalar(0.1 + radius * 0.82 * Math.min(1, e * 1.25));
+      disc.scale.setScalar(0.2 + radius * e * 0.95);
       m.material.opacity = 0.9 * (1 - u);
+      inner.material.opacity = 0.7 * (1 - u) ** 2;
+      disc.material.opacity = 0.35 * (1 - u) ** 2;
     });
   }
 
@@ -101,14 +202,25 @@ export class PowerFx {
 
   // pilar (fogo, raio, geodo, cristal) que sobe e some
   pillar(pos, color, radius, height, life = 0.6) {
-    const m = new THREE.Mesh(this.boxGeo, this.mat(color, 0.85));
+    // coluna translúcida por fora, miolo claro por dentro, clarão na base e faíscas subindo
+    const g = new THREE.Group();
+    const outer = new THREE.Mesh(this.cylGeo, this.mat(color, 0.6));
+    const core = new THREE.Mesh(this.cylGeo, this.mat('#ffffff', 0.55));
+    g.add(outer, core);
     const y = this.ground(pos.x, pos.z);
-    return this.add(m, life, (it, u) => {
+    g.position.set(pos.x, y, pos.z);
+    this.flash({ x: pos.x, y: y + 0.5, z: pos.z }, color, radius * 2.2, life * 0.5);
+    this.spark({ x: pos.x, y: y + 0.3, z: pos.z }, color, { count: 10, speed: radius * 1.6, size: 0.7, up: height * 1.1, gravity: -2, life: life * 1.1, spread: radius });
+    return this.add(g, life, (it, u) => {
       const h = height * Math.min(1, u * 4);
-      m.scale.set(radius * (1 - u * 0.6), h, radius * (1 - u * 0.6));
-      m.position.set(pos.x, y + h / 2, pos.z);
-      m.rotation.y = u * 3;
-      m.material.opacity = 0.85 * (1 - u);
+      const r = radius * 0.5 * (1 - u * 0.6);
+      outer.scale.set(r, h, r);
+      outer.position.y = h / 2;
+      core.scale.set(r * 0.45, h * 1.02, r * 0.45);
+      core.position.y = h / 2;
+      g.rotation.y = u * 3;
+      outer.material.opacity = 0.6 * (1 - u);
+      core.material.opacity = 0.55 * (1 - u) ** 2;
     });
   }
 
@@ -133,6 +245,8 @@ export class PowerFx {
       m.rotation.x += 0.3;
       m.rotation.y += 0.21;
       if (Math.random() < 0.7) this.burst(m.position, color, { count: 1, speed: 0.6, up: 0.6, size: size * 0.6, life: 0.35, gravity: 0 });
+      // halo e rastro brilhante
+      if (this.glow.length < MAX_GLOW) this.glow.push({ x: m.position.x, y: m.position.y, z: m.position.z, vx: 0, vy: 0, vz: 0, t: 0, gravity: 0, size: size * 3.2, life: 0.22, color: new THREE.Color(color), grow: -0.6 });
     });
   }
 
@@ -188,6 +302,12 @@ export class PowerFx {
       pts.push(new THREE.Vector3(from.x + (to.x - from.x) * t + (Math.random() - 0.5) * j, from.y + (to.y - from.y) * t + (Math.random() - 0.5) * j, from.z + (to.z - from.z) * t + (Math.random() - 0.5) * j));
     }
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending }));
+    // brilho ao longo do raio e clarão onde cai
+    for (let i = 1; i < pts.length; i += 2) {
+      if (this.glow.length >= MAX_GLOW) break;
+      this.glow.push({ x: pts[i].x, y: pts[i].y, z: pts[i].z, vx: 0, vy: 0, vz: 0, t: 0, gravity: 0, size: 1.1, life: life * 0.9, color: new THREE.Color(color), grow: 0 });
+    }
+    this.flash(to, color, 2.2, life * 1.2);
     return this.add(line, life, (it, u) => (line.material.opacity = 1 - u), true);
   }
 
@@ -201,7 +321,7 @@ export class PowerFx {
         this.scene.remove(it.obj);
         it.obj.traverse?.((o) => {
           if (o.material) o.material.dispose?.();
-          if (o.geometry && o.geometry !== this.ringGeo && o.geometry !== this.discGeo && o.geometry !== this.boxGeo && o.geometry !== this.orbGeo) o.geometry.dispose?.();
+          if (o.geometry && o.geometry !== this.ringGeo && o.geometry !== this.discGeo && o.geometry !== this.boxGeo && o.geometry !== this.orbGeo && o.geometry !== this.cylGeo) o.geometry.dispose?.();
         });
         this.items.splice(i, 1);
       }
@@ -235,6 +355,31 @@ export class PowerFx {
     this.parts.count = k;
     this.parts.instanceMatrix.needsUpdate = true;
     if (this.parts.instanceColor) this.parts.instanceColor.needsUpdate = true;
+    // brilhos
+    const ga = this.glowPoints.geometry.attributes;
+    let n = 0;
+    for (let i = this.glow.length - 1; i >= 0; i--) {
+      const p = this.glow[i];
+      p.t += dt;
+      if (p.t >= p.life) {
+        this.glow.splice(i, 1);
+        continue;
+      }
+      p.vy += p.gravity * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.z += p.vz * dt;
+      const u = p.t / p.life;
+      ga.position.setXYZ(n, p.x, p.y, p.z);
+      ga.aColor.setXYZ(n, p.color.r, p.color.g, p.color.b);
+      ga.aSize.setX(n, p.size * (1 + p.grow * u));
+      ga.aAlpha.setX(n, (1 - u) * (u < 0.1 ? u * 10 : 1));
+      n += 1;
+    }
+    this.glowPoints.geometry.setDrawRange(0, n);
+    for (const k2 of ['position', 'aColor', 'aSize', 'aAlpha']) ga[k2].needsUpdate = true;
+    this.glowPoints.visible = n > 0;
+    this.glowPoints.material.uniforms.uViewH.value = this.viewH();
   }
 
   // remove tudo de um item (ex.: projétil que acertou)

@@ -67,7 +67,10 @@ import { STYLES, styleCombo, stylePowers } from './styles/styles.js';
 import { Vontade } from './styles/vontade.js';
 import { Dojo } from './ui/dojo.js';
 import { ITEMS, gearTotals, wearArmor, addItem, dropFor, equipItem } from './items/items.js';
-import { applyGearVisual } from './items/gearParts.js';
+import { applyGearVisual, gearSlots } from './items/gearParts.js';
+import { OUTFITS, buildOutfit, removeOutfit, outfitPalette, buyOutfit } from './characters/outfits.js';
+import { remergeBody, tintSegment } from './characters/mergeBody.js';
+import { SEGMENT_PART, PLAYER_MERGE, BASE_LOOK } from './characters/player.js';
 import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
@@ -278,10 +281,54 @@ async function boot() {
     }
   };
   let gearParts = [];
-  const applyGear = () => {
+  let outfitParts = [];
+  // Visual do personagem: roupa (cores dos segmentos + peças) e armadura; tudo entra na
+  // malha única do corpo de novo (as peças da roupa no encaixe de uma armadura somem)
+  function refreshLook() {
+    const pal = outfitPalette(save.outfit?.id, save.outfit?.cor);
+    for (const [id, mesh] of Object.entries(player.body.meshes)) {
+      const part = SEGMENT_PART[id] || 'skin';
+      tintSegment(player.body, mesh, part === 'skin' ? BASE_LOOK.skin : pal[part] ?? BASE_LOOK[part]);
+    }
+    removeOutfit(outfitParts);
+    outfitParts = buildOutfit(player.body, save.outfit?.id, pal, { hide: gearSlots(save) });
     gearParts = applyGearVisual(player.body, save, gearParts);
+    remergeBody(player.body, PLAYER_MERGE);
+  }
+  const applyGear = () => {
+    refreshLook();
     applyStatus();
   };
+  // Guarda-roupa (aba Roupas em Personagem)
+  function outfitHtml() {
+    const cards = Object.entries(OUTFITS).map(([id, o]) => {
+      const owned = save.outfits.includes(id);
+      const on = save.outfit.id === id;
+      const sw = o.palettes.map((p, k) => `<button style="--a:${p.shirt};--b:${p.a}" class="${on && save.outfit.cor === k ? 'on' : ''}" data-outfit="${id}" data-cor="${k}" ${owned ? '' : 'disabled'} aria-label="Cor ${k + 1}"></button>`).join('');
+      const action = on ? '<span class="tag-eq">Vestindo</span>' : owned ? `<button class="btn gold" data-outfit="${id}" data-cor="0">Vestir</button>` : `<button class="btn ${save.coins >= o.preco ? 'gold' : ''}" data-buy-outfit="${id}">Comprar · ${fmt(o.preco)}</button>`;
+      return `<div class="outfit-card ${on ? 'on' : ''}"><b>${o.nome}</b><small>${o.desc}</small><div class="outfit-sw">${sw}</div>${action}</div>`;
+    }).join('');
+    return `<p class="muted">Roupas mudam só a aparência. Armaduras ficam por cima e escondem a peça de roupa do mesmo lugar (o elmo esconde o chapéu).</p><div class="outfit-grid">${cards}</div>`;
+  }
+  $('pane-outfit').addEventListener('click', (e) => {
+    const buy = e.target.closest('button[data-buy-outfit]');
+    if (buy) {
+      const r = buyOutfit(save, buy.dataset.buyOutfit);
+      if (!r.ok) hud.toast(r.why, 'bad');
+      else {
+        save.outfit = { id: buy.dataset.buyOutfit, cor: 0 };
+        hud.toast(`${OUTFITS[save.outfit.id].nome} comprada e vestida!`, 'gold');
+        refreshProfile();
+      }
+    } else {
+      const b = e.target.closest('button[data-outfit]');
+      if (!b || !save.outfits.includes(b.dataset.outfit)) return;
+      save.outfit = { id: b.dataset.outfit, cor: Number(b.dataset.cor) || 0 };
+    }
+    refreshLook();
+    statusScreen.render();
+    saveNow(true);
+  });
   let powers = null;
   applyStatus();
 
@@ -341,6 +388,12 @@ async function boot() {
             break;
           }
           floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
+          // faíscas do golpe (espada na cor do fio, soco em tom claro)
+          {
+            const c = d.attack.id?.startsWith('espada') ? WEAPONS[save.weapon]?.cores?.fio ?? '#ffffff' : '#fff0c8';
+            fx.spark(at, c, { count: d.attack.heavy ? 7 : 4, speed: 4.5, size: 0.45, up: 2.5, life: 0.3 });
+            if (d.attack.heavy) fx.flash(at, c, 1.8, 0.18);
+          }
           audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
           shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
           if (t.hostile) raceSys.onHostileHit(d.attack.weapon ? 'espada' : d.attack.fruit ? 'fruta' : 'soco');
@@ -507,6 +560,7 @@ async function boot() {
 
   // ===== Poderes das frutas (atualização 3): energia, habilidades 1–3 e domínio =====
   const fx = new PowerFx(renderer.scene, { ground: (x, z) => world.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
+  fx.viewH = () => renderer.renderer.domElement.height;
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
   // Forma híbrida (frutas de fera; atualização 13): partes no corpo e números próprios
@@ -1133,6 +1187,7 @@ async function boot() {
   const statusScreen = new StatusScreen({
     save,
     profHtml: () => forgeUi.profHtml(),
+    outfitHtml: () => outfitHtml(),
     raceActions: {
       // especialização racial: escolher é grátis; trocar custa moedas
       choose: (id) => {
@@ -2269,6 +2324,10 @@ async function boot() {
     ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade, conditions, vontade, art,
     start: startGame,
     saveNow,
+    applyGear,
+    refreshLook,
+    equip,
+    refreshEquip,
     openModal,
     closeModal,
     village,

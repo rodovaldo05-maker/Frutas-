@@ -353,6 +353,10 @@ proa, canhões) com prévia 3D, e botão **Invocar** (só em porto ou perto da c
 
 ### 5.9 Ajustes
 
+Roupas (Personagem → Roupas): 8 roupas com 3 cores cada; Treino e Kimono de Luta de graça,
+as outras compradas ali mesmo. Só aparência; a armadura cobre a peça de roupa do mesmo lugar
+(o elmo esconde o chapéu, o peitoral esconde o casaco, o Manto de Brasa esconde a capa).
+
 Zoom da câmera: pinça com dois dedos (afastar aproxima, juntar afasta) ou roda do mouse,
 de 0,5× a 1,8×; o zoom fica salvo nos ajustes.
 

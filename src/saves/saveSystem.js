@@ -1,3 +1,4 @@
+import { normalizeOutfit } from '../characters/outfits.js';
 import { newTraining, normalizeTraining } from '../progression/training.js';
 import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../progression/status.js';
 import { normalizeDomain } from '../progression/domain.js';
@@ -68,6 +69,8 @@ export function normalizeSettings(s) {
 
 export function newSave() {
   return {
+    outfit: { id: 'basica', cor: 0 }, // roupa vestida (guarda-roupa)
+    outfits: ['basica', 'lutador'],
     version: SAVE_VERSION,
     savedAt: 0,
     playTime: 0,
@@ -175,6 +178,7 @@ export function migrate(save) {
   if (!Number.isFinite(out.nextUid)) out.nextUid = 1 + out.bag.reduce((m, it) => Math.max(m, it.uid || 0), 0);
   if (out.held !== null && !out.bag.some((it) => it.uid === out.held)) out.held = null;
   out.boat = normalizeBoat(out.boat); // bote do jogador (null = amarrado no cais da Ilha de Treino)
+  normalizeOutfit(out); // roupa vestida e roupas compradas (guarda-roupa)
   // mares liberados (atualização 17): segundo = já atravessou a tempestade
   out.seas = { segundo: out.seas?.segundo === true };
   // combate naval (atualização 16): casco do bote (null = inteiro) e navios afundados por id

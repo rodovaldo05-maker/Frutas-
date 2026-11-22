@@ -29,8 +29,9 @@ export class Storm {
     this.time = 0;
   }
 
+  // true/false ou intensidade 0..1 (clima: chuva 0,45, tempestade 0,85; travessia 1)
   set(on) {
-    this.target = on ? 1 : 0;
+    this.target = typeof on === 'number' ? Math.max(0, Math.min(1, on)) : on ? 1 : 0;
   }
 
   // relâmpago: clarão que some em 0,25 s

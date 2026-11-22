@@ -203,6 +203,15 @@ Meta: cada ilha tem pelo menos **6 atividades** além das missões de combate.
   tempestade aumenta o tamanho das ondas e atrai raios.
 - Alguns inimigos, eventos e chefes só aparecem à noite.
 
+No jogo (atualização 19): o tempo é sorteado por mar a cada 2–5 horas do jogo (Primeiro Mar
+70% sol, 25% chuva, 5% tempestade; Segundo Mar 55/30/15) e aparece no relógio (☀ 🌧 ⛈).
+Chuva: chuva na tela, céu mais escuro e frutas de fogo (Brasa, Fênix, Dragão Ocidental) com
+15% menos dano. Tempestade: chuva forte, céu escuro, ondas maiores e raios marcados 1,1 s
+antes perto do jogador (ferem 8% da vida, com Choque; no bote, 5% do casco). Quando a
+tempestade passa com o jogador no mar, aparecem **destroços à deriva** (também ao acaso no mar
+aberto): encostar o bote pega o baú (moedas, Tábuas, Pólvora, às vezes chave e item).
+A Lanterna das Profundezas só aparece de noite.
+
 ## 7. Ficha de ilha (modelo)
 
 Cada ilha tem uma ficha em `data/islands.json` e um documento curto. Modelo:

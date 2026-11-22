@@ -78,6 +78,9 @@ import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
 import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked } from './islands/secondSea.js';
 import { Storm } from './world/storm.js';
+import { WEATHER, STRIKE, stepWeather, weatherDamage } from './world/weather.js';
+import { BeastManager } from './ships/beasts.js';
+import { ENCOUNTER, canSpawn, pickBeast, beastLoot, minPlayerLevel } from './ships/beastRules.js';
 import { buildArena, Recruta, scaledDef, bossDef } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
@@ -1021,6 +1024,221 @@ async function boot() {
     if (crossing.t >= crossing.dur) endCrossing();
   }
 
+  // ===== Clima (atualização 19): sol, chuva e tempestade por mar; raios na tempestade =====
+  powers.weatherMult = (fruitId) => weatherDamage(save.weather?.state ?? 'sol', fruitId);
+  let weatherTick = 0;
+  let weatherStrikeT = 6;
+  const weatherMarks = [];
+  const WEATHER_TEXT = {
+    sol: '☀ O tempo abriu',
+    chuva: '🌧 Começou a chover: frutas de fogo enfraquecem (−15%)',
+    tempestade: '⛈ Tempestade! Raios caem perto de você — saia dos círculos amarelos',
+  };
+  function weatherStep(dt) {
+    weatherTick -= dt;
+    if (weatherTick <= 0) {
+      weatherTick = 1;
+      save.weather ??= { state: 'sol', until: 0, sea: 1 };
+      const prev = save.weather.state;
+      if (stepWeather(save.weather, save.clock, seaOf(ctl.pos.z))) {
+        hud.notice(WEATHER_TEXT[save.weather.state], save.weather.state === 'sol' ? 'zone' : 'bad', 'clima');
+        // tempestade passou no mar: destroços à deriva por perto
+        if (prev === 'tempestade' && boat.aboard) spawnWreck();
+      }
+    }
+    storm.set(crossing ? 1 : WEATHER[save.weather?.state ?? 'sol'].storm);
+    // raios da tempestade (marcados 1,1 s antes, como na travessia)
+    if (save.weather?.state === 'tempestade' && !crossing && mode === 'game') {
+      weatherStrikeT -= dt;
+      if (weatherStrikeT <= 0) {
+        const [a, b] = STRIKE.every;
+        weatherStrikeT = a + Math.random() * (b - a);
+        const v = boat.aboard ? boat.velocity : { x: 0, z: 0 };
+        const p = boat.aboard ? { x: boat.s.x, z: boat.s.z } : { x: ctl.pos.x, z: ctl.pos.z };
+        const at = { x: p.x + v.x * STRIKE.telegraph + (Math.random() - 0.5) * 8, z: p.z + v.z * STRIKE.telegraph + (Math.random() - 0.5) * 8 };
+        at.y = Math.max(world.sample(at.x, at.z), ocean.heightAt(at.x, at.z));
+        weatherMarks.push({ ...at, t: STRIKE.telegraph });
+        fx.mark(at, '#ffe45a', STRIKE.radius, STRIKE.telegraph);
+      }
+    }
+    for (let i = weatherMarks.length - 1; i >= 0; i--) {
+      const m = weatherMarks[i];
+      m.t -= dt;
+      if (m.t > 0) continue;
+      weatherMarks.splice(i, 1);
+      lab.fx.lightning(new THREE.Vector3(m.x, m.y + 24, m.z), new THREE.Vector3(m.x, m.y, m.z), '#fff4b0', 0.3);
+      fx.bolt({ x: m.x, y: m.y + 24, z: m.z }, { x: m.x, y: m.y + 0.2, z: m.z }, '#fff4b0', 0.25);
+      storm.flash(settings.reduceFx ? 0.25 : 1);
+      audio.play('tormenta', 'acerto', 0.8);
+      if (boat.aboard && Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < STRIKE.radius + 1) fleet.damageHull(Math.round(fleet.maxHull * STRIKE.hull), m);
+      else if (!boat.aboard && Math.hypot(ctl.pos.x - m.x, ctl.pos.z - m.z) < STRIKE.radius && Math.abs(ctl.pos.y - m.y) < 4) {
+        enemyHit({ id: 'raio', pos: m, yaw: 0, life: 1 }, { id: 'raio-tempestade', posture: 10, knock: 1.5, reaction: 'media', element: 'raio', effects: { choque: { stacks: 2 } } }, Math.round(ctl.maxHealth * STRIKE.damage), m);
+      }
+    }
+  }
+
+  // ===== Bestas marinhas (atualização 19): encontros no mar aberto =====
+  const beasts = new BeastManager({ scene: renderer.scene, ocean, fx, lab, onEvent: (n, d) => beastEvent(n, d) });
+  fleet.extraTargets = () => beasts.targets();
+  fleet.encounter = () => beasts.active;
+  const LAND = [{ x: 0, z: 0, r: ISLAND.half * 0.75 }, { x: VILLAGE.offset.x, z: VILLAGE.offset.z, r: VILLAGE.half * 0.75 }, ...ALL_SEA.map((d) => ({ x: d.x, z: d.z, r: d.R }))];
+  const distToLand = (p) => Math.min(...LAND.map((l) => Math.hypot(p.x - l.x, p.z - l.z) - l.r));
+  function beastEvent(name, d) {
+    const b = d.beast;
+    switch (name) {
+      case 'warning':
+        hud.notice('A água borbulha… uma silhueta enorme se aproxima!', 'bad', 'besta');
+        vibrate(80);
+        break;
+      case 'emerge':
+        hud.toast(`${b.def.nome} (Nv. ${b.level}) surgiu! Use o canhão da proa quando ela estiver fora d'água.`, 'bad');
+        audio.play('impacto', 'acerto', 1);
+        shake = Math.max(shake, 0.3);
+        break;
+      case 'phase':
+        hud.notice(d.phase === 2 ? `${b.def.nome}: ondas e mergulhos!` : `${b.def.nome} em fúria! Ponto fraco exposto (+25% de dano)`, 'bad', 'besta');
+        break;
+      case 'hit':
+        floats.add({ x: d.at.x, y: d.at.y + 2, z: d.at.z }, String(d.damage), 'forte');
+        break;
+      case 'dodged':
+        floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Desviou!', 'esquiva');
+        break;
+      case 'down': {
+        const loot = beastLoot(b.level);
+        save.coins += loot.coins;
+        save.fragments = (save.fragments ?? 0) + loot.fragments;
+        hud.toast(`${b.def.nome} derrotada! +${fmt(loot.xp)} exp · +${fmt(loot.coins)} moedas · +${loot.fragments} fragmentos`, 'gold');
+        for (const [id, n] of loot.mats) {
+          addMaterial(save, id, n);
+          hud.toast(`+${n} ${MATERIALS[id].nome}`, 'good');
+        }
+        if (loot.item) {
+          const drop = dropFor(Math.min(b.level, 20));
+          if (drop) {
+            addItem(save, drop);
+            hud.toast(`Item da besta: ${ITEMS[drop].nome} (${ITEMS[drop].qualidade})`, 'gold');
+          }
+        }
+        save.beasts = save.beasts ?? {};
+        save.beasts[b.kind] = (save.beasts[b.kind] ?? 0) + 1;
+        audio.play('base', 'death', 1);
+        grantXp(loot.xp);
+        saveNow(true);
+        break;
+      }
+      case 'left':
+        hud.toast(d.reason === 'sumiu' ? `${b.def.nome} mergulhou e sumiu.` : `${b.def.nome} ficou para trás e mergulhou.`);
+        break;
+      default:
+    }
+  }
+  function beastStep(dt) {
+    const swimming = ctl.state === 'swim' || ctl.state === 'dive';
+    if (!beasts.beast) {
+      const night = daylight(hourOf(save.clock)).k < 0.3;
+      const sea = seaOf(ctl.pos.z);
+      const here = boat.aboard ? { x: boat.s.x, z: boat.s.z } : ctl.pos;
+      const ok = canSpawn({ aboard: boat.aboard, swimming, crossing: !!crossing, sunk: fleet.sunk > 0, distToLand: distToLand(here), sinceLast: beasts.since, hunterOnly: true });
+      if (ok && mode === 'game' && Math.random() < ENCOUNTER.chancePerSecond * dt) {
+        const shark = { id: 'tubarao', level: sea === 2 ? 900 : 600 };
+        const pick = boat.aboard ? pickBeast(sea, night, Math.random, save.level) : save.level >= minPlayerLevel(shark.level) ? shark : null;
+        if (pick) beasts.spawn(pick.id, pick.level, here);
+        else beasts.since = 0; // ninguém do nível do jogador por aqui: tenta de novo depois
+      }
+      beasts.since += dt;
+      return;
+    }
+    const b = beasts.beast;
+    let target = null;
+    if (boat.aboard && fleet.sunk <= 0) target = { x: boat.s.x, z: boat.s.z, vx: boat.velocity.x, vz: boat.velocity.z };
+    else if (swimming && b.def.hunter) target = { x: ctl.pos.x, z: ctl.pos.z, vx: 0, vz: 0 };
+    beasts.update(dt, {
+      target,
+      aboard: boat.aboard,
+      onHull: (dmg, at) => fleet.damageHull(dmg, at),
+      onPlayer: (dmg, at) => enemyHit({ id: b.id, pos: at, yaw: 0, life: 1 }, { id: 'mordida', posture: 16, knock: 2, reaction: 'media' }, Math.round(dmg), at),
+      push: (dx, dz) => {
+        if (!boat.aboard) return;
+        boat.s.x += dx;
+        boat.s.z += dz;
+        boat.s.speed *= 0.4;
+        shake = Math.max(shake, 0.25);
+      },
+    });
+  }
+
+  // ===== Destroços à deriva (evento): depois da tempestade ou ao acaso no mar aberto =====
+  let wreck = null;
+  let wreckChanceT = 0;
+  function spawnWreck() {
+    if (wreck) return;
+    const a = Math.random() * Math.PI * 2;
+    const d = 45 + Math.random() * 40;
+    const x = boat.s.x + Math.cos(a) * d;
+    const z = boat.s.z + Math.sin(a) * d;
+    if (distToLand({ x, z }) < 20) return;
+    const g = new THREE.Group();
+    const wood = new THREE.MeshStandardMaterial({ color: '#7a5233', roughness: 0.85 });
+    const dark = new THREE.MeshStandardMaterial({ color: '#4a3020', roughness: 0.85 });
+    const gold = new THREE.MeshStandardMaterial({ color: '#e0b040', roughness: 0.4, metalness: 0.6 });
+    const add = (size, pos, m, rot = 0) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(...size), m);
+      b.position.set(...pos);
+      b.rotation.y = rot;
+      g.add(b);
+    };
+    add([3.4, 0.3, 0.6], [0, 0, 0], wood, 0.3);
+    add([2.6, 0.3, 0.5], [0.4, 0.05, 1], dark, -0.4);
+    add([1.1, 0.8, 0.8], [-0.6, 0.45, 0.3], wood, 0.2); // baú
+    add([1.15, 0.12, 0.85], [-0.6, 0.9, 0.3], gold, 0.2);
+    add([0.2, 2.6, 0.2], [1.2, 1.1, -0.2], dark); // mastro quebrado
+    g.position.set(x, 0, z);
+    renderer.scene.add(g);
+    wreck = { g, x, z, t: 300 };
+    hud.notice('Destroços à deriva avistados! Encoste o bote para pegar o baú.', 'zone', 'destrocos');
+  }
+  function wreckStep(dt) {
+    wreckChanceT -= dt;
+    if (!wreck && wreckChanceT <= 0) {
+      wreckChanceT = 1;
+      if (boat.aboard && !crossing && distToLand(boat.s) > ENCOUNTER.openSea && Math.random() < 1 / 300) spawnWreck();
+    }
+    if (!wreck) return;
+    wreck.t -= dt;
+    wreck.g.position.y = ocean.heightAt(wreck.x, wreck.z) - 0.1;
+    wreck.g.rotation.z = Math.sin(clock * 1.3) * 0.08;
+    if (Math.random() < dt * 2) fx.spark({ x: wreck.x - 0.6, y: wreck.g.position.y + 1.2, z: wreck.z + 0.3 }, '#ffd36b', { count: 1, speed: 0.4, up: 1, size: 0.5, life: 0.6, gravity: 0 });
+    const near = boat.aboard && Math.hypot(boat.s.x - wreck.x, boat.s.z - wreck.z) < 7;
+    if (near || wreck.t <= 0) {
+      if (near) {
+        const lv = Math.max(1, save.level);
+        const coins = Math.round(40 + 2 * Math.min(lv, 700));
+        save.coins += coins;
+        addMaterial(save, 'tabua', 3 + Math.floor(Math.random() * 3));
+        if (Math.random() < 0.5) addMaterial(save, 'polvora', 1 + Math.floor(Math.random() * 2));
+        let extra = '';
+        if (Math.random() < 0.15) {
+          save.keys = (save.keys ?? 0) + 1;
+          extra = ' · +1 chave da roleta';
+        }
+        if (Math.random() < 0.3) {
+          const drop = dropFor(Math.min(lv, 20));
+          if (drop) {
+            addItem(save, drop);
+            extra += ` · ${ITEMS[drop].nome}`;
+          }
+        }
+        hud.toast(`Baú dos destroços: +${fmt(coins)} moedas · Tábuas de Navio${extra}`, 'gold');
+        audio.play('base', 'wing', 0.8);
+        saveNow(true);
+      }
+      wreck.g.removeFromParent();
+      wreck.g.traverse((o) => o.geometry?.dispose?.());
+      wreck = null;
+    }
+  }
+
   function updateHullBar() {
     const show = boat.aboard;
     $('hull-bar').classList.toggle('hidden', !show);
@@ -1918,6 +2136,9 @@ async function boot() {
         ctl.step(dt, inp);
       }
       fleet.step(dt, { boat, aboard: boat.aboard, player: ctl.pos });
+      weatherStep(dt);
+      beastStep(dt);
+      wreckStep(dt);
       crossingStep(dt);
       conditions.update(dt, ctl);
       // lava da Caldeira Rubra: queima quem pisa na cratera
@@ -1998,7 +2219,8 @@ async function boot() {
           renderer.hemi.intensity += storm.flashLight * 2.2;
           renderer.sun.intensity += storm.flashLight * 1.5;
         }
-        $('clock').textContent = `${dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`;
+        const ws = save.weather?.state ?? 'sol';
+        $('clock').textContent = `${ws !== 'sol' ? WEATHER[ws].icone : dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`;
       }
       animator.update(animDt, ctl, view);
       dust.update(animDt);
@@ -2148,7 +2370,7 @@ async function boot() {
         bossShown = shown;
         $('boss-bar').classList.toggle('hidden', !shown);
         if (boss) $('boss-name').textContent = `${boss.def.nome} · Nv. ${boss.def.level}`;
-        else if (ship) $('boss-name').textContent = `⚓ ${ship.def.nome} · Nv. ${ship.level}`;
+        else if (ship) $('boss-name').textContent = `${ship.isBeast ? '🌊' : '⚓'} ${ship.def.nome} · Nv. ${ship.level}`;
       }
       if (boss) {
         $('boss-fill').style.transform = `scaleX(${boss.health / boss.maxHealth})`;
@@ -2168,6 +2390,8 @@ async function boot() {
         for (const g of Object.values(GATES)) {
           if (Math.hypot(g.x - ctl.pos.x, g.z - ctl.pos.z) < 260) minimap.markers.push({ x: g.x, z: g.z, label: g.nome, color: '#ffb040' });
         }
+        if (beasts.beast) minimap.markers.push({ x: beasts.beast.s.x, z: beasts.beast.s.z, label: beasts.beast.def.nome, color: '#4a0a14' });
+        if (wreck) minimap.markers.push({ x: wreck.x, z: wreck.z, label: 'Destroços', color: '#ffd36b' });
         minimap.draw(view, ctl.yaw);
       }
     },
@@ -2357,6 +2581,8 @@ async function boot() {
     gatherWorld,
     sea,
     fleet,
+    beasts,
+    spawnWreck: () => spawnWreck(),
     forgeUi,
     toggleForm: () => toggleForm(),
     get form() {

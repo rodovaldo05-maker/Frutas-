@@ -182,3 +182,27 @@ perseguir navios, atacar jogadores, criar ondas que empurram barcos, reações a
 3. Fase 2 (abaixo de 60%): ataques de onda e investidas.
 4. Fase 3 (abaixo de 25%): fúria; ataques mais rápidos, pontos fracos expostos.
 5. Recompensa: material raro, moedas, chance de fragmentos e itens de barco.
+
+### 5.1 No jogo (atualização 19)
+
+| Besta | Nível | Onde | Visual |
+|---|---|---|---|
+| Serpente de Coral | 300 | Primeiro Mar | Cabeça com presas e barbatanas, 9 segmentos com crista que seguem o caminho da cabeça |
+| Mandíbula Cinzenta | 600 (900 no Segundo Mar) | Os dois mares; também caça quem está nadando | Tubarão com barbatana dorsal, dentes e cauda que balança |
+| Lanterna das Profundezas | 1200 | Segundo Mar, só de noite | Peixe-lanterna escuro com mandíbula enorme e isca brilhante |
+
+- **Quando:** com o bote no mar aberto (60 além da borda das ilhas), fora da travessia, no
+  mínimo 2 minutos depois do último encontro, chance de 1 em 40 por segundo. Só aparece besta
+  para quem tem pelo menos metade do nível dela.
+- **Aviso:** "A água borbulha…", bolhas na água e silhueta no minimapa por 4 s.
+- **Fase 1:** circula o bote e morde (aviso de 0,9 s no ponto onde o bote vai estar: dá para
+  desviar navegando). **Fase 2 (< 60%):** também ondas (efeito de onda do laboratório) que
+  ferem e empurram o bote, e mergulhos (some, fica imune e sobe por baixo do bote com mordida
+  40% mais forte). **Fase 3 (< 25%):** fúria — 40% mais rápida, ataques mais seguidos e ponto
+  fraco exposto (+25% de dano recebido).
+- **Combate:** só com o canhão da proa, que mira sozinho na besta quando ela está fora
+  d'água. Vida 2,5× a de um navio do mesmo nível; mordida 30 + 0,9 por nível; onda 20 + 0,6.
+- **Fim:** longe demais (170) ou sem ninguém no bote, ela mergulha e vai embora sem
+  recompensa. Derrotada: moedas (60 + 4 por nível), experiência (1/4 do nível), Escama
+  Abissal (material novo, Rara), pérolas, chance de cristal, 1–3 fragmentos e item (40%).
+- Código: `src/ships/beastRules.js` (regras, `tests/beasts.test.js`) e `src/ships/beasts.js`.

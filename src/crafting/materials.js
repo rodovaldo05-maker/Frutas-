@@ -22,6 +22,8 @@ export const MATERIALS = {
   // navios inimigos (atualização 16)
   tabua: { nome: 'Tábua de Navio', icone: '🪵', tipo: 'navio', raridade: 'Comum', valor: 10 },
   polvora: { nome: 'Pólvora', icone: '💣', tipo: 'navio', raridade: 'Incomum', valor: 25 },
+  // bestas marinhas (atualização 19)
+  escama: { nome: 'Escama Abissal', icone: '🐉', tipo: 'besta', raridade: 'Rara', valor: 90 },
 };
 export const MATERIAL_IDS = Object.keys(MATERIALS);
 

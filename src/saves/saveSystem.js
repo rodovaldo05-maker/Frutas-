@@ -1,4 +1,5 @@
 import { normalizeOutfit } from '../characters/outfits.js';
+import { normalizeWeather } from '../world/weather.js';
 import { newTraining, normalizeTraining } from '../progression/training.js';
 import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../progression/status.js';
 import { normalizeDomain } from '../progression/domain.js';
@@ -179,6 +180,11 @@ export function migrate(save) {
   if (out.held !== null && !out.bag.some((it) => it.uid === out.held)) out.held = null;
   out.boat = normalizeBoat(out.boat); // bote do jogador (null = amarrado no cais da Ilha de Treino)
   normalizeOutfit(out); // roupa vestida e roupas compradas (guarda-roupa)
+  // clima e bestas marinhas (atualização 19)
+  out.weather = normalizeWeather(out.weather);
+  out.beasts = out.beasts && typeof out.beasts === 'object' && !Array.isArray(out.beasts)
+    ? Object.fromEntries(Object.entries(out.beasts).filter(([, v]) => Number.isFinite(v) && v > 0).map(([k, v]) => [k, Math.floor(v)]))
+    : {};
   // mares liberados (atualização 17): segundo = já atravessou a tempestade
   out.seas = { segundo: out.seas?.segundo === true };
   // combate naval (atualização 16): casco do bote (null = inteiro) e navios afundados por id

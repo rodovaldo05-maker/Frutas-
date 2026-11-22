@@ -229,7 +229,9 @@ export class FruitPowers {
     const base = p.dano * mult;
     if (base <= 0 && !Object.keys(effect).length) return null;
     const wake = this.awakened ? AWAKEN.damage : 1;
-    const damage = base > 0 ? computeDamage(base, { mult: s.fruit * s.domain * wake * (this.dmgMult ?? 1), defense: target.defense ?? 0 }) : 0;
+    // clima (atualização 19): chuva e tempestade enfraquecem as frutas de fogo
+    const weather = this.weatherMult?.(p.fruit) ?? 1;
+    const damage = base > 0 ? computeDamage(base, { mult: s.fruit * s.domain * wake * (this.dmgMult ?? 1) * weather, defense: target.defense ?? 0 }) : 0;
     const c = this.ctl;
     const attack = {
       id: `poder:${p.fruit}:${p.slot}`, nome: p.nome, posture: 14, knock: effect.push ?? 1.2, reaction: p.slot === 2 ? 'media' : 'leve',

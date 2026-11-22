@@ -180,6 +180,12 @@ export class Fleet {
     this.hull = this.maxHull;
     this.sunk = 0; // segundos do bote afundando
     this.target = null; // navio mirado
+    // outros alvos do canhão (bestas marinhas; atualização 19): { alive, s, y, hits, velocity, takeHit }
+    this.extraTargets = () => [];
+  }
+
+  allTargets() {
+    return [...this.ships, ...this.extraTargets()];
   }
 
   setLevel(level, hull = null) {
@@ -197,7 +203,7 @@ export class Fleet {
   pickTarget(from, yaw) {
     let best = null;
     let bestScore = Infinity;
-    for (const s of this.ships) {
+    for (const s of this.allTargets()) {
       if (!s.alive) continue;
       const d = Math.hypot(s.s.x - from.x, s.s.z - from.z);
       if (d > CANNON.range) continue;
@@ -251,12 +257,15 @@ export class Fleet {
     if (!inWater) this.fx?.ring(at, '#ff8a2a', CANNON.radius, 0.35);
     this.audio?.play(inWater ? 'mare' : 'impacto', 'acerto', 0.6);
     if (owner === 'player') {
-      for (const s of this.ships) {
-        // só navios dentro do raio da explosão (distância até o costado)
+      for (const s of this.allTargets()) {
+        // só alvos dentro do raio da explosão (distância até o costado)
         if (!s.alive || !s.hits(at, CANNON.radius)) continue;
-        const d = Math.max(0, Math.hypot(at.x - s.s.x, at.z - s.s.z) - (BOAT.beam * SHIP_SCALE) / 2);
+        const d = Math.max(0, Math.hypot(at.x - s.s.x, at.z - s.s.z) - (s.isBeast ? s.def.radius : (BOAT.beam * SHIP_SCALE) / 2));
         const dmg = blastDamage(damage, Math.min(d, CANNON.radius));
-        if (dmg > 0) this.damageShip(s, dmg, at);
+        if (dmg > 0) {
+          if (s.isBeast) s.takeHit(dmg, at);
+          else this.damageShip(s, dmg, at);
+        }
       }
     } else {
       // bala inimiga: casco do bote (com o jogador a bordo) ou o próprio jogador na água/terra
@@ -382,7 +391,7 @@ export class Fleet {
       const b = stepBall(slot.b, dt);
       let hit = false;
       if (slot.owner === 'player') {
-        for (const s of this.ships) if (s.alive && s.hits(b)) hit = true;
+        for (const s of this.allTargets()) if (s.alive && s.hits(b)) hit = true;
       } else if (ctx.aboard && this.sunk <= 0) {
         const dx = b.x - boat.s.x;
         const dz = b.z - boat.s.z;
@@ -437,6 +446,9 @@ export class Fleet {
 
   // navio mais perto ativo e em combate (para a barra no topo)
   engaged(playerPos, range = 70) {
+    // besta marinha em encontro tem prioridade na barra do topo
+    const beast = this.encounter?.();
+    if (beast && beast.state !== 'aviso' && Math.hypot(beast.s.x - playerPos.x, beast.s.z - playerPos.z) < range * 1.5) return beast;
     let best = null;
     let bestD = range;
     for (const s of this.ships) {

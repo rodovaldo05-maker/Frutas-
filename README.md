@@ -113,6 +113,10 @@ nas habilidades do jogo — onda gigante e olho da maré, furacão de areia, nuv
 espinhos e muralha de gelo, pilares de fogo, prismas, ímã, garras, portais, marcas míticas,
 carga na mão, contato dos socos e aura da fruta — com reforço de brilho onde ficavam finos.
 
+Bestas marinhas e clima (atualização 19): Serpente de Coral, Mandíbula Cinzenta e Lanterna das
+Profundezas surgem no mar aberto com aviso e três fases e são enfrentadas com o canhão; clima
+por mar (sol, chuva, tempestade com raios) e destroços à deriva com baú.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

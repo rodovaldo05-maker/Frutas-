@@ -7,6 +7,9 @@ import { normalizeRace } from '../races/races.js';
 import { STYLE_IDS } from '../styles/styles.js';
 import { normalizeGear } from '../items/items.js';
 import { normalizeBoat } from '../ships/boatRules.js';
+import { normalizeClock, START_CLOCK } from '../world/clock.js';
+import { normalizeStore } from '../economy/fruitStore.js';
+import { normalizeQuests } from '../quests/village.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -60,6 +63,9 @@ export function newSave() {
     weapon: null, // espada do slot 2
     proficiency: {}, // proficiência por tipo de arma { espada: { level, xp } }
     boat: null, // bote { x, z, yaw, aboard } (atualização 10)
+    clock: START_CLOCK, // hora do jogo em minutos desde o começo (atualização 11)
+    store: { day: -1, bought: [] }, // Loja de Frutas: vagas compradas no dia do estoque
+    quests: null, // missões da vila (normalizadas no migrate)
     domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,
@@ -128,6 +134,9 @@ export function migrate(save) {
   if (!Number.isFinite(out.nextUid)) out.nextUid = 1 + out.bag.reduce((m, it) => Math.max(m, it.uid || 0), 0);
   if (out.held !== null && !out.bag.some((it) => it.uid === out.held)) out.held = null;
   out.boat = normalizeBoat(out.boat); // bote do jogador (null = amarrado no cais da Ilha de Treino)
+  out.clock = normalizeClock(out.clock);
+  out.store = normalizeStore(out.store);
+  out.quests = normalizeQuests(out.quests);
 
   return out;
 }

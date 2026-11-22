@@ -17,7 +17,7 @@ As duas convivem; uma não substitui a outra.
 |---|---|---|
 | De onde vem | 3 pontos a cada nível de aventureiro | Ações válidas do personagem (andar, nadar, escalar...) |
 | Distribuir | **Sim**: o jogador escolhe onde colocar (+1, +10, Máx) | **Não**: vai sozinho para o atributo praticado |
-| Redistribuir | Grátis uma vez; depois no Mestre de Missões | Não se apaga (nem trocando fruta ou equipamento) |
+| Redistribuir | Grátis uma vez; depois no Mestre de Missões (Prefeitura do Porto): 500 + 100 × nível moedas | Não se apaga (nem trocando fruta ou equipamento) |
 | Atributos | Força, Defesa, Fruta, Espada, Vitalidade | Fôlego, Força, Agilidade, Natação, Resistência Física, Reflexos, Defesa, Resistência Elemental, Voo |
 
 Efeito de cada ponto distribuído:
@@ -119,6 +119,11 @@ padrão por rank são Comum 1, Incomum 1, Rara 2, Épica 3, Lendária 5, Mítica
 | Diária | 3 missões que mudam a cada dia | Fragmentos e moedas |
 
 Missões aceitas aparecem no rastreador da tela (doc 10). Limite de 5 missões ativas.
+
+**No jogo (atualização 11):** o Mestre de Missões do Porto das Origens oferece 3 missões por dia
+(entrega, caça, conversa e recado; renovam às 6h do jogo), com moedas e experiência ao concluir.
+A Loja de Frutas do Porto vende 4 frutas por dia pela tabela `loja` ao preço da ficha (doc 11,
+seção 11).
 
 ## 7. Reputação (proposta)
 

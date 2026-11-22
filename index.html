@@ -66,6 +66,8 @@
         <button data-btn id="btn-menu" class="icon-btn" data-icon="gear" aria-label="Pausa e configurações"></button>
       </div>
 
+      <div id="clock" class="clock-chip">☀ 08:00</div>
+
       <div class="minimap" id="minimap">
         <canvas id="minimap-canvas" width="240" height="240"></canvas>
         <span class="dir n">N</span><span class="dir e">L</span><span class="dir s">S</span><span class="dir w">O</span>
@@ -360,6 +362,38 @@
           <button data-mtab="principais" class="active">Principais</button><button data-mtab="secundarias">Secundárias</button><button data-mtab="diarias">Diárias</button><button data-mtab="faccao">De Facção</button>
         </div>
         <div id="mission-list" class="mission-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== Conversa com morador (atualização 11) ===== -->
+    <div id="npc-dialog" class="overlay hidden">
+      <div class="frame window dialog-window">
+        <div class="frame-title" id="dlg-title" data-icon="person">Morador</div>
+        <button class="close" data-close="npc-dialog" data-icon="close" aria-label="Fechar"></button>
+        <p id="dlg-text" class="dialog-text"></p>
+        <div class="row-btns dialog-actions" id="dlg-actions"></div>
+      </div>
+    </div>
+
+    <!-- ===== Loja de Frutas do Porto ===== -->
+    <div id="fruitstore" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="fruit">Loja de Frutas</div>
+        <button class="close" data-close="fruitstore" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top"><div class="wallet big"><span data-icon="coin"><b id="fs-coins">0</b></span></div><span id="fs-restock" class="store-restock"></span></div>
+        <div id="fs-list" class="store-list"></div>
+        <p id="fs-chances" class="store-chances"></p>
+      </div>
+    </div>
+
+    <!-- ===== Mestre de Missões ===== -->
+    <div id="questmaster" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="scroll">Mestre de Missões</div>
+        <button class="close" data-close="questmaster" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top"><span id="qm-count" class="store-restock"></span><span id="qm-renew" class="store-restock"></span></div>
+        <div id="qm-list" class="quest-offers"></div>
+        <div class="row-btns qm-respec"><button class="btn" id="btn-qm-respec" data-icon="person">Redistribuir pontos</button><span id="qm-respec-note" class="store-restock"></span></div>
       </div>
     </div>
 

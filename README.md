@@ -66,6 +66,12 @@ ilhas: o analógico aponta o rumo, Correr acelera, o bote para no raso e no cais
 ondas e deixa esteira; Pular desce no cais ou na praia. Os Barqueiros trazem o bote até o cais
 deles. Os avisos de local (placas, área descoberta, ilha) aparecem pequenos no topo por 0,2 s.
 
+Vila viva (atualização 11): relógio do jogo com dia e noite (um dia = 24 minutos, lampiões
+acendem à noite); casas mobiliadas com portas que abrem; 10 moradores com nome e ofício que vão
+de casa ao trabalho, à taverna ou à praça e voltam pelas ruas; Loja de Frutas com 4 frutas por
+dia sorteadas pela tabela de raridade da loja; Mestre de Missões na Prefeitura com 3 missões por
+dia (entrega, caça, conversa, recado) e redistribuição de pontos paga.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

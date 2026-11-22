@@ -135,5 +135,48 @@ Barqueiros: falar com eles faz a travessia (tela de transição) até o outro ca
 nome da ilha aparece no alto da tela; o mapa (M) e o minimapa mostram a ilha onde o jogador
 está, com ruas, praça e casas desenhadas por cima do relevo.
 
-**Ainda não:** editor visual, interiores mobiliados, NPCs com rotina e lojas da vila
-(atualização 11), barco de verdade (atualização 10).
+**Ainda não:** editor visual (B1), eventos e baús da vila (B5) e o desempenho medido no
+Android (B6).
+
+## 11. Vila viva (atualização 11)
+
+**Relógio do jogo** (`src/world/clock.js`): 1 minuto de jogo por segundo real (um dia dura 24
+minutos), salvo em `save.clock`; o relógio aparece pequeno ao lado do minimapa. A luz muda com a
+hora: amanhece das 5h às 7h, anoitece das 18h às 20h com tom alaranjado, e a noite é azulada (dá
+para jogar). Céu, sol, neblina e reflexo do mar acompanham; os lampiões da vila e a brasa da forja
+acendem à noite.
+
+**Por dentro** (B3): cada construção tem móveis com colisão. Serviços: balcão com tampo,
+prateleira no fundo e quem atende atrás do balcão (passagem pela direita); Taverna com mesa e
+barris; Ferreiro com bigorna e forja; Mercado com caixotes; Prefeitura com quadro de missões e
+banco; Loja de Frutas com frutas no balcão. Residências: cama com cobertor e travesseiro, mesa e
+estante. As portas (uma malha instanciada) giram para fora quando o jogador ou um morador chega a
+3,4 da porta. Entrar e sair é andando, sem teleporte.
+
+**Moradores e rotina** (B4, `src/world/villageLife.js` e `villagers.js`): 10 moradores com nome e
+ofício — 5 que atendem os serviços (Inês, Mestre de Missões; Joana, Mercadora; Bento,
+Taverneiro; Rosa, Ferreira; Caio, Fruteiro) e 5 com trabalho ao ar livre (Pescador e Marinheiro
+no cais, Florista e Costureira na praça, Carpinteiro em frente ao Mercado). Cada um mora numa
+residência. Rotina: casa → trabalho (6h30–17h30) → lazer na Taverna ou na praça (até 21h) → casa;
+cada morador sai com até 30 minutos de diferença. Dormindo (22h–6h) o corpo some. As rotas
+seguem o grafo das ruas (avenidas, anel e arcos em volta do chafariz): sai pela porta, anda pela
+rua e entra pela outra porta; os testes conferem em várias sementes que nenhum trecho atravessa
+casas. Longe do jogador só a posição é calculada.
+
+**Lojas pelas tabelas** (B5, `src/economy/fruitStore.js`): a Loja de Frutas vende 4 frutas por
+dia sorteadas da tabela `loja` (Comum 50, Incomum 28, Rara 14, Épica 6, Lendária 2, Mítica 0),
+sem repetir, pela semente da vila e pelo dia; renova às 6h. Preço = `precoBase` da ficha; cada
+vaga vende uma vez por dia; sem moedas ou sem espaço na mochila nada é cobrado. A janela mostra
+as chances da tabela.
+
+**Conversas e serviços**: falar com um morador mostra uma fala pela hora e pela atividade e as
+ações do ofício — Missões (Inês), Trocar fragmentos (Joana), Refeição de 40 moedas que enche
+vida e fôlego (Bento), Armaduras e espadas (Rosa), Frutas do dia (Caio). Quem atende também
+atende fora do horário.
+
+**Missões da vila** (`src/quests/village.js`): o Mestre de Missões oferece 3 pedidos por dia (renovam
+às 6h), até 5 ativos. Tipos: entrega (pegar com a Mercadora ou a Ferreira e levar a um morador),
+caça (5 Recrutas ou 3 Recrutas elementais), conversa (4 moradores diferentes) e recado (falar com o
+Barqueiro da Ilha de Treino). Ativas aparecem em Missões › Secundárias (rastrear ou abandonar) e
+no rastreador; a recompensa sai ao concluir. Ele também cobra a redistribuição de pontos depois da
+primeira (grátis): 500 + 100 × nível moedas.

@@ -151,7 +151,7 @@ Botão final: "Zarpar".
 | Canto superior esquerdo | Retrato, nível, fruta comida com selo de nível, barras de vida, energia e experiência |
 | Topo centro | Aviso de local pequeno (nome da placa perto, área descoberta, ilha ao chegar), visível por 0,2 s; logo abaixo, os avisos gerais (recompensas, erros) |
 | Abaixo do topo | Rastreador de missão (até 3; toque para alternar) |
-| Canto superior direito | Mochila (com contador), menu, minimapa (toque abre o mapa) |
+| Canto superior direito | Mochila (com contador), menu, minimapa (toque abre o mapa); ao lado do minimapa, o relógio do jogo (☀/☾ e a hora) |
 | Esquerda inferior | Joystick flutuante (aparece onde o dedo toca), botão Correr |
 | Direita inferior | Atacar (grande), Esquiva, Pular, Defender, 5 habilidades em arco, alternância Fruta/Estilo, botões de forma (só frutas Animais/Míticas) |
 | Sobre o personagem | Arco de fôlego (só quando gastando), aviso de água |

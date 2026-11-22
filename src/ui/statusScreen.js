@@ -113,7 +113,7 @@ export class StatusScreen {
     const total = STATUS_KEYS.reduce((sum, k) => sum + status[k], 0);
     const respec = $('btn-respec');
     respec.disabled = !this.save.freeRespec || total === 0;
-    respec.lastChild.textContent = this.save.freeRespec ? 'Redistribuir (grátis 1×)' : 'Redistribuir: Mestre de Missões (em breve)';
+    respec.lastChild.textContent = this.save.freeRespec ? 'Redistribuir (grátis 1×)' : 'Redistribuir: Mestre de Missões (Prefeitura do Porto)';
   }
 
   renderTraining(t) {

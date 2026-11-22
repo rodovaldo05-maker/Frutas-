@@ -18,6 +18,9 @@ import { buildTrainingIsland, ISLAND } from './islands/trainingIsland.js';
 import { buildVillageIsland, buildTrainingDock, BOATMEN, DOCKS, VILLAGE } from './islands/villageIsland.js';
 import { WorldField } from './terrain/offsetField.js';
 import { Boat } from './ships/boat.js';
+import { Villagers } from './world/villagers.js';
+import { VillageUi } from './ui/villageUi.js';
+import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
 import { createPlayer } from './characters/player.js';
 import { PlayerAnimator } from './animation/playerAnimator.js';
@@ -103,6 +106,8 @@ async function boot() {
   // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
   const world = new WorldField([island.field, village.field]);
   const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: BOATMEN });
+  // moradores do Porto das Origens (rotina pela hora do jogo)
+  const villagers = new Villagers({ scene: renderer.scene, data: DATA, village: village.village, offset: VILLAGE.offset, physics, baseY: VILLAGE.plateau });
   island.signs.push(...market.signs);
   const arena = buildArena({ scene: renderer.scene, physics, field: island.field, data: DATA });
   physics.world.updateSceneQueries?.();
@@ -403,6 +408,7 @@ async function boot() {
       }
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
+      villageUi.defeat(foe.def);
       audio.play('base', 'death', 0.6);
       grantXp(foe.def.xp);
       saveNow(true);
@@ -796,6 +802,39 @@ async function boot() {
     onHold: () => applyHeld(),
     onEat: (item) => startEating(item),
   });
+  const villageUi = new VillageUi({
+    save,
+    villagers,
+    seed: VILLAGE.seed,
+    getClock: () => save.clock,
+    thumbOf: (id) => thumbs()[fruitIndex(id)],
+    openModal: (id) => openModal(id),
+    closeModal: (id) => closeModal(id),
+    toast: (text, kind) => hud.toast(text, kind),
+    onQuestDone: (q) => {
+      save.coins += q.coins;
+      grantXp(q.xp);
+      hud.toast(`Missão concluída: ${q.titulo} · +${fmt(q.coins)} moedas · +${fmt(q.xp)} exp`, 'gold');
+      audio.play('base', 'wing', 0.8);
+      refreshProfile();
+      saveNow(true);
+    },
+    onQuestChange: () => refreshMission(),
+    onStatus: () => {
+      applyStatus();
+      statusScreen.render();
+      refreshProfile();
+      saveNow(true);
+    },
+    onBag: () => {
+      refreshProfile();
+      saveNow(true);
+    },
+    heal: () => {
+      ctl.health = ctl.maxHealth;
+      ctl.stamina.value = ctl.stamina.max;
+    },
+  });
   function startEating(item) {
     if (ctl.state !== 'ground' || animator.eat) {
       hud.toast('Para comer, fique com os pés no chão.');
@@ -835,6 +874,13 @@ async function boot() {
   function refreshMission() {
     const st = save.missions.treino;
     const next = mission.next();
+    const vq = villageUi.tracked();
+    if (vq) {
+      hud.setTracker({ visible: true, title: vq.title, step: vq.step, reward: `${ICONS.coin} ${vq.reward}`, done: false });
+      hud.setQuestBadge(mission.complete && !st.claimed);
+      renderMissionList();
+      return;
+    }
     hud.setTracker({
       visible: st.tracked && !st.claimed,
       title: `${TRAINING.title} (${mission.count}/${mission.total})`,
@@ -1059,14 +1105,19 @@ async function boot() {
     if (!nearAction || modals.length || mode !== 'game') return;
     if (nearAction.kind === 'board') return board();
     if (nearAction.kind === 'leave') return disembark();
+    if (nearAction.kind === 'villager') return villageUi.talk(nearAction.m);
     const npc = nearAction.npc;
-    if (npc.role === 'barqueiro') return openBoatman(npc);
+    if (npc.role === 'barqueiro') {
+      for (const n of villageUi.questTalk(npc.id, false)) hud.toast(n, 'good');
+      return openBoatman(npc);
+    }
     openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[npc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
   $('btn-untrack').addEventListener('click', () => {
-    save.missions.treino.tracked = false;
+    if (villageUi.tracked()) save.quests.tracked = null;
+    else save.missions.treino.tracked = false;
     refreshMission();
   });
   window.addEventListener('keydown', (e) => {
@@ -1089,6 +1140,11 @@ async function boot() {
   }
   function renderMissionList() {
     const list = $('mission-list');
+    if (missionTab === 'secundarias') {
+      list.innerHTML = villageUi.activeHtml();
+      villageUi.bindActive(list);
+      return;
+    }
     if (missionTab !== 'principais') {
       list.innerHTML = '<div class="empty">Nenhuma missão aqui ainda. Novas missões chegam com as próximas ilhas.</div>';
       return;
@@ -1155,6 +1211,7 @@ async function boot() {
   let autosave = 0;
   let minimapTimer = 0;
   const fogDay = { color: renderer.scene.fog.color.clone() };
+  let dayTimer = 0;
   const fogWater = new THREE.Color('#1d5866');
   const titleIdle = { moveX: 0, moveY: 0, camYaw: 0, jump: false, crouch: false, jumpPressed: false, crouchPressed: false, dashPressed: false, sprint: false };
 
@@ -1222,6 +1279,10 @@ async function boot() {
         ctl.step(dt, inp);
       }
       conditions.update(dt, ctl);
+      // hora do jogo, rotina dos moradores e portas da vila
+      save.clock += dt * GAME_MINUTES_PER_SECOND;
+      villagers.update(dt, hourOf(save.clock), ctl.pos);
+      if (village.field.inside(ctl.pos.x, ctl.pos.z)) village.updateDoors(dt, [ctl.pos, ...villagers.people()]);
       playerProxy.alive = ctl.faint <= 0;
       arena.update(dt, playerProxy);
       tracker.step(dt, ctl);
@@ -1254,6 +1315,20 @@ async function boot() {
       const animDt = mode === 'title' ? dt : loop.paused ? 0 : dt;
       if (mode === 'title') ctl.input = titleIdle;
       boat.render(alpha, animDt);
+      villagers.render(animDt, view);
+      // luz do dia (a cada meio segundo): céu, sol, neblina, mar e lampiões; relógio na tela
+      dayTimer -= dt;
+      if (dayTimer <= 0) {
+        dayTimer = 0.5;
+        const dl = daylight(hourOf(save.clock));
+        const sky = renderer.setDaylight(dl);
+        fogDay.color.copy(sky.horizon);
+        ocean.material.uniforms.uSkyTop.value.copy(sky.top);
+        ocean.material.uniforms.uSkyHorizon.value.copy(sky.horizon);
+        ocean.material.uniforms.uSunColor.value.copy(renderer.sun.color).multiplyScalar(0.4 + 0.6 * dl.k);
+        village.setNight(1 - dl.k);
+        $('clock').textContent = `${dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`;
+      }
       animator.update(animDt, ctl, view);
       dust.update(animDt);
       market.update(mode === 'title' ? dt : animDt, view);
@@ -1348,12 +1423,18 @@ async function boot() {
       if (!modals.length && !animator.eat) {
         if (boat.aboard) act = { kind: 'leave', key: 'leave', text: 'Desembarcar' };
         else {
-          const npc = ctl.state === 'ground' ? market.nearest(ctl.pos) : null;
-          const canBoard = (ctl.state === 'ground' || ctl.state === 'swim') && boat.near(ctl.pos);
-          const dBoat = Math.hypot(ctl.pos.x - boat.s.x, ctl.pos.z - boat.s.z) - 1.5;
-          if (npc && !(canBoard && dBoat < Math.hypot(ctl.pos.x - npc.x, ctl.pos.z - npc.z))) {
-            act = { kind: 'npc', npc, key: npc.id, text: `Falar com ${npc.art ?? 'o'} ${npc.name}` };
-          } else if (canBoard) act = { kind: 'board', key: 'board', text: 'Embarcar no bote' };
+          // o mais perto entre NPC, morador e bote
+          const opts = [];
+          const p = ctl.pos;
+          const npc = ctl.state === 'ground' ? market.nearest(p) : null;
+          if (npc) opts.push({ d: Math.hypot(p.x - npc.x, p.z - npc.z), kind: 'npc', npc, key: npc.id, text: `Falar com ${npc.art ?? 'o'} ${npc.name}` });
+          const vm = ctl.state === 'ground' ? villagers.nearest(p) : null;
+          if (vm) {
+            const w = villagers.world(vm);
+            opts.push({ d: Math.hypot(p.x - w.x, p.z - w.z), kind: 'villager', m: vm, key: vm.id, text: `Falar com ${vm.nome}` });
+          }
+          if ((ctl.state === 'ground' || ctl.state === 'swim') && boat.near(p)) opts.push({ d: Math.hypot(p.x - boat.s.x, p.z - boat.s.z) - 1.5, kind: 'board', key: 'board', text: 'Embarcar no bote' });
+          act = opts.sort((a, b) => a.d - b.d)[0] ?? null;
         }
       }
       if ((act?.key ?? null) !== (nearAction?.key ?? null)) {
@@ -1534,6 +1615,12 @@ async function boot() {
     boat,
     board,
     disembark,
+    villagers,
+    villageUi,
+    setHour(h) {
+      save.clock = Math.floor(save.clock / 1440) * 1440 + h * 60;
+      dayTimer = 0;
+    },
     teleport(x, z, y) {
       const h = y ?? world.sample(x, z) + 0.5;
       ctl.spawn(x, h, z, ctl.yaw);

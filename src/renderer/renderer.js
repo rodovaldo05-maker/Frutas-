@@ -11,6 +11,10 @@ export const QUALITY = {
 
 const SKY_TOP = new THREE.Color('#5aa7d6');
 const SKY_HORIZON = new THREE.Color('#cfe7e4');
+// paleta do dia e da noite (atualização 11): a noite é azulada e ainda dá para jogar
+const DAY = { top: SKY_TOP.clone(), horizon: SKY_HORIZON.clone(), sun: new THREE.Color('#fff1dc'), hemi: new THREE.Color('#f4f6ec') };
+const NIGHT = { top: new THREE.Color('#14244a'), horizon: new THREE.Color('#3b5078'), sun: new THREE.Color('#9fb4ff'), hemi: new THREE.Color('#8fa4d0') };
+const DUSK = { horizon: new THREE.Color('#f2a878'), sun: new THREE.Color('#ffb070') };
 
 export class Renderer {
   constructor(canvas) {
@@ -53,6 +57,21 @@ export class Renderer {
     this.sky = new THREE.Mesh(geo, mat);
     this.sky.renderOrder = -1;
     return this.sky;
+  }
+
+  // Luz do dia: k = 1 dia, 0 noite; dusk = tom do nascer/pôr do sol (clock.daylight)
+  setDaylight({ k, dusk }) {
+    const top = this.sky.material.uniforms.top.value;
+    const hor = this.sky.material.uniforms.horizon.value;
+    top.copy(NIGHT.top).lerp(DAY.top, k);
+    hor.copy(NIGHT.horizon).lerp(DAY.horizon, k).lerp(DUSK.horizon, dusk * 0.55);
+    this.scene.fog.color.copy(hor);
+    this.scene.background.copy(hor);
+    this.sun.color.copy(NIGHT.sun).lerp(DAY.sun, k).lerp(DUSK.sun, dusk * 0.6);
+    this.sun.intensity = 0.45 + 1.65 * k;
+    this.hemi.color.copy(NIGHT.hemi).lerp(DAY.hemi, k);
+    this.hemi.intensity = 0.75 + 0.6 * k;
+    return { top, horizon: hor };
   }
 
   setQuality(id) {

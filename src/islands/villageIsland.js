@@ -1,13 +1,17 @@
 // Ilha do Porto das Origens (atualização 9): ilha costeira a leste da Ilha de Treino, com a
 // primeira vila gerada pela semente (praça com chafariz, avenidas, anel, casas com porta,
-// prefeitura, mercado, taverna, ferreiro, loja de frutas, postes e cais). Interiores, NPCs com
-// rotina e lojas da vila chegam na atualização 11.
+// prefeitura, mercado, taverna, ferreiro, loja de frutas, postes e cais). Atualização 11:
+// móveis por dentro (balcão, prateleiras, cama, mesa, forja, quadro de missões), portas que
+// abrem quando alguém chega perto e lampiões que acendem à noite.
 
 import { OffsetHeightfield } from '../terrain/offsetField.js';
 import { Heightfield } from '../terrain/heightfield.js';
 import { buildTerrain, tropicalColor } from '../terrain/terrainMesh.js';
 import { StructureBuilder } from '../world/structures.js';
+import * as THREE from 'three';
 import { generateVillage } from '../world/village.js';
+import { interiorOf, isService, toWorldOfBuilding } from '../world/villageLife.js';
+import { makeFruit } from '../fruits/fruitArt.js';
 import { smooth, valueNoise2D } from '../core/math.js';
 
 export const VILLAGE = {
@@ -90,7 +94,52 @@ export function buildVillageIsland({ scene, physics }) {
 
   // casas: paredes com porta na fachada, piso, janelas e telhado em degraus
   const NAMES = { prefeitura: 'Prefeitura', mercado: 'Mercado', taverna: 'Taverna', ferreiro: 'Ferreiro', 'loja-frutas': 'Loja de Frutas' };
+  const HINTS = {
+    prefeitura: 'Mestre de Missões: missões da vila e redistribuir pontos de status.',
+    mercado: 'Mercadora: troca de fragmentos e chaves; encomendas para entregar.',
+    taverna: 'Taverneiro: refeição que recupera vida e fôlego. À noite os moradores vêm para cá.',
+    ferreiro: 'Ferreira: armaduras, acessórios, espadas e conserto.',
+    'loja-frutas': 'Fruteiro: frutas do dia pela tabela de raridade da loja (renova às 6h).',
+  };
   const signs = [];
+  const doors = [];
+  const fruitsOnCounter = [];
+  // móveis de cada construção (blocos com colisão; o chão de dentro fica em +0,25)
+  const F = 0.25;
+  function furnish(b, put, at) {
+    const it = interiorOf(b);
+    if (isService(b)) {
+      const c = it.counter;
+      put(c.x, c.z, c.w, 1.25, c.d, F, 'moveis'); // balcão
+      put(c.x, c.z, c.w + 0.2, 0.12, c.d + 0.2, F + 1.25, 'madeira'); // tampo
+      put(-0.6, -b.d / 2 + 0.85, b.w - 3, 2.6, 0.5, F, 'moveis'); // prateleira do fundo
+      put(-0.6, -b.d / 2 + 0.85, b.w - 3.2, 0.12, 0.55, F + 1.3, 'madeira');
+      if (b.tipo === 'taverna') {
+        const tb = it.table;
+        put(tb.x, tb.z, tb.w, 1.0, tb.d, F, 'madeira');
+        for (const s of [-1, 1]) put(b.w / 2 - 1.1, b.d / 2 - 1.2 + s * 0.05 - (s > 0 ? 1.1 : 0), 0.9, 1.2, 0.9, F, 'moveis'); // barris
+      } else if (b.tipo === 'ferreiro') {
+        put(-b.w / 2 + 1.5, b.d / 2 - 2.2, 1.1, 0.9, 0.6, F, 'pedraLisa'); // bigorna
+        put(b.w / 2 - 1.3, b.d / 2 - 2.0, 1.4, 1.3, 1.3, F, 'tijolo'); // forja
+        put(b.w / 2 - 1.3, b.d / 2 - 2.0, 0.9, 0.25, 0.9, F + 1.3, 'lanterna'); // brasa
+      } else if (b.tipo === 'mercado') {
+        for (const [lx, lz, y] of [[-b.w / 2 + 1.2, b.d / 2 - 1.6, 0], [-b.w / 2 + 1.2, b.d / 2 - 2.6, 0], [-b.w / 2 + 1.2, b.d / 2 - 1.6, 0.9]]) put(lx, lz, 0.9, 0.9, 0.9, F + y, 'moveis');
+      } else if (b.tipo === 'prefeitura') {
+        put(-b.w / 2 + 0.7, 0.6, 0.15, 2.2, 3.2, F + 1.4, 'madeira'); // quadro de missões
+        for (const [dz, dy] of [[-0.8, 2.6], [0.3, 2.9], [1.2, 2.3], [-0.1, 2.0]]) put(-b.w / 2 + 0.8, 0.6 + dz, 0.06, 0.6, 0.5, F + dy, 'reboco');
+        put(b.w / 2 - 1.4, b.d / 2 - 2.4, 0.6, 0.5, 2.6, F, 'madeira'); // banco
+      } else if (b.tipo === 'loja-frutas') {
+        fruitsOnCounter.push(...[-1.6, -0.4, 0.8].map((lx, k) => ({ p: toWorldOfBuilding(b, c.x + lx, c.z), k })));
+      }
+    } else {
+      const bed = it.bed;
+      put(bed.x, bed.z, bed.w, 0.55, bed.d, F, 'moveis');
+      put(bed.x, bed.z + 0.4, bed.w - 0.2, 0.22, bed.d - 1.0, F + 0.55, 'cobertor');
+      put(bed.x, bed.z - bed.d / 2 + 0.5, bed.w - 0.5, 0.25, 0.6, F + 0.55, 'reboco'); // travesseiro
+      put(it.table.x, it.table.z, it.table.w, 1.0, it.table.d, F, 'madeira');
+      put(it.shelf.x, it.shelf.z, it.shelf.w, 2.4, it.shelf.d, F, 'moveis');
+    }
+  }
   for (const b of village.buildings) {
     const right = [Math.cos(b.rotY), -Math.sin(b.rotY)];
     const fwd = [Math.sin(b.rotY), Math.cos(b.rotY)];
@@ -118,8 +167,10 @@ export function buildVillageIsland({ scene, physics }) {
     if (b.d > 6.5) put(0, 0, b.w - 3, 0.7, b.d - 4.6, b.h + 1.6, b.telhado);
     if (NAMES[b.tipo]) {
       const [sx, sz] = at(b.w / 2 + 1.2, b.d / 2 + 1.5);
-      sb.sign({ x: sx, y: ground(sx - o.x, sz - o.z), z: sz, rotY: b.rotY + Math.PI, title: NAMES[b.tipo], hint: `${NAMES[b.tipo]} do Porto das Origens. Interiores, moradores e lojas chegam na atualização 11.` });
+      sb.sign({ x: sx, y: ground(sx - o.x, sz - o.z), z: sz, rotY: b.rotY + Math.PI, title: NAMES[b.tipo], hint: HINTS[b.tipo] });
     }
+    furnish(b, put, at);
+    doors.push({ b, angle: 0, target: 0 });
   }
   // postes de luz
   for (const p of village.props) {
@@ -132,12 +183,64 @@ export function buildVillageIsland({ scene, physics }) {
     sb.block({ x: o.x + lx, y: Math.max(ground(lx, 0) - 0.25, VILLAGE.deck - 0.35), z: o.z, w: 3.2, h: 0.35, d: 4.2, style: 'madeira' });
     if (lx % 6 === -1 && lx < -86) for (const s of [-1, 1]) sb.block({ x: o.x + lx, y: -8, z: o.z + s * 1.9, w: 0.4, h: 9.4, d: 0.4, style: 'madeira' });
   }
-  sb.sign({ x: o.x + 4.5, y: base, z: o.z + village.plaza.r + 1.5, rotY: 0, title: VILLAGE.name, hint: 'Primeira vila do mar. Ruas, casas e serviços gerados pela semente; moradores e lojas chegam na atualização 11.' });
+  sb.sign({ x: o.x + 4.5, y: base, z: o.z + village.plaza.r + 1.5, rotY: 0, title: VILLAGE.name, hint: 'Primeira vila do mar. Os moradores vão ao trabalho de manhã, à taverna no fim da tarde e voltam para casa à noite.' });
   sb.sign({ x: o.x - 72, y: ground(-72, 4.5), z: o.z + 4.5, rotY: -Math.PI / 2, title: 'Cais do Porto', hint: 'Embarque no seu bote para navegar até a Ilha de Treino (a oeste) ou fale com a Barqueira.' });
   sb.finish();
   for (const sg of sb.signs) if (sg.title === VILLAGE.name) sg.major = true; // nome da vila tem prioridade no mapa
   signs.push(...sb.signs);
-  return { field, localField, village, signs, terrain };
+
+  // frutas no balcão da Loja de Frutas
+  for (const { p, k } of fruitsOnCounter) {
+    const f = makeFruit([1, 6, 9][k], 1);
+    f.scale.setScalar(0.5);
+    f.position.set(p.x + o.x, base + F + 1.37 + 0.3, p.z + o.z);
+    scene.add(f);
+  }
+  // portas: uma malha instanciada; giram para fora (dobradiça à esquerda) quando alguém chega perto
+  const doorGeo = new THREE.BoxGeometry(3.1, 4.9, 0.16).translate(1.55, 2.45, 0);
+  const doorMesh = new THREE.InstancedMesh(doorGeo, new THREE.MeshStandardMaterial({ color: '#6a4424', roughness: 0.8 }), doors.length);
+  doorMesh.castShadow = true;
+  doorMesh.name = 'portas';
+  scene.add(doorMesh);
+  const m4 = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const up = new THREE.Vector3(0, 1, 0);
+  const one = new THREE.Vector3(1, 1, 1);
+  for (const d of doors) {
+    const h = toWorldOfBuilding(d.b, -1.6, d.b.d / 2 + 0.1);
+    d.hinge = new THREE.Vector3(h.x + o.x, base + F - 0.2, h.z + o.z);
+    d.center = toWorldOfBuilding(d.b, 0, d.b.d / 2);
+    d.center = { x: d.center.x + o.x, z: d.center.z + o.z };
+  }
+  const setDoor = (i) => {
+    const d = doors[i];
+    q.setFromAxisAngle(up, d.b.rotY - d.angle);
+    doorMesh.setMatrixAt(i, m4.compose(d.hinge, q, one));
+  };
+  doors.forEach((_, i) => setDoor(i));
+  doorMesh.instanceMatrix.needsUpdate = true;
+  const lanterns = sb.group.getObjectByName('estruturas_lanterna');
+  if (lanterns) lanterns.material.emissive = new THREE.Color('#ffc65a');
+  return {
+    field, localField, village, signs, terrain, lanterns,
+    // abre as portas com alguém a até 3,4 da porta (jogador e moradores, em coordenadas do mundo)
+    updateDoors(dt, people) {
+      let changed = false;
+      doors.forEach((d, i) => {
+        d.target = people.some((p) => Math.hypot(p.x - d.center.x, p.z - d.center.z) < 3.4) ? 1.75 : 0;
+        if (Math.abs(d.angle - d.target) > 1e-3) {
+          d.angle += Math.sign(d.target - d.angle) * Math.min(Math.abs(d.target - d.angle), dt * 4);
+          setDoor(i);
+          changed = true;
+        }
+      });
+      if (changed) doorMesh.instanceMatrix.needsUpdate = true;
+    },
+    // à noite os lampiões brilham
+    setNight(n) {
+      if (lanterns) lanterns.material.emissiveIntensity = n * 1.3;
+    },
+  };
 }
 
 // Cais da Ilha de Treino (costa leste): o bote do jogador fica amarrado ao lado

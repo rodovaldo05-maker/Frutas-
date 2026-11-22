@@ -41,13 +41,13 @@ const NPCS = [
   },
 ];
 
-const PART = {
+export const PART = {
   cabeca: 'skin', tronco: 'shirt', ombro_E: 'shirt', ombro_D: 'shirt', braco_E: 'shirt', braco_D: 'shirt',
   antebraco_E: 'skin', antebraco_D: 'skin', mao_E: 'skin', mao_D: 'skin', cintura: 'shorts', coxa_E: 'shorts', coxa_D: 'shorts',
   canela_E: 'skin', canela_D: 'skin', pe_E: 'shoes', pe_D: 'shoes',
 };
 
-function label(text) {
+export function label(text, scale = 1) {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 96;
@@ -67,9 +67,18 @@ function label(text) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthWrite: false, transparent: true }));
-  sprite.scale.set(4.2, 0.79, 1);
+  sprite.scale.set(4.2 * scale, 0.79 * scale, 1);
   sprite.renderOrder = 5;
   return sprite;
+}
+
+// Corpo do laboratório com as cores de um NPC (pele, cabelo, roupa) e rosto
+export function makeNpcBody(scene, data, look) {
+  const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
+  for (const [id, mesh] of Object.entries(body.meshes)) mesh.material.color.set(look[PART[id] || 'skin']);
+  const face = new Face(body.joints.cabeca, { hair: look.hair, skin: look.skin });
+  scene.add(body.root);
+  return { body, face };
 }
 
 export function buildMarket({ scene, physics, field, data, extra = [] }) {

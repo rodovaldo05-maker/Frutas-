@@ -78,6 +78,21 @@
         "ativa": false
       }
     },
+    "loja": {
+      "nome": "Loja de Frutas do Porto",
+      "pesos": {
+        "comum": 50,
+        "incomum": 28,
+        "rara": 14,
+        "epica": 6,
+        "lendaria": 2,
+        "mitica": 0
+      },
+      "regiao": null,
+      "garantia": {
+        "ativa": false
+      }
+    },
     "mundo": {
       "nome": "Frutas no mundo aberto",
       "pesos": {

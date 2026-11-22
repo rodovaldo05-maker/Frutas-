@@ -24,6 +24,8 @@ export const STYLES = {
   janela: { color: '#2a3a58', top: '#2a3a58', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.02 },
   agua: { color: '#4fb6d8', top: '#7fd0ea', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.03 },
   lanterna: { color: '#ffd45e', top: '#fff2a0', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.02 },
+  cobertor: { color: '#b8443a', top: '#c8564a', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.03 },
+  moveis: { color: '#7a4e2c', top: '#8a5c36', climbable: false, material: 'madeira', tile: [0.5, 2.4], offset: true, jitter: 0.06 },
 };
 
 const FACES = [

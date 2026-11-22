@@ -954,3 +954,21 @@ body.lefty .act.block { right: auto; left: calc(212px * var(--btn) + var(--safe-
 body.lefty .act.crouch { right: auto; left: calc(240px * var(--btn) + var(--safe-l)); }
 body.lefty .act.sprint { right: auto; left: calc(214px * var(--btn) + var(--safe-l)); }
 .keys { white-space: normal; text-align: center; width: min(900px, 92vw); line-height: 1.5; }
+
+/* celular (v2): sem botão de ataque (toque na tela ataca); Correr ao lado do joystick;
+   Esquiva e Agachar colados no Pular; Defender ao lado */
+.act.jump { width: calc(82px * var(--btn)); height: calc(82px * var(--btn)); right: calc(16px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); }
+.act.dash { width: calc(56px * var(--btn)); height: calc(56px * var(--btn)); right: calc(108px * var(--btn) + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
+.act.crouch { width: calc(52px * var(--btn)); height: calc(52px * var(--btn)); right: calc(104px * var(--btn) + var(--safe-r)); bottom: calc(76px * var(--btn) + var(--safe-b)); }
+.act.block { width: calc(52px * var(--btn)); height: calc(52px * var(--btn)); right: calc(174px * var(--btn) + var(--safe-r)); bottom: calc(14px + var(--safe-b)); }
+.act.sprint {
+  width: calc(56px * var(--btn)); height: calc(56px * var(--btn)); right: auto;
+  left: calc(204px * var(--btn) + var(--safe-l)); bottom: calc(26px + var(--safe-b));
+}
+body.touch .skill-list { bottom: calc(132px * var(--btn) + var(--safe-b)); }
+body.touch .skill-row { height: 22px; }
+body.lefty .act.jump { right: auto; left: calc(16px + var(--safe-l)); }
+body.lefty .act.dash { right: auto; left: calc(108px * var(--btn) + var(--safe-l)); }
+body.lefty .act.crouch { right: auto; left: calc(104px * var(--btn) + var(--safe-l)); }
+body.lefty .act.block { right: auto; left: calc(174px * var(--btn) + var(--safe-l)); }
+body.lefty .act.sprint { left: auto; right: calc(204px * var(--btn) + var(--safe-r)); }

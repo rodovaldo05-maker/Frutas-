@@ -82,7 +82,7 @@ npm run apk        # build + sync + gradle assembleDebug
 | Correr (alterna) | Correr | R | Apertar analógico esquerdo |
 | Pular · salto duplo · planar | Pular (segurar caindo plana) | Espaço | A / ✕ |
 | Esquiva | Esquiva | Shift | B / ◯ |
-| Atacar (combo) | Punho | Clique ou J | X / ▢ ou RT |
+| Atacar (combo) | Tocar na tela | Clique ou J | X / ▢ ou RT |
 | Defender (segurar) | Escudo | Botão direito ou K | RB / R1 ou LT |
 | Equipar Fruta · Arma · Estilo | Barra de baixo | 1 · 2 · 3 · 4 | LB / L1 (próximo) |
 | Habilidades do item equipado | Botões Usar (direita) | Z · X · C · V | Direcional ← ↑ → ↓ |

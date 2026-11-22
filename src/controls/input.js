@@ -151,7 +151,8 @@ export class Input {
       if (!p) return;
       pointers.delete(e.pointerId);
       if (p.kind === 'block') this.setBlock('mouse', false);
-      if (p.kind === 'look' && p.mouse && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 6 && performance.now() - p.at < 350) {
+      // toque rápido na tela (ou clique sem arrastar) = Atacar; arrastar só gira a câmera
+      if (p.kind === 'look' && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < (p.mouse ? 6 : 12) && performance.now() - p.at < (p.mouse ? 350 : 280)) {
         this.pressed.attack = true;
       }
       if (p.kind === 'stick') {

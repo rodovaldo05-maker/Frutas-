@@ -1195,6 +1195,7 @@ body.aboard .act.jump::after {
 .prof-row .bar { height: 14px; }
 
 /* ===== Forma híbrida e despertar (atualização 13) ===== */
+.act.form.full { box-shadow: 0 0 0 3px #ffd36b, 0 0 14px rgba(255, 211, 107, 0.7); }
 .act.form {
   width: calc(50px * var(--btn)); height: calc(50px * var(--btn)); right: auto; left: calc(207px * var(--btn) + var(--safe-l)); bottom: calc(152px * var(--btn) + var(--safe-b));
   font: 800 calc(10px * var(--btn)) var(--body-font); color: #fff1cf;

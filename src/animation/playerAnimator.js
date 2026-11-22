@@ -10,6 +10,7 @@ import { FRUTOMotion } from './fruto-motion.js';
 import { FRUTOBalance } from './fruto-balance.js';
 import { MOVE } from '../movement/config.js';
 import { clamp, damp, lerp, smooth, wrapAngle } from '../core/math.js';
+import { animateFormRig } from '../transformations/forms.js';
 
 const motion = FRUTOMotion;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -142,9 +143,23 @@ export class PlayerAnimator {
     const turn = dt > 0 ? wrapAngle(ctl.yaw - (this.prevYaw ?? ctl.yaw)) / dt : 0;
     this.prevYaw = ctl.yaw;
     this.bank = lerp(this.bank ?? 0, clamp(-turn * 0.3, -0.55, 0.55) * (state === 'glide' ? 1 : 0), damp(5, dt));
+    this.hurt = Math.max(0, this.hurt - dt);
+    // forma de fera (atualização 21): o corpo do laboratório substitui o humano
+    if (this.form) {
+      this.player.setGlider(0, false);
+      const ground = this.groundAt(root.x, root.z, root.y);
+      const res = animateFormRig(this.form, {
+        dt, clock: t, state, speed, maxSpeed: (state === 'swim' ? MOVE.swim : MOVE.run) * (ctl.speedMult ?? 1),
+        action: !ctl.dash ? ctl.action : null, dash: ctl.dash, faint: state === 'faint' ? clamp(2.2 - ctl.faint, 0, 1.55) : 0,
+        air: clamp(Math.max(0, root.y - ground) / 1.08), landing: ctl.landing, swimming: inWater, runBlend: this.runBlend,
+      });
+      this.formPose = res.id;
+      this.updateSounds(ctl, speed);
+      this.updateBlob(ctl, root);
+      return;
+    }
     this.player.setGlider(this.glide, !!ctl.unlocks?.glide);
     this.player.glider.group.rotation.z = this.bank;
-    this.hurt = Math.max(0, this.hurt - dt);
 
     let grounded = false;
     switch (state) {

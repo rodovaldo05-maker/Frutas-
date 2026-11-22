@@ -157,4 +157,4 @@ Legenda: Q = quadros totais; I = quadro de impacto; A = quadros ativos (colisão
 
 ![Quadro de contato dos golpes](m1-golpes.png)
 
-Formas completas (quadrúpedes, aves e dragões inteiros) ainda não existem no jogo; as variantes delas ficam pendentes.
+Formas completas (atualização 21): cada fruta de fera tem os 4 golpes `fruta_m1_n_c` do próprio animal, com o mesmo tempo de impacto; ver docs/08-frutas.md, seção "Formas híbridas e completas".

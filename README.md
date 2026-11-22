@@ -128,6 +128,16 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Formas de fera do laboratório (atualização 21): Lobo, Falcão, Besta, Fênix e os dois Dragões
+usam os corpos híbrido e completo do HTML do Laboratório Voxel (Edição 18), sem mudar os
+modelos: Lobo e Besta completos de quatro patas, Falcão e Fênix aves, Dragão Ocidental com
+quatro patas e asas. O Dragão Oriental completo é novo: uma serpente celestial articulada de
+doze segmentos que paira e ondula, com a cabeça, os chifres, os bigodes e a cauda do
+laboratório. Botão Forma (ou H): humana → híbrida (domínio 20) → completa (domínio 50) →
+humana. As animações de golpe são novas: na híbrida, os 4 golpes de M1 com cauda, asas e
+mandíbula acompanhando; na completa, golpes do próprio animal (patada, mordida, bote, cauda,
+chifrada, carga, batida de asa, mergulho, ascensão, garra anterior, ondulação e rugido).
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

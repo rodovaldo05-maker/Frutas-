@@ -402,6 +402,35 @@ Código: `src/fruits/powers.js` (formato de cada habilidade), `src/combat/powers
 (domínio), `src/ui/skillBar.js` (slots e Energia); testes em `tests/powers.test.js`.
 
 
+## Formas híbridas e completas (atualização 21)
+
+- **Corpos.** Os módulos de fera do HTML do laboratório entram no jogo sem mudança de modelo
+  (`src/characters/fruto-animals.js`: FRUTOWolf, FRUTOFalcon, FRUTOMythBeast, FRUTOMythPhoenix,
+  FRUTOMythEast, FRUTOMythWest). A forma escolhida substitui o corpo humano; o capuz de colisão
+  continua o mesmo e a câmera recua (×1,12 na híbrida, ×1,45 na completa).
+- **Dragão Oriental completo (novo).** No laboratório era um quadrúpede; agora é uma serpente
+  celestial (`src/characters/orientalSerpent.js`): peito, pescoço e 12 segmentos em cadeia com
+  juba nos primeiros e espinhos dourados no resto, placas de marfim no ventre, quatro patas
+  curtas e a cabeça, a mandíbula, os chifres, os bigodes e as folhas da cauda esculpidos pelo
+  laboratório. Paira acima do chão, ondula da cabeça para a cauda e voa mais alto no ar.
+- **Ciclo.** Botão Forma ou H: humana → híbrida (domínio 20) → completa (domínio 50) → humana.
+  Trocar de forma zera a sequência do M1 e dá 0,6 s de invulnerabilidade.
+- **Números da forma completa.** Lobo +45% de velocidade e +30% corpo a corpo; Besta +45% corpo
+  a corpo e −20% de dano físico; Falcão +4 batidas no ar e plana 60% mais rápido; Fênix +4
+  batidas e 4 de vida por segundo; Dragão Oriental +4 impulsos e +35% de dano da fruta; Dragão
+  Ocidental +3 batidas e −15% de dano físico. Os golpes alcançam 35% mais longe (híbrida 10%).
+- **Animações novas (`src/transformations/formM1.js`).** Na híbrida, o M1 usa a variante `_h`
+  e a cauda chicoteia da base para a ponta, as asas varrem à frente e a mandíbula abre na
+  mordida. Na completa, cada golpe é do próprio animal, escrito na linguagem de pose do
+  laboratório (tabelas de ação do Lobo e do Falcão), com o impacto no mesmo quadro do M1:
+  - Lobo: patada dianteira, patada cruzada, mordida, bote.
+  - Besta: patada dianteira, golpe de cauda, chifrada, carga.
+  - Dragão Ocidental: patada, mordida, chicote de cauda, esmagamento.
+  - Falcão: patada de talões, batida lateral de asa, garras em voo, mergulho com asas abertas.
+  - Fênix: corte de asa, garras, giro de asas e cauda, ascensão.
+  - Dragão Oriental (serpente): garra anterior, chicote de cauda, ondulação e avanço, rugido.
+  A locomoção (andar, galope, voo, planeio, nado, queda) é a do próprio laboratório.
+
 ## Efeitos visuais das habilidades (atualização 18)
 
 Os efeitos vêm do **Laboratório Voxel** (`FRUTO_Laboratorio_Voxel_Edicao_18.html`): o módulo

@@ -247,9 +247,13 @@ describe('teste 4: cancelamentos, atordoamento, morte e troca de fruta', () => {
 
   it('esquiva só cancela depois da janela de colisão; forma híbrida usa a variante', () => {
     const { ctl, combat, input } = rig();
-    combat.hybrid = () => true;
+    combat.formShape = () => 'hibrida';
     combat.update(FRAME, input(true), []);
     expect(ctl.action.clip).toBe('lobo_m1_1_h');
+    combat.formShape = () => 'completa';
+    combat.update(FRAME, input(), []);
+    expect(ctl.action.clip).toBe('lobo_m1_1_c');
+    combat.formShape = () => 'hibrida';
     const blocked = { ...input(), dashPressed: true };
     combat.update(FRAME, blocked, []);
     expect(blocked.dashPressed).toBe(false); // antes do impacto o golpe vai até o fim

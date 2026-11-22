@@ -5,7 +5,7 @@ import { RaceSystem } from '../src/races/raceSystem.js';
 import { AWAKEN, awakenState, trialHit, normalizeAwaken, trialProgress } from '../src/fruits/awakening.js';
 import { FruitPowers } from '../src/combat/powers.js';
 import { powersOf } from '../src/fruits/powers.js';
-import { FORMS, FORM_IDS, FORM_UNLOCK, formBlock, formMods, addFormParts, removeFormParts } from '../src/transformations/forms.js';
+import { FORMS, FORM_IDS, FORM_UNLOCK, COMPLETE_UNLOCK, formBlock, formMods, nextShape, createFormRig, showForm, disposeFormRig, poseIdFor, animateFormRig } from '../src/transformations/forms.js';
 import { migrate, newSave } from '../src/saves/saveSystem.js';
 import { makeSim } from './helpers/sim.js';
 import { MOVE } from '../src/movement/config.js';
@@ -148,17 +148,68 @@ describe('formas híbridas', () => {
     for (const id of ['falcao', 'fenix', 'oriental', 'ocidental']) expect(formMods(id).extraJumps).toBe(2);
   });
 
-  it('as partes entram no corpo e saem sem sobrar nada', () => {
-    const joints = Object.fromEntries(['cabeca', 'tronco', 'cintura', 'mao_E', 'mao_D'].map((k) => [k, new THREE.Group()]));
-    const count = () => Object.values(joints).reduce((n, j) => n + j.children.length, 0);
-    for (const id of FORM_IDS) {
-      const info = addFormParts({ joints }, id, '#ff0000');
-      expect(count()).toBeGreaterThan(0);
-      if (['falcao', 'fenix', 'ocidental'].includes(id)) expect(info.wings.length).toBe(2);
-      removeFormParts(info);
-      expect(count()).toBe(0);
-    }
+
+  it('forma completa no domínio 50; o botão passa por humana → híbrida → completa → humana', () => {
+    expect(formBlock('lobo', COMPLETE_UNLOCK - 1, 'completa')).toMatch(/completa/);
+    expect(formBlock('lobo', COMPLETE_UNLOCK, 'completa')).toBeNull();
+    expect(nextShape(null, 80)).toBe('hibrida');
+    expect(nextShape('hibrida', 80)).toBe('completa');
+    expect(nextShape('hibrida', 30)).toBeNull();
+    expect(nextShape('completa', 80)).toBeNull();
+    expect(formMods('lobo', 'completa').speed).toBeGreaterThan(formMods('lobo').speed);
+    expect(formMods('besta', 'completa').mitigation).toBeGreaterThan(formMods('besta').mitigation);
     expect(Object.keys(FORMS)).toHaveLength(6);
+  });
+
+  it('os 12 corpos do laboratório montam, animam e trocam com o humano sem sobrar nada', () => {
+    const body = { root: new THREE.Group() };
+    const human = new THREE.Group();
+    body.root.add(human);
+    for (const id of FORM_IDS) {
+      for (const shape of ['hibrida', 'completa']) {
+        const rig = createFormRig(id, shape, 2);
+        expect(Object.keys(rig.joints).length).toBeGreaterThan(15);
+        showForm(body, rig);
+        expect(human.visible).toBe(false);
+        for (const clip of ['idle', `${id}_m1_1`, `${id}_m1_4`]) {
+          const r = animateFormRig(rig, { dt: 1 / 60, clock: 1, state: 'ground', speed: 3, maxSpeed: 6, action: clip === 'idle' ? null : { clip, t: 0.12 }, air: 0 });
+          expect(r.id).not.toBe(undefined);
+          rig.root.traverse((o) => {
+            expect(Number.isFinite(o.position.x + o.position.y + o.position.z + o.quaternion.x + o.quaternion.w)).toBe(true);
+          });
+        }
+        disposeFormRig(rig);
+        showForm(body, null);
+        expect(human.visible).toBe(true);
+        expect(body.root.children).toEqual([human]);
+      }
+    }
+  });
+
+  it('cada forma tem o próprio golpe: híbrida _h, completa _c; Oriental completo é a serpente', () => {
+    const hib = createFormRig('besta', 'hibrida', 2);
+    const com = createFormRig('besta', 'completa', 2);
+    expect(poseIdFor(hib, 'besta_m1_2')).toBe('besta_m1_2_h');
+    expect(poseIdFor(com, 'besta_m1_2')).toBe('besta_m1_2_c');
+    expect(poseIdFor(com, 'besta0')).toBe('lobo0'); // técnica da fruta: clipe de origem do laboratório
+    for (const id of FORM_IDS) {
+      const rig = createFormRig(id, 'completa', 2);
+      for (let n = 1; n <= 4; n++) expect(poseIdFor(rig, `${id}_m1_${n}`)).toBe(`${id}_m1_${n}_c`);
+    }
+    const serpent = createFormRig('oriental', 'completa', 2);
+    expect(serpent.serpent).toBe(true);
+    expect(Object.keys(serpent.joints).filter((k) => k.startsWith('corpo_')).length).toBe(12);
+    expect(serpent.joints.cabeca && serpent.joints.mandibula && serpent.joints.bigode_E && serpent.joints.orelha_E).toBeTruthy();
+    // a garra anterior sobe a pata dianteira no preparo e corta no impacto
+    const pose = (t) => {
+      animateFormRig(serpent, { dt: 0, clock: 0, state: 'ground', speed: 0, maxSpeed: 6, action: { clip: 'oriental_m1_1', t }, air: 0 });
+      return serpent.joints.perna_dianteira_E.rotation.x;
+    };
+    expect(pose(0.04)).toBeLessThan(pose(0)); // pata erguida à frente
+    // a serpente paira e ondula
+    animateFormRig(serpent, { dt: 0.5, clock: 2, state: 'ground', speed: 6, maxSpeed: 6, air: 0 });
+    expect(serpent.joints.peitoral.position.y).toBeGreaterThan(1.4);
+    expect(Math.abs(serpent.joints.corpo_6.rotation.y)).toBeGreaterThan(0.001);
   });
 });
 

@@ -441,7 +441,7 @@ export class LabFx {
   // Efeito do M1 (atualização 20; Prompt Mestre, seção 4): sai do evento de impacto da
   // animação, uma vez por golpe. Contato básico do laboratório (força pelo passo 1–4) mais o
   // detalhe próprio do golpe, curto e dentro do alcance básico (sem projétil gratuito).
-  m1(fruitId, attack, at, dir) {
+  m1(fruitId, attack, at, dir, shape = null) {
     const f = this.fruit(fruitId);
     if (!f) return;
     const fx = this.fx;
@@ -455,7 +455,8 @@ export class LabFx {
     const floor = this.floor(P, 0.05);
     const ahead = (k, y = 0) => P.clone().addScaledVector(D, k).add(V(0, y, 0));
     try {
-      fx.basicContact({ point: P, dir: D, fruit: f, form: 'humana', strike: tier });
+      const form = shape ?? 'humana';
+      fx.basicContact({ point: P, dir: D, fruit: f, form, strike: tier });
       switch (attack.vfx) {
         // Impacto: refração do ar, linhas de pressão e onda curta
         case 'onda': fx.pulse(P, '#cfe0ff', 0.7, 0.32, true); break;
@@ -531,7 +532,7 @@ export class LabFx {
         case 'esmagamento': fx.cracks(floor, '#edb34c', 1.6, 0.8); fx.pulse(floor, '#ffd27a', 2, 0.45); fx.sparks(floor, '#b89a78', 16, 3.4, { gravity: 6, life: 0.5, size: 0.08 }); break;
         default:
       }
-      this.myth(f, 'hit', P, D, tier);
+      if (f && MYTH.has(f.id)) FRUTOMythFX.emit(this.fx, f, 'hit', P, D, form, tier);
     } catch (e) {
       // efeito nunca derruba o combate (avisa uma vez)
       if (!this.m1Warned) {
@@ -542,7 +543,7 @@ export class LabFx {
   }
 
   // aura da fruta em volta do corpo (forte no despertar)
-  aura(fruitId, body, awakened, dt) {
-    this.fx.aura(fruitId ? this.fruit(fruitId) : null, body, awakened, dt, 'humana');
+  aura(fruitId, body, awakened, dt, shape = null) {
+    this.fx.aura(fruitId ? this.fruit(fruitId) : null, body, awakened, dt, shape ?? 'humana');
   }
 }

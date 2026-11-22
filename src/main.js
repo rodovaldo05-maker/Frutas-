@@ -25,7 +25,7 @@ import { NODE_TYPES } from './crafting/professions.js';
 import { MATERIALS, TOOLS, addMaterial, materialDrop } from './crafting/materials.js';
 import { ForgeUi } from './ui/forgeUi.js';
 import { AWAKEN, awakenState, trialHit, trialProgress } from './fruits/awakening.js';
-import { FORMS, FORM_TIME, formMods, formBlock, hasForm, addFormParts, removeFormParts, animateForm } from './transformations/forms.js';
+import { FORM_TIME, formMods, formBlock, hasForm, formInfo, nextShape, createFormRig, showForm, disposeFormRig, WINGED } from './transformations/forms.js';
 import { SPECS, SPEC_LEVEL, SPEC_CHANGE_COST } from './races/races.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
@@ -230,7 +230,7 @@ async function boot() {
       case 'doubleJump':
         audio.play('base', 'wing', 0.8);
         raceSys.onExtraJump(data.n);
-        if (save.race === 'ceu' || form?.info?.wings?.length) wingBurst = 1;
+        if (save.race === 'ceu' || (form && WINGED[form.id])) wingBurst = 1;
         break;
       case 'wallJump': audio.play('base', 'jump', 1); break;
       case 'dash': audio.play('base', 'dash', 0.8); break;
@@ -255,7 +255,7 @@ async function boot() {
   let condTimer = 0;
   let playerTint = '#000000';
   let wingBurst = 0;
-  let form = null; // forma híbrida ativa { id, info } (atualização 13)
+  let form = null; // forma de fera ativa { id, shape, rig } (atualizações 13 e 21)
   let raceParts = save.race ? addRaceParts(player.body, save.race) : null;
   const raceSys = new RaceSystem({ ctl, save, onEvent: (name, d) => onRaceEvent(name, d) });
   let baseRegen = 1;
@@ -270,7 +270,7 @@ async function boot() {
     baseRegen = b.staminaRegen * (1 - g.pesoPenalty);
     ctl.stamina.regenMult = baseRegen;
     const rm = raceSys.mods;
-    const fm = formMods(form?.id);
+    const fm = formMods(form?.id, form?.shape);
     ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed * rm.glideSpeed * fm.glide, glideFall: b.glideFall * rm.glideFall };
     ctl.race = { extraJumps: rm.extraJumps + fm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda) * fm.fall, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
     ctl.speedMult = fm.speed;
@@ -363,7 +363,7 @@ async function boot() {
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
       const g = gearTotals(save);
-      const fm = formMods(form?.id);
+      const fm = formMods(form?.id, form?.shape);
       const wake = powers?.awakened && save.equipped === 'fruta' ? AWAKEN.damage : 1; // combo da fruta desperta
       return { melee: m.melee * rm.meleeMult * fm.melee * wake, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
@@ -382,7 +382,7 @@ async function boot() {
           const f = eatenFruit();
           const dir = { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) };
           const at = m1Point(a, d.target);
-          if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir);
+          if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir, form?.shape);
           audio.play(d.landed ? 'impacto' : 'base', d.landed ? 'acerto' : 'swing', a.heavy ? 1 : 0.55 + a.m1 * 0.08);
           if (d.landed) shake = Math.max(shake, [0.08, 0.1, 0.14, 0.22][a.m1 - 1]);
           if (d.landed && a.heavy) vibrate(30);
@@ -483,13 +483,14 @@ async function boot() {
     },
   });
   // forma híbrida ativa: o M1 usa a variante híbrida dos golpes (mesmo quadro de impacto)
-  combat.hybrid = () => !!form;
+  combat.formShape = () => form?.shape ?? null;
+  combat.formReach = () => (form?.shape === 'completa' ? 1.35 : form ? 1.1 : 1);
   // Ponto do impacto do M1: o encaixe do golpe (punho, palma, pé, boca) no corpo animado;
   // com alvo atingido, entre o encaixe e o peito do alvo
   const m1Tmp = new THREE.Vector3();
   const m1Tmp2 = new THREE.Vector3();
   function m1Point(a, target) {
-    const sk = player.body.sockets;
+    const sk = form?.rig?.sockets ?? player.body.sockets;
     let p;
     if (a.socket === 'palmas' && sk.palma_E && sk.palma_D) p = sk.palma_E.getWorldPosition(m1Tmp).add(sk.palma_D.getWorldPosition(m1Tmp2)).multiplyScalar(0.5);
     else if (sk[a.socket]) p = sk[a.socket].getWorldPosition(m1Tmp);
@@ -513,16 +514,6 @@ async function boot() {
     m1El.classList.add('on');
     clearTimeout(m1Hide);
     m1Hide = setTimeout(() => m1El.classList.remove('on'), 1300);
-  }
-  // Cauda e asas da forma híbrida acompanham o golpe (chicote de cauda, corte de asa)
-  function m1Appendage() {
-    const cur = combat.runner.current;
-    if (!cur || !form) return null;
-    const a = combat.runner.attacks[cur.id];
-    if (!a?.appendage || (a.appendage !== 'cauda' && a.appendage !== 'asas')) return null;
-    const tm = cur.tm;
-    const k = Math.max(0, Math.min(1, (cur.t - tm.release * 0.45) / (tm.duration - tm.release * 0.45)));
-    return { part: a.appendage, k, side: a.kind === 'tail' && cur.step % 2 ? -1 : 1 };
   }
 
   // ===== Condições (atualização 6): queimando, congelado, lento, choque, molhado =====
@@ -645,33 +636,60 @@ async function boot() {
   });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
-  // Forma híbrida (frutas de fera; atualização 13): partes no corpo e números próprios
-  function toggleForm(off = false) {
+  // Formas de fera (atualizações 13 e 21): corpos híbrido e completo do laboratório, com
+  // números próprios. O botão Forma (ou H) passa por humana → híbrida → completa → humana.
+  const formRigs = new Map(); // corpos já montados (trocar de forma não remonta o modelo)
+  function rigFor(species, shape) {
+    const key = `${species}/${shape}`;
+    if (!formRigs.has(key)) formRigs.set(key, createFormRig(species, shape, renderer.quality === 'leve' ? 2 : 1));
+    return formRigs.get(key);
+  }
+  function setForm(shape, quiet = false) {
     const f = eatenFruit();
     combat.runner.reset(); // transformar é ação incompatível: a sequência do M1 recomeça
-    if (form) {
-      removeFormParts(form.info);
+    ctl.action = null;
+    if (form) disposeFormRig(form.rig);
+    if (!shape) {
+      const had = !!form;
       form = null;
+      showForm(player.body, null);
+      animator.form = null;
       applyStatus();
-      $('btn-form').classList.remove('on');
-      if (!off) {
+      $('btn-form').classList.remove('on', 'full');
+      $('btn-form').querySelector('span').textContent = 'Forma';
+      cam.sizeMult = 1;
+      if (had && !quiet) {
         hud.toast('Forma humana');
         fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f?.color ?? '#ffffff', { count: 14, speed: 3, up: 2 });
       }
       return;
     }
-    if (off) return;
-    const why = formBlock(f?.id, f ? domainOf(save, f.id).level : 1);
+    const rig = rigFor(f.id, shape);
+    form = { id: f.id, shape, rig };
+    showForm(player.body, rig);
+    animator.form = rig;
+    ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME); // invulnerável durante a troca
+    fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f.color, { count: shape === 'completa' ? 48 : 32, speed: 6, up: 4 });
+    fx.ring(ctl.pos, f.color, shape === 'completa' ? 5 : 3.5, FORM_TIME);
+    audio.play('base', 'wing', 0.9);
+    const info = formInfo(f.id, shape);
+    hud.toast(`${info.nome}: ${info.desc}`, 'gold');
+    $('btn-form').classList.add('on');
+    $('btn-form').classList.toggle('full', shape === 'completa');
+    $('btn-form').querySelector('span').textContent = shape === 'completa' ? 'Completa' : 'Híbrida';
+    cam.sizeMult = shape === 'completa' ? 1.45 : 1.12;
+    applyStatus();
+  }
+  function toggleForm(off = false) {
+    const f = eatenFruit();
+    if (off) return setForm(null, true);
+    const level = f ? domainOf(save, f.id).level : 1;
+    const next = form ? nextShape(form.shape, level) : 'hibrida';
+    if (!next) return setForm(null);
+    const why = formBlock(f?.id, level, next);
     if (why) return hud.toast(why);
     if (!['ground', 'air', 'glide'].includes(ctl.state)) return hud.toast('Transforme-se em terra ou no ar.');
-    form = { id: f.id, info: addFormParts(player.body, f.id, f.color) };
-    ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME); // invulnerável durante a troca
-    fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f.color, { count: 32, speed: 6, up: 4 });
-    fx.ring(ctl.pos, f.color, 3.5, FORM_TIME);
-    audio.play('base', 'wing', 0.9);
-    hud.toast(`${FORMS[f.id].nome}: ${FORMS[f.id].desc}`, 'gold');
-    $('btn-form').classList.add('on');
-    applyStatus();
+    setForm(next);
   }
   const domainBudget = new Map();
   let deniedAt = -9;
@@ -2142,7 +2160,7 @@ async function boot() {
       if (inp.formPressed) toggleForm();
       // vida por segundo: Fênix híbrida e Maré Viva (na água)
       {
-        const regen = formMods(form?.id).regen + ((ctl.state === 'swim' || ctl.state === 'dive') ? raceSys.mods.waterRegen : 0);
+        const regen = formMods(form?.id, form?.shape).regen + ((ctl.state === 'swim' || ctl.state === 'dive') ? raceSys.mods.waterRegen : 0);
         if (regen > 0 && ctl.faint <= 0 && ctl.health < ctl.maxHealth) ctl.health = Math.min(ctl.maxHealth, ctl.health + regen * dt);
       }
       raceSys.update(dt);
@@ -2300,7 +2318,7 @@ async function boot() {
       fx.update(animDt);
       lab.update(animDt);
       // aura da fruta do laboratório: com o slot da fruta equipado; mais forte no despertar
-      lab.aura(mode === 'game' && save.equipped === 'fruta' && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened, animDt);
+      lab.aura(mode === 'game' && save.equipped === 'fruta' && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened, animDt, form?.shape);
       if (mode === 'game') {
         skillBar.update(powers, true, save.equipped === 'arma' ? blade : save.equipped === 'estilo' ? art : powers);
         const learned = save.vontade.armadura || save.vontade.percepcao;
@@ -2338,7 +2356,6 @@ async function boot() {
       }
       wingBurst = Math.max(0, wingBurst - animDt * 2.2);
       if (raceParts?.wings) flapWings(raceParts, clock, wingBurst);
-      if (form) animateForm(form.info, clock, wingBurst, ctl.speed, m1Appendage());
       // aura do despertar: brilho pulsando na cor da fruta e faíscas em volta (o corpo não muda)
       if (powers.awakened && mode === 'game') {
         const c = eatenFruit()?.color ?? '#ffd36b';
@@ -2646,10 +2663,10 @@ async function boot() {
     fleet,
     beasts,
     motion: FRUTOMotion,
+    animator,
     toggleForm: (off) => toggleForm(off),
     spawnWreck: () => spawnWreck(),
     forgeUi,
-    toggleForm: () => toggleForm(),
     get form() {
       return form;
     },

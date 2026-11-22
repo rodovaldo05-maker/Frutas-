@@ -64,7 +64,8 @@ export class FollowCamera {
       if (diff < 2.2) this.yaw = lerpAngle(this.yaw, behind, damp(0.9 * clamp(speed / 6), dt));
     }
 
-    const want = ((DISTANCE[state] ?? 8.6) + (state === 'ground' ? Math.max(0, speed - 4.5) * 0.25 : 0)) * this.zoom;
+    // formas grandes (atualização 21): a câmera recua conforme o tamanho do corpo
+    const want = ((DISTANCE[state] ?? 8.6) + (state === 'ground' ? Math.max(0, speed - 4.5) * 0.25 : 0)) * this.zoom * (this.sizeMult ?? 1);
     this.distance = lerp(this.distance, want, damp(3, dt));
     const cp = Math.cos(this.pitch);
     const dir = new THREE.Vector3(Math.sin(this.yaw) * cp, -Math.sin(this.pitch), Math.cos(this.yaw) * cp);

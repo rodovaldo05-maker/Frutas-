@@ -72,8 +72,11 @@ export class PlayerCombat {
     if (cur) {
       c.attackLock = Math.max(c.attackLock, 0.05);
       const a = this.runner.attacks[cur.id];
-      // forma híbrida: variante própria do golpe (mesmo tempo, mesmo quadro de impacto)
-      c.action = { clip: (this.hybrid?.() && a.clipHybrid) || a.clip, t: cur.t };
+      // forma de fera: variante própria do golpe (mesmo tempo, mesmo quadro de impacto) —
+      // híbrida `_h` (clipe humanoide), completa `_c` (golpe do corpo do animal)
+      const shape = this.formShape?.() ?? null;
+      const clip = shape === 'hibrida' && a.clipHybrid ? a.clipHybrid : shape === 'completa' && a.m1 && a.clipHybrid ? `${a.clip}_c` : a.clip;
+      c.action = { clip, t: cur.t };
     } else if (!this.powers?.busy) c.action = null;
     if (strike) this.strike(strike, targets);
   }
@@ -117,7 +120,10 @@ export class PlayerCombat {
     let first = null;
     for (const t of targets) {
       if (!t.alive) continue;
-      if (!inReach(me, { x: t.pos.x, y: t.pos.y, z: t.pos.z }, attack, { radius: t.radius ?? 0.9, arc: attack.arc ?? 0.45 })) continue;
+      // corpos maiores (formas de fera) alcançam mais longe
+      const reach = this.formReach?.() ?? 1;
+      const hitbox = reach === 1 ? attack : { ...attack, range: attack.range * reach };
+      if (!inReach(me, { x: t.pos.x, y: t.pos.y, z: t.pos.z }, hitbox, { radius: t.radius ?? 0.9, arc: attack.arc ?? 0.45 })) continue;
       // espada: pontos de Espada × proficiência; soco e combo de fruta: pontos de Força
       const mult = (attack.weapon ? s.weapon * (s.prof ?? 1) : s.melee * (attack.styleMult ?? 1)) * (s.armor ?? 1);
       const damage = computeDamage(attack.damage, { mult, defense: t.defense ?? 0 });

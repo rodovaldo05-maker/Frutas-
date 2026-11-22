@@ -116,8 +116,8 @@ Código: `src/progression/training.js` (curva, atributos, bônus, antifarm, rast
 - Partes visuais presas ao corpo: nadadeiras e brânquias (Aquático), marcas que brilham
   (Ghoul), asas de penas que batem nos saltos extras (Homem do Céu).
 - Maestria racial de 1 a 100 (curva × 1,25), marcos nos níveis 20, 40, 60, 80 e 100 (aba
-  Raça em Personagem). Especializações (Nv. 40/80) e o despertar com prova racial ficam para
-  a atualização 13.
+  Raça em Personagem). Especializações (Nv. 40/80) e o despertar com prova racial: seção 11
+  (atualização 13).
 
 Código: `src/races/races.js`, `src/races/raceSystem.js`, `src/races/raceParts.js`; testes em
 `tests/races.test.js`.
@@ -170,3 +170,51 @@ Código: `src/items/items.js`, `src/items/gearParts.js`; testes em `tests/items.
 - **Missões de coleta** no Mestre de Missões: pescar 3 peixes ou minerar 5 minérios.
 
 Código: `src/crafting/`, `src/ui/forgeUi.js`; testes em `tests/crafting.test.js`.
+
+
+## 11. Situação: especializações e despertares (atualização 13)
+
+**Especialização racial** (aba Personagem › Raça): na maestria 40 o jogador escolhe uma de duas
+trilhas; na 80 ela é aprimorada. Escolher é grátis; trocar custa 2.500 moedas.
+
+| Raça | Trilha | Nv. 40 | Nv. 80 |
+|---|---|---|---|
+| Humano | Versátil | Adaptação Tática dura 15 s e recarrega 25% mais rápido | 20 s e 40% mais rápido |
+| Humano | Disciplinado | +8% de dano corpo a corpo e com espada | +15% e −5% de dano físico recebido |
+| Aquático | Correnteza | +20% nadando, Impulso Abissal 30% mais forte | +35% e 50% mais forte |
+| Aquático | Maré Viva | Na água, +2 de vida por segundo | +4 por segundo e +5% de resistência elemental |
+| Ghoul | Faminto | Sifão devolve 50% mais energia e cura 6 | O dobro de energia e cura 12 |
+| Ghoul | Essência Pura | +10% de dano das habilidades de fruta | +20% e −10% de recarga das habilidades de fruta |
+| Homem do Céu | Planador | Plana 25% mais rápido e cai 25% mais devagar | 40% e 40% |
+| Homem do Céu | Acrobata | Passo Celeste recarrega 40% mais rápido | +1 salto extra |
+
+**Despertar racial** (maestria 100, não automático): a prova racial é derrotar os 3 Recrutas
+elementais (Brasa, Geada e Tormenta) em até 4 minutos sem desmaiar. Desperta: a habilidade
+ativa recarrega pela metade e o efeito fica 50% mais forte.
+
+**Despertar das frutas** (slot 4, tecla V; doc 08): libera no domínio 59 da fruta depois da
+Prova do Despertar (acertar 30 habilidades da fruta em inimigos; o slot mostra "Prova n/30").
+Ligado: precisa de 45 de energia, custa 15 para começar e 4 por segundo, desliga sozinho sem
+energia. Dá +30% de dano da fruta (habilidades e combo) e recargas 50% mais rápidas; o corpo
+ganha um brilho pulsando na cor da fruta e faíscas em volta, sem mudar de forma. O nome vem da
+ficha da fruta (ex.: Coração da Fornalha, Era Glacial).
+
+**Formas híbridas** (frutas de fera, domínio 20, tecla H ou botão Forma): partes em blocos
+presas ao corpo e números próprios; transformar dá 0,6 s de invulnerabilidade e não gasta
+energia. Trocar de fruta volta à forma humana.
+
+| Forma | Partes | Efeito |
+|---|---|---|
+| Lobo | Orelhas, focinho, pelagem nos ombros, garras, cauda | +20% de velocidade, +15% de dano corpo a corpo e da fruta |
+| Besta | Chifres, ombros com espinhos, garras, cauda | +25% corpo a corpo, −10% de dano físico recebido, 5% mais lenta |
+| Falcão | Asas de penas, bico, penas da cauda | +2 batidas no ar, plana 30% mais rápido, metade do dano de queda |
+| Fênix | Asas de fogo azul, crista, cauda | +2 batidas no ar, recupera 2 de vida por segundo, +25% da fruta |
+| Dragão Oriental | Juba, chifres em galho, bigodes, cauda longa | +2 batidas no ar, +25% da fruta |
+| Dragão Ocidental | Asas de dragão, chifres, espinhos nas costas, cauda | +2 batidas no ar, −5% de dano físico recebido |
+
+As formas completas (lobo quadrúpede, aves e dragões com controladores próprios) ficam para
+depois.
+
+Código: `src/races/races.js` e `raceSystem.js` (trilhas e prova), `src/fruits/awakening.js`,
+`src/combat/powers.js` (despertar), `src/transformations/forms.js`; testes em
+`tests/awakening.test.js`.

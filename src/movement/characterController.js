@@ -529,7 +529,7 @@ export class CharacterController {
     if (this.inWater) target *= clamp(1 - this.feetDepth * 0.12, 0.55, 1); // água rasa
     if (this.lockT > 0) target *= 0.25;
     if (this.guarding) target = Math.min(target, MOVE.walk * 0.45); // defendendo: passos curtos
-    target *= this.slowMult ?? 1; // condição Lento (gelo)
+    target *= (this.slowMult ?? 1) * (this.speedMult ?? 1); // condição Lento (gelo) e forma híbrida
     // subida íngreme cansa um pouco (até 30% mais devagar)
     const gn = this.groundNormal;
     const uphill = Math.max(0, -(gn.x * w.x + gn.z * w.z));

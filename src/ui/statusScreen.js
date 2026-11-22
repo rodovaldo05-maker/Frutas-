@@ -11,7 +11,7 @@ import { STATUS_KEYS, STATUS_INFO, TRAINED_TWIN, allocate, resetStatus, maxHealt
 import { ICONS } from './icons.js';
 import { fruitName } from '../fruits/catalog.js';
 import { domainProgress } from '../progression/domain.js';
-import { RACES, raceXpToNext } from '../races/races.js';
+import { RACES, raceXpToNext, SPECS, SPEC_LEVEL, SPEC_UP_LEVEL, SPEC_CHANGE_COST, RACE_TRIAL, RACE_MAX, AWAKENED_TEXT } from '../races/races.js';
 import { ITEMS, SLOTS, SLOT_NAMES, QUALITY, gearTotals, equipItem, unequip, isBroken, itemMult, itemLabel } from '../items/items.js';
 
 const $ = (id) => document.getElementById(id);
@@ -19,10 +19,18 @@ const fmt = (n) => n.toLocaleString('pt-BR');
 const ICON = { forca: 'fist', defesa: 'shield', fruta: 'fruit', espada: 'sword', vitalidade: 'vital' };
 
 export class StatusScreen {
-  constructor({ save, onChange, profHtml = () => '' }) {
+  constructor({ save, onChange, profHtml = () => '', raceActions = {} }) {
     this.save = save;
     this.onChange = onChange;
     this.profHtml = profHtml; // aba Profissões (atualização 12)
+    this.raceActions = raceActions; // especialização e prova racial (atualização 13)
+    $('pane-race').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-spec], button[data-trial]');
+      if (!b) return;
+      if (b.dataset.spec) this.raceActions.choose?.(b.dataset.spec);
+      else this.raceActions.trial?.();
+      this.render();
+    });
     this.tab = 'status';
     $('train-tabs').addEventListener('click', (e) => {
       const b = e.target.closest('[data-ttab]');
@@ -155,6 +163,16 @@ export class StatusScreen {
     const m = s.raceMastery;
     const p = m.level >= 100 ? 1 : m.xp / raceXpToNext(m.level);
     const marcos = Object.entries(r.marcos).map(([lv, nome]) => `<li class="${m.level >= lv ? 'on' : ''}"><i>Nv. ${lv}</i> ${nome}${lv === '100' ? ' <small>(despertar com prova racial)</small>' : ''}</li>`).join('');
+    // especialização (Nv. 40, aprimora no 80) e prova racial (Nv. 100)
+    const specs = Object.entries(SPECS[r.id] ?? {}).map(([id, sp]) => {
+      const on = s.raceSpec === id;
+      const can = m.level >= SPEC_LEVEL;
+      const btn = on ? '<span class="chip comum"><b>Escolhida</b></span>' : can ? `<button class="btn ${s.raceSpec ? '' : 'gold'}" data-spec="${id}">${s.raceSpec ? `Trocar · ${fmt(SPEC_CHANGE_COST)}` : 'Escolher'}</button>` : `<small>Maestria ${SPEC_LEVEL}</small>`;
+      return `<div class="spec-card ${on ? 'on' : ''}" style="--rc:${r.cor}"><b>${sp.nome}</b><small>Nv. ${SPEC_LEVEL}: ${sp.d40}</small><small class="${m.level >= SPEC_UP_LEVEL && on ? 'up' : ''}">Nv. ${SPEC_UP_LEVEL}: ${sp.d80}</small>${btn}</div>`;
+    }).join('');
+    const trial = s.raceAwakened
+      ? `<p class="up"><b>Despertar racial ativo:</b> ${AWAKENED_TEXT}</p>`
+      : m.level >= RACE_MAX ? `<p>${RACE_TRIAL.texto}</p><button class="btn gold" data-trial="1">Iniciar prova racial</button>` : `<p class="muted">Na maestria 100: ${RACE_TRIAL.texto}</p>`;
     $('pane-race').innerHTML = `
       <div class="race-head" style="--rc:${r.cor}"><b>${r.nome}</b><span>${r.titulo}</span></div>
       <div class="race-mastery"><span>Maestria racial <b>Nv. ${m.level}</b></span><div class="bar xp"><i style="transform:scaleX(${p})"></i><em><span>${Math.floor(p * 100)}% · ${fmt(Math.floor(m.xp))}/${fmt(raceXpToNext(m.level))}</span></em></div></div>
@@ -163,7 +181,9 @@ export class StatusScreen {
           <h4>Ativa: ${r.ativa.nome} <small>(${r.ativa.recarga} s)</small></h4><p>${r.ativa.desc}</p></div>
         <div><h4>Marcos</h4><ul class="race-marcos">${marcos}</ul>
           <h4>Como treinar</h4><p>${r.treino}</p><p class="muted">${r.limitacao}</p></div>
-      </div>`;
+      </div>
+      <h4>Especialização</h4><div class="spec-cards">${specs}</div>
+      <h4>Despertar racial</h4>${trial}`;
   }
 
   // Equipamento: encaixes, itens da mochila e totais (com tetos e peso)

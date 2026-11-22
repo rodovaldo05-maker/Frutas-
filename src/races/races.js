@@ -49,11 +49,42 @@ export const RACES = {
 };
 export const RACE_IDS = Object.keys(RACES);
 
+// Especializações (atualização 13): duas trilhas por raça, escolhidas na maestria 40 e
+// aprimoradas na 80. Trocar depois custa moedas (SPEC_CHANGE_COST).
+export const SPEC_LEVEL = 40;
+export const SPEC_UP_LEVEL = 80;
+export const SPEC_CHANGE_COST = 2500;
+export const SPECS = {
+  humano: {
+    versatil: { nome: 'Versátil', d40: 'Adaptação Tática dura 15 s e recarrega 25% mais rápido', d80: 'Dura 20 s e recarrega 40% mais rápido' },
+    disciplinado: { nome: 'Disciplinado', d40: '+8% de dano corpo a corpo e com espada', d80: '+15% de dano e −5% de dano físico recebido' },
+  },
+  aquatico: {
+    correnteza: { nome: 'Correnteza', d40: '+20% nadando e Impulso Abissal 30% mais forte', d80: '+35% nadando e Impulso 50% mais forte' },
+    mareViva: { nome: 'Maré Viva', d40: 'Na água, recupera 2 de vida por segundo', d80: '4 de vida por segundo e +5% de resistência elemental' },
+  },
+  ghoul: {
+    faminto: { nome: 'Faminto', d40: 'Sifão devolve 50% mais energia e cura 6', d80: 'Devolve o dobro de energia e cura 12' },
+    essencia: { nome: 'Essência Pura', d40: '+10% de dano das habilidades de fruta', d80: '+20% de dano e −10% de recarga das habilidades de fruta' },
+  },
+  ceu: {
+    planador: { nome: 'Planador', d40: 'Plana 25% mais rápido e cai 25% mais devagar', d80: 'Plana 40% mais rápido e cai 40% mais devagar' },
+    acrobata: { nome: 'Acrobata', d40: 'Passo Celeste recarrega 40% mais rápido', d80: '+1 salto extra' },
+  },
+};
+
+// Despertar racial (maestria 100): prova própria, não automática
+export const RACE_TRIAL = { tempo: 240, alvo: 3, texto: 'Derrote os 3 Recrutas elementais em até 4 minutos sem desmaiar.' };
+export const AWAKENED_TEXT = 'Ativa desperta: recarga pela metade e efeito 50% mais forte.';
+
 // Efeitos de jogo das passivas (lidos pelo controlador, combate, poderes e treino)
-export function raceMods(raceId, level = 1) {
+export function raceMods(raceId, level = 1, spec = null, awakened = false) {
   const m = {
     xpPhysical: 1, staminaRegenCalm: 1, swordCooldown: 1, noWaterDamage: false, breathesWater: false, swimSpeed: 1,
     physicalMitigation: 0, fruitDamage: 1, energyRegen: 1, stunMult: 1, extraJumps: 0, airControl: 1, jumpMult: 1, fallMult: 1,
+    // especializações e despertar (atualização 13)
+    adaptTime: 10, activeCd: 1, activePower: 1, siphonMult: 1, siphonHeal: 0, meleeMult: 1, waterRegen: 0, elementalMit: 0,
+    glideSpeed: 1, glideFall: 1, fruitCd: 1,
   };
   switch (raceId) {
     case 'humano':
@@ -80,6 +111,49 @@ export function raceMods(raceId, level = 1) {
       break;
     default:
   }
+  // especialização escolhida (vale da maestria 40; aprimora na 80)
+  const sp = level >= SPEC_LEVEL && SPECS[raceId]?.[spec] ? spec : null;
+  const up = level >= SPEC_UP_LEVEL;
+  switch (sp) {
+    case 'versatil':
+      m.adaptTime = up ? 20 : 15;
+      m.activeCd *= up ? 0.6 : 0.75;
+      break;
+    case 'disciplinado':
+      m.meleeMult = up ? 1.15 : 1.08;
+      if (up) m.physicalMitigation += 0.05;
+      break;
+    case 'correnteza':
+      m.swimSpeed *= up ? 1.35 : 1.2;
+      m.activePower *= up ? 1.5 : 1.3;
+      break;
+    case 'mareViva':
+      m.waterRegen = up ? 4 : 2;
+      if (up) m.elementalMit = 0.05;
+      break;
+    case 'faminto':
+      m.siphonMult = up ? 2 : 1.5;
+      m.siphonHeal = up ? 12 : 6;
+      break;
+    case 'essencia':
+      m.fruitDamage *= up ? 1.2 : 1.1;
+      if (up) m.fruitCd = 0.9;
+      break;
+    case 'planador':
+      m.glideSpeed = up ? 1.4 : 1.25;
+      m.glideFall = up ? 0.6 : 0.75;
+      break;
+    case 'acrobata':
+      m.activeCd *= 0.6;
+      if (up) m.extraJumps += 1;
+      break;
+    default:
+  }
+  if (awakened && level >= RACE_MAX) {
+    m.activeCd *= 0.5;
+    m.activePower *= 1.5;
+    m.siphonMult *= 1.5;
+  }
   return m;
 }
 
@@ -88,6 +162,9 @@ export function normalizeRace(save) {
   const r = save.raceMastery;
   const level = Math.min(RACE_MAX, Math.max(1, Math.floor(Number(r?.level)) || 1));
   save.raceMastery = { level, xp: level >= RACE_MAX ? 0 : Math.max(0, Number(r?.xp) || 0) };
+  // especialização só da raça atual; despertar só na maestria 100
+  if (!save.race || !SPECS[save.race]?.[save.raceSpec]) save.raceSpec = null;
+  save.raceAwakened = !!save.raceAwakened && level >= RACE_MAX;
   return save;
 }
 

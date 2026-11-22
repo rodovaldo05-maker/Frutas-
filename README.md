@@ -77,6 +77,11 @@ pontos (cais, praia e lagoa) com maestrias próprias; materiais dos inimigos; Fo
 receitas, peças com 0 a 3 estrelas e melhorias de +1 a +10 com custo crescente e prévia; venda de
 materiais na Mercadora; aba Profissões em Personagem.
 
+Especializações e despertares (atualização 13): duas trilhas por raça na maestria 40 (aprimoradas
+na 80) e despertar racial por prova na 100; despertar das frutas no slot 4 depois da Prova do
+Despertar (domínio 59), com +30% de dano, recargas mais rápidas e aura; formas híbridas de Lobo,
+Besta, Falcão, Fênix e dos dois Dragões (tecla H ou botão Forma) com partes no corpo e bônus.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

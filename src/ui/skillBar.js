@@ -61,8 +61,11 @@ export class SkillBar {
         <span class="name">${locked ? `<span class="req">[${lockLabel} ${p.unlock}]</span>` : `${p.curto.length > 18 ? p.nome.split(' ')[0] : p.nome}${p.custo ? `<small>${p.custo}</small>` : ''}<span class="cd"></span><span class="sec"></span>`}</span>
       </button>`;
     });
+    // slot 4 das frutas: despertar (atualização 13). awaken = { state, name, hits, total } ou true/false
     if (powers.length && awaken) {
-      rows.push(`<button data-btn class="skill-row locked" data-skill="3" title="Despertar: domínio ${AWAKEN_LEVEL}"><span class="use">Usar</span><kbd>V</kbd><span class="name"><span class="req">[Dom. ${AWAKEN_LEVEL}]</span></span></button>`);
+      const a = typeof awaken === 'object' ? awaken : { state: 'bloqueado' };
+      const label = a.state === 'liberado' ? `${a.name}<span class="cd"></span>` : `<span class="req">${a.state === 'prova' ? `[Prova ${a.hits}/${a.total}]` : `[Dom. ${AWAKEN_LEVEL}]`}</span>`;
+      rows.push(`<button data-btn class="skill-row awaken${a.state === 'liberado' ? '' : ' locked'}" data-skill="3" title="Despertar${a.name ? `: ${a.name}` : ''}"><span class="use">Usar</span><kbd>V</kbd><span class="name">${label}</span></button>`);
     }
     if (note) rows.push(`<div class="skill-note">${note}</div>`);
     this.rows.innerHTML = rows.join('');
@@ -83,6 +86,8 @@ export class SkillBar {
       if (this.energyText.textContent !== text) this.energyText.textContent = text;
     }
     if (!active || !this.rowEls) return;
+    const wake = this.rowEls[this.powers.length];
+    if (wake?.classList.contains('awaken')) wake.classList.toggle('casting', !!powers.awakened);
     for (let i = 0; i < this.powers.length; i++) {
       const p = this.powers[i];
       const el = this.rowEls[i];

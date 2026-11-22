@@ -11,6 +11,7 @@ import { normalizeClock, START_CLOCK } from '../world/clock.js';
 import { normalizeStore } from '../economy/fruitStore.js';
 import { normalizeQuests } from '../quests/village.js';
 import { normalizeMaterials, normalizeTools } from '../crafting/materials.js';
+import { normalizeAwaken } from '../fruits/awakening.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -68,6 +69,10 @@ export function newSave() {
     store: { day: -1, bought: [] }, // Loja de Frutas: vagas compradas no dia do estoque
     quests: null, // missões da vila (normalizadas no migrate)
     materials: {}, // materiais { id: quantidade } (atualização 12)
+    raceSpec: null, // especialização racial (atualização 13)
+    raceAwakened: false, // despertar racial (prova na maestria 100)
+    awakened: {}, // frutas com o despertar liberado { id: true }
+    awakenTrial: null, // Prova do Despertar em andamento { fruit, hits }
     tools: [], // ferramentas: picareta, vara
     domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
@@ -142,6 +147,7 @@ export function migrate(save) {
   out.quests = normalizeQuests(out.quests);
   out.materials = normalizeMaterials(out.materials);
   out.tools = normalizeTools(out.tools);
+  normalizeAwaken(out);
 
   return out;
 }

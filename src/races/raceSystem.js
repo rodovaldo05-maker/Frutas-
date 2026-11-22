@@ -2,7 +2,7 @@
 // maestria racial por prática válida de cada raça (documento mestre 4.0, seções 17–21).
 
 import * as THREE from 'three';
-import { RACES, raceMods, addRaceXp, raceXpToNext } from './races.js';
+import { RACES, raceMods, addRaceXp, raceXpToNext, RACE_TRIAL, RACE_MAX } from './races.js';
 import { wrapAngle } from '../core/math.js';
 
 export class RaceSystem {
@@ -24,13 +24,52 @@ export class RaceSystem {
   }
 
   get mods() {
-    return raceMods(this.save.race, this.save.raceMastery?.level ?? 1);
+    return raceMods(this.save.race, this.save.raceMastery?.level ?? 1, this.save.raceSpec, this.save.raceAwakened);
   }
 
   update(dt) {
     this.time += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.adapt = Math.max(0, this.adapt - dt);
+    // prova racial (maestria 100): tempo limite
+    const tr = this.trial;
+    if (tr) {
+      tr.t += dt;
+      if (tr.t >= RACE_TRIAL.tempo) this.failTrial('O tempo da prova acabou.');
+    }
+  }
+
+  // ===== Prova racial (despertar na maestria 100) =====
+  startTrial() {
+    if (!this.def) return false;
+    if ((this.save.raceMastery?.level ?? 1) < RACE_MAX) return this.onEvent('denied', { message: 'A prova racial abre na maestria 100.' }), false;
+    if (this.save.raceAwakened) return false;
+    this.trial = { t: 0, kills: new Set() };
+    this.onEvent('trial', { started: true, texto: RACE_TRIAL.texto });
+    return true;
+  }
+
+  failTrial(message) {
+    if (!this.trial) return;
+    this.trial = null;
+    this.onEvent('trial', { failed: true, message });
+  }
+
+  // Recruta elemental derrotado durante a prova
+  onTrialKill(def) {
+    const tr = this.trial;
+    if (!tr || !def.element) return;
+    tr.kills.add(def.element);
+    this.onEvent('trial', { progress: tr.kills.size, total: RACE_TRIAL.alvo });
+    if (tr.kills.size >= RACE_TRIAL.alvo) {
+      this.trial = null;
+      this.save.raceAwakened = true;
+      this.onEvent('trial', { done: true });
+    }
+  }
+
+  onFaint() {
+    this.failTrial('Você desmaiou durante a prova.');
   }
 
   // Usa a ativa; ctx: { targets, powers, fx, input }
@@ -44,16 +83,17 @@ export class RaceSystem {
     const dir = w && w.mag > 0.2 ? new THREE.Vector3(w.x, 0, w.z) : fwd;
     switch (d.id) {
       case 'humano':
-        this.adapt = 10;
+        this.adapt = this.mods.adaptTime;
         break;
       case 'aquatico': {
         const inWater = c.state === 'swim' || c.state === 'dive' || c.state === 'sink';
         if (inWater) {
           if (!c.stamina.spend(15)) return this.onEvent('denied', { message: 'Sem fôlego para o Impulso Abissal.' });
-          c.vel.x += dir.x * 13;
-          c.vel.z += dir.z * 13;
+          const pw = this.mods.activePower;
+          c.vel.x += dir.x * 13 * pw;
+          c.vel.z += dir.z * 13 * pw;
           if (c.state === 'dive') c.vel.y += Math.sin(-(c.pitch ?? 0)) * 4;
-        } else if (c.state === 'ground') c.shove(dir.x * 11, dir.z * 11, 0.2);
+        } else if (c.state === 'ground') c.shove(dir.x * 11 * this.mods.activePower, dir.z * 11 * this.mods.activePower, 0.2);
         else return null;
         break;
       }
@@ -72,8 +112,11 @@ export class RaceSystem {
             break;
           }
         }
-        if (hit?.target.hostile && ctx.powers) ctx.powers.energy = Math.min(ctx.powers.energyMax, ctx.powers.energy + 18);
-        this.onEvent('siphon', { hit, gained: hit?.target.hostile ? 18 : 0 });
+        const m = this.mods;
+        const gain = Math.round(18 * m.siphonMult);
+        if (hit?.target.hostile && ctx.powers) ctx.powers.energy = Math.min(ctx.powers.energyMax, ctx.powers.energy + gain);
+        if (hit?.target.hostile && m.siphonHeal) c.health = Math.min(c.maxHealth, c.health + m.siphonHeal);
+        this.onEvent('siphon', { hit, gained: hit?.target.hostile ? gain : 0 });
         if (hit?.target.hostile) this.grant(3, 'sifão');
         break;
       }
@@ -88,7 +131,7 @@ export class RaceSystem {
       }
       default:
     }
-    this.cooldown = d.ativa.recarga * (this.cdMult ?? 1);
+    this.cooldown = d.ativa.recarga * (this.cdMult ?? 1) * this.mods.activeCd;
     this.onEvent('active', { race: d.id, nome: d.ativa.nome });
     return true;
   }

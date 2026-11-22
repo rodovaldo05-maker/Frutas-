@@ -24,6 +24,9 @@ import { buildGathering, Gathering } from './crafting/gathering.js';
 import { NODE_TYPES } from './crafting/professions.js';
 import { MATERIALS, TOOLS, addMaterial, materialDrop } from './crafting/materials.js';
 import { ForgeUi } from './ui/forgeUi.js';
+import { AWAKEN, awakenState, trialHit, trialProgress } from './fruits/awakening.js';
+import { FORMS, FORM_TIME, formMods, formBlock, hasForm, addFormParts, removeFormParts, animateForm } from './transformations/forms.js';
+import { SPECS, SPEC_LEVEL, SPEC_CHANGE_COST } from './races/races.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
 import { createPlayer } from './characters/player.js';
@@ -43,7 +46,7 @@ import { buildMarket } from './world/npcs.js';
 import { fruitThumbs } from './fruits/fruitArt.js';
 import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
-import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
+import { RANK, FRUIT, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
 import { maxStamina, maxHealth, maxEnergy, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
 import { computeDamage } from './combat/rules.js';
@@ -178,7 +181,7 @@ async function boot() {
       case 'doubleJump':
         audio.play('base', 'wing', 0.8);
         raceSys.onExtraJump(data.n);
-        if (save.race === 'ceu') wingBurst = 1;
+        if (save.race === 'ceu' || form?.info?.wings?.length) wingBurst = 1;
         break;
       case 'wallJump': audio.play('base', 'jump', 1); break;
       case 'dash': audio.play('base', 'dash', 0.8); break;
@@ -192,7 +195,7 @@ async function boot() {
         hud.damageFlash();
         if (data.reason !== 'golpe' && data.reason !== 'queimadura') hud.toast(`−${Math.round(data.amount)} vida (${data.reason})`, 'bad');
         break;
-      case 'faint': hud.toast('Você desmaiou…', 'bad'); audio.play('base', 'death', 0.8); conditions?.reset(); break;
+      case 'faint': hud.toast('Você desmaiou…', 'bad'); audio.play('base', 'death', 0.8); conditions?.reset(); raceSys.onFaint(); break;
       case 'respawn': cam.snap(ctl.pos, ctl.yaw); conditions?.reset(); break;
       default:
     }
@@ -203,6 +206,7 @@ async function boot() {
   let condTimer = 0;
   let playerTint = '#000000';
   let wingBurst = 0;
+  let form = null; // forma híbrida ativa { id, info } (atualização 13)
   let raceParts = save.race ? addRaceParts(player.body, save.race) : null;
   const raceSys = new RaceSystem({ ctl, save, onEvent: (name, d) => onRaceEvent(name, d) });
   let baseRegen = 1;
@@ -217,14 +221,20 @@ async function boot() {
     baseRegen = b.staminaRegen * (1 - g.pesoPenalty);
     ctl.stamina.regenMult = baseRegen;
     const rm = raceSys.mods;
-    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed, glideFall: b.glideFall };
-    ctl.race = { extraJumps: rm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda), noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
+    const fm = formMods(form?.id);
+    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed * rm.glideSpeed * fm.glide, glideFall: b.glideFall * rm.glideFall };
+    ctl.race = { extraJumps: rm.extraJumps + fm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda) * fm.fall, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
+    ctl.speedMult = fm.speed;
     raceSys.cdMult = 1 - g.adaptCd;
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = maxHealth(save.status) + g.vida;
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
     powers?.setEnergyMax(maxEnergy(save.status) + g.energia);
-    if (powers) powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen);
+    if (powers) {
+      powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen);
+      powers.dmgMult = fm.fruit;
+      powers.cdMult = rm.fruitCd;
+    }
   };
   let gearParts = [];
   const applyGear = () => {
@@ -260,7 +270,9 @@ async function boot() {
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
       const g = gearTotals(save);
-      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation, elementalMit: b.elementalMit + g.elemental, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      const fm = formMods(form?.id);
+      const wake = powers?.awakened && save.equipped === 'fruta' ? AWAKEN.damage : 1; // combo da fruta desperta
+      return { melee: m.melee * rm.meleeMult * fm.melee * wake, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -416,6 +428,7 @@ async function boot() {
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
       villageUi.defeat(foe.def);
+      raceSys.onTrialKill(foe.def);
       for (const [id, n] of materialDrop(foe.def)) {
         addMaterial(save, id, n);
         hud.toast(`+${n} ${MATERIALS[id].nome}`, 'good');
@@ -431,6 +444,33 @@ async function boot() {
   const fx = new PowerFx(renderer.scene, { ground: (x, z) => world.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
+  // Forma híbrida (frutas de fera; atualização 13): partes no corpo e números próprios
+  function toggleForm(off = false) {
+    const f = eatenFruit();
+    if (form) {
+      removeFormParts(form.info);
+      form = null;
+      applyStatus();
+      $('btn-form').classList.remove('on');
+      if (!off) {
+        hud.toast('Forma humana');
+        fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f?.color ?? '#ffffff', { count: 14, speed: 3, up: 2 });
+      }
+      return;
+    }
+    if (off) return;
+    const why = formBlock(f?.id, f ? domainOf(save, f.id).level : 1);
+    if (why) return hud.toast(why);
+    if (!['ground', 'air', 'glide'].includes(ctl.state)) return hud.toast('Transforme-se em terra ou no ar.');
+    form = { id: f.id, info: addFormParts(player.body, f.id, f.color) };
+    ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME); // invulnerável durante a troca
+    fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f.color, { count: 32, speed: 6, up: 4 });
+    fx.ring(ctl.pos, f.color, 3.5, FORM_TIME);
+    audio.play('base', 'wing', 0.9);
+    hud.toast(`${FORMS[f.id].nome}: ${FORMS[f.id].desc}`, 'gold');
+    $('btn-form').classList.add('on');
+    applyStatus();
+  }
   const domainBudget = new Map();
   let deniedAt = -9;
   function grantDomain(fruitId, xp, key, hostile, foe) {
@@ -472,6 +512,18 @@ async function boot() {
           }
           break;
         case 'heal': floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, `+${d.amount}`, 'info'); break;
+        case 'awaken': {
+          const f = eatenFruit();
+          const nome = FRUIT[f?.id]?.despertar?.nome ?? 'Despertar';
+          if (d.on) {
+            hud.toast(`Despertar: ${nome}! +30% de dano e recargas mais rápidas (gasta energia)`, 'gold');
+            fx.burst({ x: p.x, y: p.y + 1.5, z: p.z }, f?.color ?? '#ffd36b', { count: 30, speed: 6, up: 4 });
+            fx.ring(p, f?.color ?? '#ffd36b', 4, 0.6);
+            audio.play('base', 'wing', 1);
+          } else hud.toast(d.empty ? 'Despertar terminou: sem energia.' : 'Despertar desligado.');
+          playerTint = null;
+          break;
+        }
         case 'teleport': ctl.spawn(d.x, world.sample(d.x, d.z) + 0.4, d.z, d.yaw); break;
         case 'hit': {
           const t = d.target;
@@ -489,7 +541,22 @@ async function boot() {
           }
           if (d.power.style) grantStyle(d.power.fruit, t.hostile ? (d.power.slot >= 2 ? 4 : 3) : 1, `${t.id}:t${d.power.slot}`, t.hostile, t);
           else if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
-          else grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
+          else {
+            grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
+            // Prova do Despertar: habilidades da fruta acertando inimigos
+            if (t.hostile && d.power.fruit === eatenFruit()?.id) {
+              const lv = domainOf(save, d.power.fruit).level;
+              if (trialHit(save, d.power.fruit, lv)) {
+                hud.toast(`Despertar liberado: ${FRUIT[d.power.fruit]?.despertar?.nome ?? 'Despertar'}! Use no slot 4 (V).`, 'gold');
+                audio.play('base', 'wing', 1);
+                refreshEquip();
+                saveNow(true);
+              } else if (save.awakenTrial && save.awakenTrial.hits % 5 === 0) {
+                hud.toast(`Prova do Despertar: ${save.awakenTrial.hits}/${AWAKEN.trialHits}`);
+                refreshEquip();
+              }
+            }
+          }
           break;
         }
         default:
@@ -595,7 +662,11 @@ async function boot() {
     skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: st.curto, weapon: w });
     skillBar.setEquipped(save.equipped);
     skillBar.setEnergyVisible(!!f);
-    if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level });
+    const awk = f ? { state: awakenState(save, f.id, level), name: FRUIT[f.id]?.despertar?.nome ?? 'Despertar', hits: trialProgress(save, f.id), total: AWAKEN.trialHits } : null;
+    if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level, awaken: awk });
+    // botão da forma híbrida: só com fruta de fera
+    $('btn-form').classList.toggle('hidden', !hasForm(f?.id));
+    if (f) $('btn-form').style.setProperty('--fc', f.color);
     else if (swordOn) skillBar.setSkills({ title: w.nome, color: w.cor, powers: blade.powers, domainLevel: prof, lockLabel: 'Prof.', awaken: false });
     else skillBar.setSkills({ title: st.nome, color: st.cor, powers: art.powers, domainLevel: stLv, lockLabel: 'Maest.', awaken: false });
   }
@@ -771,6 +842,22 @@ async function boot() {
   const statusScreen = new StatusScreen({
     save,
     profHtml: () => forgeUi.profHtml(),
+    raceActions: {
+      // especialização racial: escolher é grátis; trocar custa moedas
+      choose: (id) => {
+        if (!SPECS[save.race]?.[id] || (save.raceMastery?.level ?? 1) < SPEC_LEVEL) return;
+        if (save.raceSpec) {
+          if (save.coins < SPEC_CHANGE_COST) return hud.toast(`Trocar de especialização custa ${fmt(SPEC_CHANGE_COST)} moedas.`, 'bad');
+          save.coins -= SPEC_CHANGE_COST;
+        }
+        save.raceSpec = id;
+        hud.toast(`Especialização: ${SPECS[save.race][id].nome}`, 'gold');
+        applyStatus();
+        refreshProfile();
+        saveNow(true);
+      },
+      trial: () => raceSys.startTrial(),
+    },
     onChange: () => {
       applyGear();
       refreshProfile();
@@ -791,6 +878,7 @@ async function boot() {
     player.setHeldFruit(it ? fruitIndex(it.fruit) : null);
   };
   const applyFruit = () => {
+    if (form && form.id !== eatenFruit()?.id) toggleForm(true); // trocou de fruta: volta à forma humana
     ctl.waterCursed = isWaterCursed(save.eaten);
     hud.setFruit(save.eaten ? { thumb: thumbs()[fruitIndex(save.eaten.fruit)], color: RANK[rarityOf(save.eaten)].cor, label: fruitLabel(save.eaten) } : null);
     if (ctl.waterCursed && (ctl.state === 'swim' || ctl.state === 'dive')) ctl.enterWater(0);
@@ -996,7 +1084,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), armor: $('btn-armor'), sense: $('btn-sense'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
+    buttons: { form: $('btn-form'), jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), armor: $('btn-armor'), sense: $('btn-sense'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -1287,6 +1375,7 @@ async function boot() {
   let minimapTimer = 0;
   const fogDay = { color: renderer.scene.fog.color.clone() };
   let dayTimer = 0;
+  let auraT = 0;
   const fogWater = new THREE.Color('#1d5866');
   const titleIdle = { moveX: 0, moveY: 0, camYaw: 0, jump: false, crouch: false, jumpPressed: false, crouchPressed: false, dashPressed: false, sprint: false };
 
@@ -1326,13 +1415,25 @@ async function boot() {
       combat.update(dt, inp, arena.targets);
       if (inp.equip >= 0) equip(inp.equip);
       if (inp.racePressed) raceSys.activate({ targets: arena.targets, powers, fx });
+      if (inp.formPressed) toggleForm();
+      // vida por segundo: Fênix híbrida e Maré Viva (na água)
+      {
+        const regen = formMods(form?.id).regen + ((ctl.state === 'swim' || ctl.state === 'dive') ? raceSys.mods.waterRegen : 0);
+        if (regen > 0 && ctl.faint <= 0 && ctl.health < ctl.maxHealth) ctl.health = Math.min(ctl.maxHealth, ctl.health + regen * dt);
+      }
       raceSys.update(dt);
       ctl.stamina.regenMult = baseRegen * (ctl.lastDamage > 5 ? raceSys.mods.staminaRegenCalm : 1) * (raceSys.adapt > 0 ? 1.5 : 1);
       const canCast = combat.canFight() && !combat.runner.busy && !ctl.guarding;
       if (inp.skill >= 0) {
         if (save.equipped === 'fruta') {
-          if (inp.skill === 3) hud.toast(`Despertar: domínio ${59} da fruta (próximas atualizações).`);
-          else powers.cast(inp.skill, arena.targets, canCast);
+          if (inp.skill === 3) {
+            const f = eatenFruit();
+            const lv = f ? domainOf(save, f.id).level : 1;
+            const st = awakenState(save, f?.id, lv);
+            if (st === 'liberado') powers.toggleAwaken();
+            else if (st === 'prova') hud.toast(`Prova do Despertar: acerte ${AWAKEN.trialHits} habilidades da fruta em inimigos (${trialProgress(save, f.id)}/${AWAKEN.trialHits}).`);
+            else hud.toast(`Despertar: domínio ${AWAKEN.level} da fruta.`);
+          } else powers.cast(inp.skill, arena.targets, canCast);
         } else if (save.equipped === 'arma') {
           if (inp.skill < 3) blade.cast(inp.skill, arena.targets, canCast);
         } else art.cast(inp.skill, arena.targets, canCast);
@@ -1469,9 +1570,24 @@ async function boot() {
           }
         }
       }
-      if (raceParts?.wings) {
-        wingBurst = Math.max(0, wingBurst - animDt * 2.2);
-        flapWings(raceParts, clock, wingBurst);
+      wingBurst = Math.max(0, wingBurst - animDt * 2.2);
+      if (raceParts?.wings) flapWings(raceParts, clock, wingBurst);
+      if (form) animateForm(form.info, clock, wingBurst, ctl.speed);
+      // aura do despertar: brilho pulsando na cor da fruta e faíscas em volta (o corpo não muda)
+      if (powers.awakened && mode === 'game') {
+        const c = eatenFruit()?.color ?? '#ffd36b';
+        const k = 0.3 + 0.18 * Math.sin(clock * 6);
+        for (const m of Object.values(player.body.meshes)) if (m.material.emissive) {
+          m.material.emissive.set(c);
+          m.material.emissiveIntensity = k;
+        }
+        playerTint = 'desperto';
+        auraT -= animDt;
+        if (auraT <= 0) {
+          auraT = 0.2;
+          const a = Math.random() * Math.PI * 2;
+          fx.burst({ x: view.x + Math.cos(a) * 1.1, y: view.y + 0.6 + Math.random() * 3, z: view.z + Math.sin(a) * 1.1 }, c, { count: 3, speed: 1.2, up: 2.5 });
+        }
       }
       if (save.race && mode === 'game') {
         const rb = $('btn-race');
@@ -1592,9 +1708,18 @@ async function boot() {
         fx.ring(p, r.cor, 3, 0.4);
         audio.play('base', d.race === 'aquatico' ? 'splash' : d.race === 'ceu' ? 'wing' : 'dash', 0.9);
         if (d.race === 'ceu') wingBurst = 1;
-        if (d.race === 'humano') hud.toast('Adaptação Tática: troca de item instantânea por 10 s', 'good');
+        if (d.race === 'humano') hud.toast(`Adaptação Tática: troca de item instantânea por ${raceSys.mods.adaptTime} s`, 'good');
         break;
       }
+      case 'trial':
+        if (d.started) hud.toast(`Prova racial: ${d.texto}`, 'gold');
+        else if (d.failed) hud.toast(`Prova racial falhou: ${d.message}`, 'bad');
+        else if (d.done) {
+          hud.toast(`Despertar racial! ${RACES[save.race].marcos[100]} · ativa com recarga pela metade e efeito 50% mais forte`, 'gold');
+          applyStatus();
+          saveNow(true);
+        } else hud.toast(`Prova racial: ${d.progress}/${d.total} Recrutas elementais`);
+        break;
       case 'siphon':
         if (d.hit) floats.add({ x: d.hit.target.pos.x, y: d.hit.target.pos.y + 3.2, z: d.hit.target.pos.z }, String(d.hit.damage), 'dano');
         floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, d.gained ? `+${d.gained} energia` : 'Sifão sem alvo', d.gained ? 'info' : 'bloqueio');
@@ -1721,6 +1846,10 @@ async function boot() {
     gathering,
     gatherWorld,
     forgeUi,
+    toggleForm: () => toggleForm(),
+    get form() {
+      return form;
+    },
     setHour(h) {
       save.clock = Math.floor(save.clock / 1440) * 1440 + h * 60;
       dayTimer = 0;

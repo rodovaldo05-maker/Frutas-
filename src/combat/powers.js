@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { clipTiming, computeDamage } from './rules.js';
 import { wrapAngle } from '../core/math.js';
+import { AWAKEN } from '../fruits/awakening.js';
 
 export const ENERGY = { base: 100, perVitality: 4, regen: 7, delay: 1 };
 
@@ -32,6 +33,28 @@ export class FruitPowers {
     this.marks = new Map(); // alvo -> tempo da marca (Eco)
     this.time = 0;
     this.domainLevel = 1;
+    this.awakened = false; // despertar ligado (atualização 13; só nas frutas)
+    this.dmgMult = 1; // forma híbrida e outros multiplicadores de fora
+    this.cdMult = 1; // recarga (especialização Essência Pura)
+  }
+
+  // Liga/desliga o despertar; exige energia para começar
+  toggleAwaken() {
+    if (this.awakened) {
+      this.awakened = false;
+      this.onEvent('awaken', { on: false });
+      return true;
+    }
+    if (!this.fruit) return false;
+    if (this.energy < AWAKEN.minEnergy) {
+      this.onEvent('denied', { message: `Despertar: precisa de ${AWAKEN.minEnergy} de energia.` });
+      return false;
+    }
+    this.energy -= AWAKEN.start;
+    this.idle = 0;
+    this.awakened = true;
+    this.onEvent('awaken', { on: true });
+    return true;
   }
 
   // Atualiza fruta/espada/estilo. Recargas e golpe em andamento só zeram quando o item muda
@@ -44,6 +67,10 @@ export class FruitPowers {
     if (changed) {
       this.cooldown = powers.map(() => 0);
       this.casting = null;
+      if (this.awakened) {
+        this.awakened = false;
+        this.onEvent('awaken', { on: false });
+      }
     }
     while (this.cooldown.length < Math.max(3, powers.length)) this.cooldown.push(0);
   }
@@ -81,7 +108,7 @@ export class FruitPowers {
     const c = this.ctl;
     this.energy -= p.custo;
     this.idle = 0;
-    this.cooldown[slot] = p.recarga;
+    this.cooldown[slot] = p.recarga * (this.cdMult ?? 1);
     // mira: alvo vivo mais perto à frente (ou para onde o personagem olha)
     const target = this.aim(targets, p.params.range ?? 14);
     if (target) c.yaw = Math.atan2(target.pos.x - c.pos.x, target.pos.z - c.pos.z);
@@ -125,7 +152,18 @@ export class FruitPowers {
   update(dt, targets, canAct) {
     this.time += dt;
     const c = this.ctl;
-    for (let i = 0; i < this.cooldown.length; i++) this.cooldown[i] = Math.max(0, (this.cooldown[i] || 0) - dt); // todos os slots (estilos têm 4)
+    const cdk = this.awakened ? AWAKEN.cdSpeed : 1;
+    for (let i = 0; i < this.cooldown.length; i++) this.cooldown[i] = Math.max(0, (this.cooldown[i] || 0) - dt * cdk); // todos os slots (estilos têm 4)
+    // despertar: gasta energia por segundo e desliga sozinho sem energia
+    if (this.awakened) {
+      this.energy -= AWAKEN.drain * dt;
+      this.idle = 0;
+      if (this.energy <= 0) {
+        this.energy = 0;
+        this.awakened = false;
+        this.onEvent('awaken', { on: false, empty: true });
+      }
+    }
     this.idle += dt;
     if (this.idle >= ENERGY.delay) this.energy = Math.min(this.energyMax, this.energy + ENERGY.regen * (this.regenMult ?? 1) * dt);
 
@@ -167,7 +205,8 @@ export class FruitPowers {
     const s = this.stats();
     const base = p.dano * mult;
     if (base <= 0 && !Object.keys(effect).length) return null;
-    const damage = base > 0 ? computeDamage(base, { mult: s.fruit * s.domain, defense: target.defense ?? 0 }) : 0;
+    const wake = this.awakened ? AWAKEN.damage : 1;
+    const damage = base > 0 ? computeDamage(base, { mult: s.fruit * s.domain * wake * (this.dmgMult ?? 1), defense: target.defense ?? 0 }) : 0;
     const c = this.ctl;
     const attack = {
       id: `poder:${p.fruit}:${p.slot}`, nome: p.nome, posture: 14, knock: effect.push ?? 1.2, reaction: p.slot === 2 ? 'media' : 'leve',

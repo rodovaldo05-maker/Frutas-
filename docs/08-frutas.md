@@ -391,8 +391,8 @@ Regras:
 | Combo da fruta | Comer uma fruta troca o Jab → Direto → Gancho pelos três golpes assinados da fruta, com o dano dela |
 | Dano | Dano da habilidade × (1 + 3% por ponto de Fruta) × bônus de domínio (até +30%) × defesa do alvo |
 | Domínio | Por fruta, nível 1 a 100 (curva dos atributos × 1,4). Sobe acertando inimigos com as habilidades (+3, a terceira +4) e com o combo da fruta (+1), com teto por oponente; em bonecos rende pouco e cai com repetição. Habilidade 2 abre no domínio 5 e a 3 no 13 (0, 25 e 75 de 600 na ficha). Trocar de fruta não apaga o domínio |
-| Transformações | Lobo, Falcão, Besta, Fênix, Oriental e Ocidental usam por enquanto as habilidades sem forma (moves 3 e 4); as formas chegam na atualização 13 |
-| Despertar | Slot 4, bloqueado até o domínio 59 (atualização 13) |
+| Transformações | Atualização 13: forma híbrida (domínio 20, tecla H ou botão Forma) para Lobo, Falcão, Besta, Fênix e os dois Dragões, com partes no corpo e números próprios (doc 12, seção 11); formas completas depois |
+| Despertar | Atualização 13: slot 4, domínio 59 + Prova do Despertar (30 acertos de habilidade); +30% de dano e recargas 50% mais rápidas gastando energia, com aura (doc 12, seção 11) |
 
 Os efeitos visuais são próprios do jogo (cubos, anéis, marcas, pilares, ondas e muralha na
 cor da fruta). O conjunto completo de efeitos do laboratório pode ser trazido depois.

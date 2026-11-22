@@ -1,9 +1,11 @@
 // Dragão Oriental — forma completa nova (pedido do jogador; Prompt Mestre, seção 7: "corpo
 // serpenteante articulado"). No laboratório a forma completa era um quadrúpede; aqui ela vira
-// um dragão celestial que paira (refeito na atualização 22): peito, pescoço e dez segmentos
-// grossos em cadeia com escamas em fileiras e aro dourado, barbatana dorsal de chamas, juba
-// farta, quatro patas com garras douradas, nuvens sob o corpo e a pérola flamejante; a cabeça,
-// a mandíbula, a galhada, os bigodes e as folhas da cauda são do laboratório (FRUTOMythEast).
+// um dragão celestial que paira (refeito na atualização 23 pela imagem de referência do
+// jogador): corpo longo e fino em S, dorso carmim com listras escuras, ventre creme largo em
+// placas, espinhos dourados nas bordas do ventre e no dorso, juba quase preta e farta, pescoço
+// erguido, patas escuras finas com garras laranja e o fim da cauda escuro com folhas e ponta de
+// flecha douradas. Cabeça, mandíbula, galhada e bigodes são do laboratório (FRUTOMythEast), com
+// a juba e os bigodes escurecidos.
 // Mesma interface dos módulos do laboratório: create(T, models, data, form, level) e
 // animate(T, motion, data, rig, state). Os golpes M1 da forma completa entram por registerActions.
 
@@ -18,24 +20,57 @@ const smooth = (x) => {
 // envelope suave: sobe até `at` (em `before` s) e desce depois (em `after` s)
 const event = (t, at, before, after) => smooth(t < at ? (t - at + before) / before : (at + after - t) / after);
 
-export const SEGMENTS = 10;
-const SEG_LEN = 0.66;
-// grosso no peito, cheio no meio, fino na cauda
+export const SEGMENTS = 14;
+const SEG_LEN = 0.56;
+// corpo longo e fino: um pouco mais cheio no meio, afinando até a ponta da cauda
 const radius = (i) => {
   const k = i / SEGMENTS;
-  return 0.56 * (1 - 0.72 * k * k) + 0.03 * Math.sin(Math.PI * k);
+  return 0.31 + 0.05 * Math.sin(Math.PI * Math.min(1, k * 1.6)) - 0.2 * k * k;
 };
+// fim da cauda escuro (como na referência)
+const DARK_FROM = SEGMENTS - 3;
 const pigments = {
-  lacquer: '#8e0b24', ruby: '#d62038', ember: '#f2463f', wine: '#5e0a20', claret: '#3e0d24', mane: '#4c0c26', maneLight: '#b01e45',
-  ivory: '#fff0c8', belly: '#f1c27c', gold: '#f5a824', light: '#ffe27a', ochre: '#b8641c', cloud: '#ffffff', cloudShade: '#e6ecff',
+  crimson: '#8f1a2e', crimsonLit: '#b3263a', stripe: '#5a0f22', dark: '#2a0f1c', darkLit: '#3d1a2a',
+  cream: '#f4dfb2', creamShade: '#d8b98b', gold: '#f2a33a', goldLit: '#ffd27a', goldDeep: '#b86a1c',
+  mane: '#26121c', maneLit: '#3b1d2b', maneDeep: '#140a10', claw: '#f0a23a', leg: '#341522', legLit: '#4a2030',
 };
 
 const geoCache = new Map();
 const donorCache = new Map();
 
-// peças esculpidas pelo laboratório (cabeça, chifres, bigodes, folhas da cauda)
+// cabeça, mandíbula, galhada e bigodes esculpidos pelo laboratório (FRUTOMythEast), com a juba
+// e os bigodes escurecidos para o visual da referência
+const RECOLOR = {
+  cabeca: { '#240818': '#140a10', '#96163c': '#3b1d2b', '#4c0c26': '#26121c' },
+  bigode: { '#f5a824': '#4a2433', '#a8501c': '#2b1622', '#ffde66': '#5a3040' },
+};
+function recolored(T, geo, map) {
+  const g = geo.clone();
+  const c = g.attributes.color;
+  const tmp = new T.Color();
+  const table = Object.entries(map).map(([a, b]) => [new T.Color(a), new T.Color(b)]);
+  for (let i = 0; i < c.count; i++) {
+    tmp.setRGB(c.getX(i), c.getY(i), c.getZ(i));
+    for (const [a, b] of table) {
+      if (Math.abs(a.r - tmp.r) + Math.abs(a.g - tmp.g) + Math.abs(a.b - tmp.b) < 0.03) {
+        c.setXYZ(i, b.r, b.g, b.b);
+        break;
+      }
+    }
+  }
+  c.needsUpdate = true;
+  return g;
+}
 function donor(T, models, data, level) {
-  if (!donorCache.has(level)) donorCache.set(level, FRUTOMythEast.create(T, models, data, 'completa', level));
+  if (!donorCache.has(level)) {
+    const d = FRUTOMythEast.create(T, models, data, 'completa', level);
+    d.dark = {
+      cabeca: recolored(T, d.meshes.cabeca.geometry, RECOLOR.cabeca),
+      bigode_E: recolored(T, d.meshes.bigode_E.geometry, RECOLOR.bigode),
+      bigode_D: recolored(T, d.meshes.bigode_D.geometry, RECOLOR.bigode),
+    };
+    donorCache.set(level, d);
+  }
   return donorCache.get(level);
 }
 const palette = (T) => Object.fromEntries(Object.entries(pigments).map(([k, c]) => [k, new T.Color(c).toArray()]));
@@ -69,7 +104,24 @@ function tube(T, models, s, rows, rgb, slices, colorFn) {
   face(rings.at(-1).slice(), centers.at(-1).clone().sub(centers.at(-2)).toArray(), colorFn(rows.length, 0, 0));
 }
 
-// folha (barbatana, tufo de juba, chama) com crista
+// espinho (cone de 4 faces) da base para a ponta
+function spike(T, models, s, rgb, base, tip, w, colors) {
+  const V = (x, y, z) => new T.Vector3(x, y, z);
+  const b = V(...base);
+  const t = V(...tip);
+  const axis = t.clone().sub(b).normalize();
+  const u = Math.abs(axis.y) > 0.9 ? V(1, 0, 0) : V(0, 1, 0);
+  const s1 = V(0, 0, 0).crossVectors(axis, u).normalize().multiplyScalar(w);
+  const s2 = V(0, 0, 0).crossVectors(axis, s1).normalize().multiplyScalar(w * 0.7);
+  const ring = [b.clone().add(s1), b.clone().add(s2), b.clone().sub(s1), b.clone().sub(s2)];
+  for (let i = 0; i < 4; i++) {
+    const a = ring[i];
+    const c = ring[(i + 1) % 4];
+    const n = a.clone().add(c).multiplyScalar(0.5).sub(b).normalize();
+    s.polygon(models.oriented([a.toArray(), c.toArray(), t.toArray()], n.toArray()), rgb[colors[i % 2]]);
+  }
+}
+// tufo de juba / folha
 function vane(T, models, s, rgb, base, height, len, w, colors, lean = 0) {
   const V = (x, y, z) => new T.Vector3(x, y, z);
   const [x, y, z] = base;
@@ -91,15 +143,13 @@ function vane(T, models, s, rgb, base, height, len, w, colors, lean = 0) {
   for (const [u0, u1] of [[c0, c1], [c1, c2], [c2, c3], [c3, c0]]) face([u0, u1, bottom], normal.clone().negate().toArray(), colors[2]);
 }
 
-// escamas: dorso laca, flancos em fileiras rubi/brasa alternadas, ventre de placas marfim,
-// e um aro dourado na frente de cada segmento
-function scaleColor(ring, k, up) {
-  if (ring <= 1) return up < -0.5 ? 'belly' : 'gold';
-  if (up > 0.8) return 'lacquer';
-  if (up < -0.55) return ring % 2 ? 'ivory' : 'belly';
-  if (up < -0.1) return (ring + k) % 2 ? 'wine' : 'ruby';
-  return (ring + k) % 2 ? 'ruby' : 'ember';
-}
+// dorso carmim com listras escuras, ventre creme largo em placas
+const bodyColor = (dark) => (ring, k, up) => {
+  if (up < 0.02) return ring % 2 ? 'cream' : 'creamShade';
+  if (dark) return up > 0.6 ? 'dark' : (ring + k) % 3 ? 'darkLit' : 'dark';
+  if (up > 0.75) return ring % 2 ? 'stripe' : 'crimson';
+  return (ring + k) % 4 === 0 ? 'stripe' : ring % 2 ? 'crimsonLit' : 'crimson';
+};
 
 function segmentGeometry(T, models, i, level) {
   const key = `seg/${i}/${level}`;
@@ -108,42 +158,46 @@ function segmentGeometry(T, models, i, level) {
   const rgb = palette(T);
   const r0 = radius(i);
   const r1 = radius(i + 1);
+  const dark = i >= DARK_FROM;
   const slices = level === 2 ? 6 : 10;
   const rows = [];
-  // aro dourado fino + quatro anéis de escamas
-  const zs = [0.12, 0.06, -0.12, -0.3, -0.48, -SEG_LEN - 0.02];
-  zs.forEach((z, n) => {
+  for (const z of [0.06, -0.14, -0.28, -0.42, -SEG_LEN - 0.02]) {
     const u = Math.max(0, Math.min(1, -z / SEG_LEN));
-    const r = (r0 + (r1 - r0) * u) * (n === 0 ? 0.97 : n === 1 ? 1.04 : 1 + 0.05 * Math.sin(Math.PI * u));
-    rows.push([0, 0, z, r, r * 1.06]);
-  });
-  tube(T, models, s, rows, rgb, slices, scaleColor);
+    const r = r0 + (r1 - r0) * u;
+    rows.push([0, 0, z, r, r * 1.05]);
+  }
+  tube(T, models, s, rows, rgb, slices, bodyColor(dark));
   if (level < 2) {
-    const maned = i < 3;
-    // barbatana dorsal: chamas douradas (juba escura no começo do corpo)
-    for (const [z, h] of [[-0.05, 1], [-0.36, 0.78]]) {
-      const height = (maned ? 0.46 : 0.34 - i * 0.018) * h;
-      vane(T, models, s, rgb, [0, r0 * 0.95, z], height, height * 1.25, maned ? 0.1 : 0.07, maned ? ['maneLight', 'mane', 'claret'] : ['light', 'gold', 'ochre']);
+    // espinhos dourados nas duas bordas do ventre e espinhos curtos no dorso
+    for (const [z, k] of [[-0.12, 1], [-0.4, 0.85]]) {
+      for (const sg of [-1, 1]) {
+        const base = [sg * r0 * 0.92, -r0 * 0.38, z];
+        spike(T, models, s, rgb, base, [sg * (r0 + 0.2 * k), -r0 * 0.62, z - 0.2], 0.04, ['gold', 'goldDeep']);
+      }
+      if (!dark) spike(T, models, s, rgb, [0, r0 * 0.98, z], [0, r0 + 0.16 * k, z - 0.16], 0.035, ['goldLit', 'gold']);
     }
-    if (maned) for (const sg of [-1, 1]) vane(T, models, s, rgb, [sg * r0 * 0.75, r0 * 0.55, -0.1], 0.3, 0.5, 0.08, ['maneLight', 'mane', 'claret'], sg * 0.35);
+    // juba que desce pelo começo do corpo
+    if (i < 2) for (const sg of [-1, 0, 1]) vane(T, models, s, rgb, [sg * r0 * 0.6, r0 * 0.8, -0.05], 0.32, 0.55, 0.1, ['maneLit', 'mane', 'maneDeep'], sg * 0.3);
   }
   const g = s.geometry();
   geoCache.set(key, g);
   return g;
 }
 
+// pescoço erguido (curva em S para cima, como na referência) e juba farta
 function neckGeometry(T, models, level) {
   const key = `neck/${level}`;
   if (geoCache.has(key)) return geoCache.get(key);
   const s = new models.Surface(T);
   const rgb = palette(T);
   const r = radius(0);
-  tube(T, models, s, [[0, -0.05, -0.12, r, r * 1.05], [0, 0.18, 0.16, r * 0.94, r * 0.98], [0, 0.42, 0.38, r * 0.86, r * 0.9], [0, 0.6, 0.52, r * 0.8, r * 0.84]], rgb, level === 2 ? 6 : 10, scaleColor);
+  tube(T, models, s, [[0, -0.02, -0.1, r, r * 1.05], [0, 0.22, 0.12, r * 0.97, r * 1.02], [0, 0.55, 0.22, r * 0.94, r], [0, 0.9, 0.24, r * 0.92, r * 0.98], [0, 1.18, 0.34, r * 0.9, r * 0.95]], rgb, level === 2 ? 6 : 10, bodyColor(false));
   if (level < 2) {
-    // juba farta: tufos para trás e para os lados
-    for (let k = 0; k < 4; k++) {
-      vane(T, models, s, rgb, [0, 0.35 + k * 0.12, 0.1 + k * 0.13], 0.5, 0.62, 0.12, ['maneLight', 'mane', 'claret']);
-      for (const sg of [-1, 1]) vane(T, models, s, rgb, [sg * 0.32, 0.2 + k * 0.12, 0.08 + k * 0.13], 0.28, 0.55, 0.09, ['maneLight', 'mane', 'claret'], sg * 0.4);
+    for (let k = 0; k < 5; k++) {
+      const y = 0.25 + k * 0.22;
+      const z = 0.12 + k * 0.04;
+      vane(T, models, s, rgb, [0, y, z - 0.1], 0.42 + 0.06 * k, 0.6, 0.13, ['maneLit', 'mane', 'maneDeep']);
+      for (const sg of [-1, 1]) vane(T, models, s, rgb, [sg * 0.22, y, z], 0.3 + 0.05 * k, 0.55, 0.11, ['maneLit', 'mane', 'maneDeep'], sg * 0.45);
     }
   }
   const g = s.geometry();
@@ -151,15 +205,14 @@ function neckGeometry(T, models, level) {
   return g;
 }
 
-// pata: braço escamado, tufo de chama no cotovelo e quatro garras douradas
-function legGeometry(T, models, level, front) {
-  const key = `leg/${front}/${level}`;
+// pata fina e escura, com garras laranja
+function legGeometry(T, models, level) {
+  const key = `leg/${level}`;
   if (geoCache.has(key)) return geoCache.get(key);
   const s = new models.Surface(T);
   const rgb = palette(T);
   const slices = level === 2 ? 5 : 8;
-  tube(T, models, s, [[0, 0.05, 0, 0.2, 0.2], [0, -0.22, 0.04, 0.16, 0.17], [0, -0.46, 0.1, 0.13, 0.13]], rgb, slices, (ring, k, up) => (ring === 0 ? 'ruby' : (ring + k) % 2 ? 'ruby' : 'ember'));
-  if (level < 2) vane(T, models, s, rgb, [0, -0.2, -0.08], 0.16, 0.34, 0.06, ['light', 'gold', 'ochre']);
+  tube(T, models, s, [[0, 0.04, 0, 0.13, 0.14], [0, -0.2, 0.06, 0.1, 0.11], [0, -0.42, 0.02, 0.08, 0.085]], rgb, slices, (ring, k) => ((ring + k) % 2 ? 'leg' : 'legLit'));
   const g = s.geometry();
   geoCache.set(key, g);
   return g;
@@ -169,41 +222,39 @@ function clawGeometry(T, models, level) {
   if (geoCache.has(key)) return geoCache.get(key);
   const s = new models.Surface(T);
   const rgb = palette(T);
-  const b = level === 0 ? 0.02 : 0;
-  models.bevel(s, [0, -0.04, 0.08], [0.26, 0.1, 0.3], b, rgb.ruby);
+  models.bevel(s, [0, -0.02, 0.06], [0.18, 0.08, 0.22], level === 0 ? 0.015 : 0, rgb.leg);
   for (let d = 0; d < 4; d++) {
-    const x = (d - 1.5) * 0.065;
-    models.bevel(s, [x, -0.07, 0.25], [0.05, 0.05, 0.1], 0, rgb.gold);
-    models.bevel(s, [x, -0.1, 0.31], [0.035, 0.035, 0.07], 0, rgb.light);
+    const x = (d - 1.5) * 0.05;
+    spike(T, models, s, rgb, [x, -0.04, 0.16], [x * 1.3, -0.12, 0.3], 0.022, ['claw', 'goldDeep']);
   }
   const g = s.geometry();
   geoCache.set(key, g);
   return g;
 }
-// nuvens sob o corpo (o dragão celestial anda sobre elas)
-function cloudGeometry(T, models, level) {
-  const key = `cloud/${level}`;
+// ponta da cauda: escura, com folhas douradas dos dois lados e ponta de flecha dourada
+function tailTipGeometry(T, models, level) {
+  const key = `tail/${level}`;
   if (geoCache.has(key)) return geoCache.get(key);
   const s = new models.Surface(T);
   const rgb = palette(T);
-  const b = level === 0 ? 0.06 : 0;
-  for (const [x, y, z, w, h, d] of [[0, 0, 0, 0.9, 0.32, 0.6], [0.35, 0.12, 0.1, 0.5, 0.36, 0.46], [-0.38, 0.08, -0.08, 0.52, 0.3, 0.44], [0.05, 0.2, -0.12, 0.42, 0.3, 0.4]]) {
-    models.bevel(s, [x, y, z], [w, h, d], b, y > 0.1 ? rgb.cloud : rgb.cloudShade);
+  const r = radius(SEGMENTS);
+  tube(T, models, s, [[0, 0, 0.04, r, r], [0, 0, -0.5, r * 0.8, r * 0.8], [0, 0, -0.95, r * 0.55, r * 0.55]], rgb, level === 2 ? 5 : 8, () => 'dark');
+  for (const [z, l] of [[-0.25, 0.3], [-0.6, 0.26], [-0.85, 0.2]]) {
+    for (const sg of [-1, 1]) spike(T, models, s, rgb, [sg * r * 0.7, 0, z], [sg * (r + l), 0.02, z - l * 0.9], 0.07, ['gold', 'goldDeep']);
   }
+  // ponta de flecha
+  spike(T, models, s, rgb, [0, 0, -0.95], [0, 0, -1.4], 0.16, ['goldLit', 'gold']);
   const g = s.geometry();
   geoCache.set(key, g);
   return g;
 }
-
-const pearlMat = new Map();
-const cloudMat = new Map();
 
 export function create(T, models, data, form = 'completa', level = 0) {
   const d = donor(T, models, data, level);
   const mat = d.meshes.cabeca.material;
   const root = new T.Group();
   root.name = 'Dragao_Oriental_Celestial';
-  root.scale.setScalar(1.15);
+  root.scale.setScalar(1.25);
   const joints = {};
   const meshes = {};
   const parts = [];
@@ -224,12 +275,12 @@ export function create(T, models, data, form = 'completa', level = 0) {
     }
     return j;
   };
-  add('peitoral', null, [0, 2.2, 0], segmentGeometry(T, models, 0, level));
-  add('pescoco', 'peitoral', [0, 0.08, 0.2], neckGeometry(T, models, level));
-  add('cabeca', 'pescoco', [0, 0.62, 0.62], d.meshes.cabeca.geometry, 0.98);
+  add('peitoral', null, [0, 1.9, 0], segmentGeometry(T, models, 0, level));
+  add('pescoco', 'peitoral', [0, 0.05, 0.12], neckGeometry(T, models, level));
+  add('cabeca', 'pescoco', [0, 1.2, 0.42], d.dark.cabeca, 0.8);
   for (const id of ['mandibula', 'orelha_E', 'orelha_D', 'bigode_E', 'bigode_D']) {
-    const p = d.parts.find((q) => q.id === id).pivot.map((v) => v * 0.98);
-    add(id, 'cabeca', p, d.meshes[id].geometry, 0.98);
+    const p = d.parts.find((q) => q.id === id).pivot.map((v) => v * 0.8);
+    add(id, 'cabeca', p, d.dark[id] ?? d.meshes[id].geometry, 0.8);
   }
   let prev = 'peitoral';
   for (let i = 1; i <= SEGMENTS; i++) {
@@ -237,28 +288,21 @@ export function create(T, models, data, form = 'completa', level = 0) {
     add(id, prev, [0, 0, -SEG_LEN], segmentGeometry(T, models, i, level));
     prev = id;
   }
-  add('cauda_folha', prev, [0, 0, -SEG_LEN], d.meshes.cauda_folha.geometry, 1.1);
-  add('cauda_lamina', 'cauda_folha', [0.1, 0.02, -0.62], d.meshes.cauda_lamina.geometry, 1.1);
-  // patas: dianteiras no 1º segmento, traseiras no 6º
+  add('cauda_ponta', prev, [0, 0, -SEG_LEN], tailTipGeometry(T, models, level));
+  // patas: dianteiras logo atrás do pescoço, traseiras no meio do corpo
   for (const [side, x] of [['E', 1], ['D', -1]]) {
-    for (const [front, seg] of [[true, 'corpo_1'], [false, 'corpo_6']]) {
+    for (const [front, seg] of [[true, 'corpo_1'], [false, 'corpo_7']]) {
       const leg = (front ? 'dianteira_' : 'traseira_') + side;
-      const r = radius(front ? 1 : 6);
-      add(`perna_${leg}`, seg, [x * r * 0.82, -r * 0.35, -0.22], legGeometry(T, models, level, front), front ? 1 : 0.85);
-      add(`pata_${leg}`, `perna_${leg}`, [0, -0.5, 0.12], clawGeometry(T, models, level), front ? 1 : 0.85);
+      const r = radius(front ? 1 : 7);
+      add(`perna_${leg}`, seg, [x * r * 0.9, -r * 0.35, -0.2], legGeometry(T, models, level));
+      add(`pata_${leg}`, `perna_${leg}`, [0, -0.44, 0.04], clawGeometry(T, models, level));
     }
   }
-  // nuvens sob o corpo e a pérola flamejante que o dragão persegue
-  if (!cloudMat.has(T)) cloudMat.set(T, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, emissive: '#dfe8ff', emissiveIntensity: 0.45 }));
-  add('nuvem_1', 'corpo_2', [0, -radius(2) - 0.3, -0.3], cloudGeometry(T, models, level), 1.5, cloudMat.get(T));
-  add('nuvem_2', 'corpo_7', [0, -radius(7) - 0.26, -0.3], cloudGeometry(T, models, level), 1.2, cloudMat.get(T));
-  if (!pearlMat.has(T)) pearlMat.set(T, new T.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffb02e', emissiveIntensity: 1.6, roughness: 0.3 }));
-  add('perola', 'peitoral', [0.55, 0.15, 1.25], new T.IcosahedronGeometry(0.2, level === 2 ? 0 : 1), 1, pearlMat.get(T));
   const points = {
-    peito: ['peitoral', [0, 0.25, 0.4]], boca: ['cabeca', [0, 0.16, 0.98]], pegada: ['mandibula', [0, 0, 0.45]],
-    palma_E: ['pata_dianteira_E', [0, -0.08, 0.3]], punho_E: ['pata_dianteira_E', [0, -0.08, 0.3]], apoio_E: ['pata_traseira_E', [0, -0.08, 0.2]],
-    palma_D: ['pata_dianteira_D', [0, -0.08, 0.3]], punho_D: ['pata_dianteira_D', [0, -0.08, 0.3]], apoio_D: ['pata_traseira_D', [0, -0.08, 0.2]],
-    cauda: ['cauda_lamina', [0, 0, -0.45]],
+    peito: ['peitoral', [0, 0.2, 0.3]], boca: ['cabeca', [0, 0.14, 0.82]], pegada: ['mandibula', [0, 0, 0.4]],
+    palma_E: ['pata_dianteira_E', [0, -0.08, 0.25]], punho_E: ['pata_dianteira_E', [0, -0.08, 0.25]], apoio_E: ['pata_traseira_E', [0, -0.08, 0.2]],
+    palma_D: ['pata_dianteira_D', [0, -0.08, 0.25]], punho_D: ['pata_dianteira_D', [0, -0.08, 0.25]], apoio_D: ['pata_traseira_D', [0, -0.08, 0.2]],
+    cauda: ['cauda_ponta', [0, 0, -1.2]],
   };
   const sockets = {};
   for (const [name, [parent, p]] of Object.entries(points)) {
@@ -276,10 +320,10 @@ export function create(T, models, data, form = 'completa', level = 0) {
       if (!m) continue;
       if (p.id === 'peitoral' || p.id.startsWith('corpo_')) m.geometry = segmentGeometry(T, models, p.id === 'peitoral' ? 0 : Number(p.id.split('_')[1]), next);
       else if (p.id === 'pescoco') m.geometry = neckGeometry(T, models, next);
-      else if (p.id.startsWith('perna_')) m.geometry = legGeometry(T, models, next, p.id.includes('dianteira'));
+      else if (p.id.startsWith('perna_')) m.geometry = legGeometry(T, models, next);
       else if (p.id.startsWith('pata_')) m.geometry = clawGeometry(T, models, next);
-      else if (p.id.startsWith('nuvem')) m.geometry = cloudGeometry(T, models, next);
-      else if (dn.meshes[p.id]) m.geometry = dn.meshes[p.id].geometry;
+      else if (p.id === 'cauda_ponta') m.geometry = tailTipGeometry(T, models, next);
+      else m.geometry = dn.dark[p.id] ?? dn.meshes[p.id].geometry;
     }
   };
   return rig;
@@ -312,7 +356,7 @@ export function animate(T, motion, data, rig, state) {
   const strike = act ? event(t, rel, rel * 0.45, (dur - rel) * 0.65) : 0;
   const fall = dead ? smooth(t / 1.1) : 0;
   // pairar: o corpo flutua acima do chão, mais alto no voo, rente à água nadando
-  const hover = (wet ? 0.95 : flying ? 2.7 : 2.2) + 0.12 * Math.sin(clock * 1.7) * (1 - fall);
+  const hover = (wet ? 0.9 : flying ? 2.4 : 1.9) + 0.12 * Math.sin(clock * 1.7) * (1 - fall);
   const base = j.peitoral;
   base.position.set(0, hover * (1 - fall) + 0.6 * fall, 0);
   base.rotation.set(-0.06 * Math.sin(clock * 1.7 + 0.8) * (1 - fall) + 0.1 * fall, 0.09 * Math.sin(wave + 0.7) * (1 - fall), 0.05 * Math.sin(wave) * (1 - fall));
@@ -328,9 +372,9 @@ export function animate(T, motion, data, rig, state) {
   for (let i = 1; i <= SEGMENTS; i++) {
     const seg = j[`corpo_${i}`];
     const k = i / SEGMENTS;
-    let ry = (amp * Math.sin(wave - i * 0.62) + 0.05 * Math.sin(i * 0.55 + 1)) * (0.7 + 0.6 * k);
+    let ry = (amp * Math.sin(wave - i * 0.55) + 0.07 * Math.sin(i * 0.45 + 1)) * (0.7 + 0.6 * k);
     // curva em S de dragão celestial: o corpo sobe e desce em laços mesmo parado
-    let rx = (0.2 * Math.sin(i * 0.8 + 0.5) + 0.06 * Math.sin(wave * 0.5 - i * 0.45)) * (1 - fall) + (dead ? 0.02 * Math.sin(i) * fall : 0);
+    let rx = (0.24 * Math.sin(i * 0.55 + 0.6) + 0.06 * Math.sin(wave * 0.5 - i * 0.45)) * (1 - fall) + (dead ? 0.02 * Math.sin(i) * fall : 0);
     // investida: enrola em S e depois estica
     ry += coil * 0.28 * Math.sin(i * 1.05) * (1 - straight);
     ry *= 1 - 0.7 * straight;
@@ -346,21 +390,13 @@ export function animate(T, motion, data, rig, state) {
     if (act?.kind === 'rugido') rx += 0.05 * ready * (1 - k);
     seg.rotation.set(rx, ry, 0.03 * Math.sin(wave - i * 0.5) * (1 - fall));
   }
-  j.cauda_folha.rotation.set(0, 0.25 * Math.sin(wave - 8) * (1 - fall) - 0.3 * whip, 0);
-  j.cauda_lamina.rotation.set(0, 0.3 * Math.sin(wave - 8.6) * (1 - fall) - 0.25 * whip, 0);
+  j.cauda_ponta.rotation.set(-0.1, 0.3 * Math.sin(wave - 9) * (1 - fall) - 0.35 * whip, 0);
   // pescoço e cabeça compensam a onda e olham à frente
   const neck = j.pescoco;
   const head = j.cabeca;
   neck.rotation.set(0.05 * Math.sin(clock * 1.7) + 0.35 * fall, -base.rotation.y * 0.8, 0);
   head.rotation.set(-0.04 * Math.sin(clock * 1.7 + 0.5) + 0.25 * fall, -base.rotation.y * 0.4 + 0.06 * Math.sin(clock * 0.8) * (1 - drive), 0);
-  head.position.set(0, 0.62, 0.62);
-  // a pérola flamejante gira diante do dragão; as nuvens respiram sob o corpo
-  if (j.perola) {
-    const o = clock * 1.3;
-    j.perola.position.set(0.6 * Math.cos(o), 0.2 + 0.12 * Math.sin(o * 1.7), 1.3 + 0.25 * Math.sin(o));
-    j.perola.rotation.set(o, o * 0.7, 0);
-  }
-  for (const [n, ph] of [['nuvem_1', 0], ['nuvem_2', 1.9]]) if (j[n]) j[n].scale.setScalar(1 + 0.06 * Math.sin(clock * 2 + ph));
+  head.position.set(0, 1.2, 0.42);
   j.mandibula.rotation.x = 0.04 + 0.03 * Math.sin(clock * 2.1);
   for (const [side, sign] of [['E', 1], ['D', -1]]) {
     j[`bigode_${side}`].rotation.set(0.05 * Math.sin(clock * 2 + sign), sign * 0.12 * Math.sin(clock * 1.4 + sign), 0);

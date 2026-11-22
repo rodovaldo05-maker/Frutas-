@@ -86,16 +86,16 @@ describe('prova racial', () => {
 });
 
 describe('despertar das frutas', () => {
-  it('bloqueado antes do domínio 59; prova de 30 acertos libera', () => {
+  it('bloqueado antes da maestria 581; prova de 30 acertos libera', () => {
     const save = {};
-    expect(awakenState(save, 'brasa', 58)).toBe('bloqueado');
-    expect(awakenState(save, 'brasa', 59)).toBe('prova');
-    expect(trialHit(save, 'brasa', 30)).toBe(false); // domínio baixo não conta
-    for (let i = 0; i < AWAKEN.trialHits - 1; i++) expect(trialHit(save, 'brasa', 60)).toBe(false);
+    expect(awakenState(save, 'brasa', 580)).toBe('bloqueado');
+    expect(awakenState(save, 'brasa', 581)).toBe('prova');
+    expect(trialHit(save, 'brasa', 300)).toBe(false); // maestria baixa não conta
+    for (let i = 0; i < AWAKEN.trialHits - 1; i++) expect(trialHit(save, 'brasa', 600)).toBe(false);
     expect(trialProgress(save, 'brasa')).toBe(AWAKEN.trialHits - 1);
-    expect(trialHit(save, 'brasa', 60)).toBe(true);
-    expect(awakenState(save, 'brasa', 60)).toBe('liberado');
-    expect(awakenState(save, 'geada', 60)).toBe('prova'); // é por fruta
+    expect(trialHit(save, 'brasa', 600)).toBe(true);
+    expect(awakenState(save, 'brasa', 600)).toBe('liberado');
+    expect(awakenState(save, 'geada', 600)).toBe('prova'); // é por fruta
     expect(normalizeAwaken({ awakened: { brasa: true, x: 'sim' }, awakenTrial: { fruit: 1 } })).toMatchObject({ awakened: { brasa: true }, awakenTrial: null });
   });
 
@@ -138,10 +138,10 @@ describe('despertar das frutas', () => {
 });
 
 describe('formas híbridas', () => {
-  it('só frutas de fera e a partir do domínio 20', () => {
+  it('só frutas de fera e a partir da maestria 191', () => {
     expect(FORM_IDS.sort()).toEqual(['besta', 'falcao', 'fenix', 'lobo', 'ocidental', 'oriental']);
     expect(formBlock('brasa', 80)).toMatch(/fera/);
-    expect(formBlock('lobo', FORM_UNLOCK - 1)).toMatch(/domínio/);
+    expect(formBlock('lobo', FORM_UNLOCK - 1)).toMatch(/maestria/);
     expect(formBlock('lobo', FORM_UNLOCK)).toBeNull();
     expect(formMods(null)).toMatchObject({ speed: 1, melee: 1, fruit: 1, extraJumps: 0 });
     expect(formMods('lobo').speed).toBe(1.2);
@@ -149,13 +149,13 @@ describe('formas híbridas', () => {
   });
 
 
-  it('forma completa no domínio 50; o botão passa por humana → híbrida → completa → humana', () => {
+  it('forma completa na maestria 491; o botão passa por humana → híbrida → completa → humana', () => {
     expect(formBlock('lobo', COMPLETE_UNLOCK - 1, 'completa')).toMatch(/completa/);
     expect(formBlock('lobo', COMPLETE_UNLOCK, 'completa')).toBeNull();
-    expect(nextShape(null, 80)).toBe('hibrida');
-    expect(nextShape('hibrida', 80)).toBe('completa');
-    expect(nextShape('hibrida', 30)).toBeNull();
-    expect(nextShape('completa', 80)).toBeNull();
+    expect(nextShape(null, 800)).toBe('hibrida');
+    expect(nextShape('hibrida', 800)).toBe('completa');
+    expect(nextShape('hibrida', 300)).toBeNull();
+    expect(nextShape('completa', 800)).toBeNull();
     expect(formMods('lobo', 'completa').speed).toBeGreaterThan(formMods('lobo').speed);
     expect(formMods('besta', 'completa').mitigation).toBeGreaterThan(formMods('besta').mitigation);
     expect(Object.keys(FORMS)).toHaveLength(6);
@@ -198,7 +198,7 @@ describe('formas híbridas', () => {
     }
     const serpent = createFormRig('oriental', 'completa', 2);
     expect(serpent.serpent).toBe(true);
-    expect(Object.keys(serpent.joints).filter((k) => k.startsWith('corpo_')).length).toBe(10);
+    expect(Object.keys(serpent.joints).filter((k) => k.startsWith('corpo_')).length).toBe(14);
     expect(serpent.joints.cabeca && serpent.joints.mandibula && serpent.joints.bigode_E && serpent.joints.orelha_E).toBeTruthy();
     // a garra anterior sobe a pata dianteira no preparo e corta no impacto
     const pose = (t) => {

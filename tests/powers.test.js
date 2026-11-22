@@ -23,7 +23,7 @@ const dummyAt = (x, z, hostile = false) => ({
   id: `alvo-${x}-${z}`, pos: new THREE.Vector3(x, 0, z), alive: true, hostile, radius: 0.8, defense: 0, hits: [],
   receiveHit(h) { this.hits.push(h); return { result: 'hit', damage: h.damage }; },
 });
-function setup(id, level = 100) {
+function setup(id, level = 1000) {
   const ctl = fakeCtl();
   const events = [];
   const p = new FruitPowers({ ctl, stats: () => ({ fruit: 1, domain: 1 }), onEvent: (n, d) => events.push([n, d]) });
@@ -94,7 +94,7 @@ describe('poderes das frutas: uso', () => {
   it('habilidades bloqueadas pelo domínio e sem energia', () => {
     const s = setup('geada', 1);
     expect(s.p.cast(1, [], true)).toBe(false);
-    expect(s.events.at(-1)[1].message).toMatch(/domínio 5/);
+    expect(s.events.at(-1)[1].message).toMatch(/maestria 41/);
     const s2 = setup('geada');
     s2.p.energy = 5;
     expect(s2.p.cast(0, [], true)).toBe(false);
@@ -159,10 +159,11 @@ describe('poderes das frutas: uso', () => {
 });
 
 describe('domínio da fruta', () => {
-  it('curva × 1,4 e bônus de dano até +30%', () => {
-    expect(domainXpToNext(1)).toBe(Math.round(120 * 1.4));
+  it('maestria 1–1000: 10 níveis novos custam um nível antigo; bônus de dano até +30%', () => {
+    expect(domainXpToNext(1)).toBe(Math.round(Math.round(130 * 1.4) / 10));
     expect(domainBonus(1)).toBe(1);
-    expect(domainBonus(100)).toBeCloseTo(1.3);
+    expect(domainBonus(1000)).toBeCloseTo(1.3);
+    expect(domainBonus(5000)).toBeCloseTo(1.3); // não cresce para sempre
   });
 
   it('sobe por fruta e não apaga ao trocar', () => {
@@ -171,11 +172,15 @@ describe('domínio da fruta', () => {
     addDomainXp(save, 'geada', 10);
     expect(save.domain.brasa.level).toBeGreaterThan(2);
     expect(save.domain.geada.level).toBe(1);
-    expect(normalizeDomain({ brasa: { level: '7', xp: 3 }, x: { level: -2 } })).toEqual({ brasa: { level: 7, xp: 3 }, x: { level: 1, xp: 0 } });
+    // salvo antigo (1–100) migra para a escala nova: nível × 10
+    const n = normalizeDomain({ brasa: { level: '7', xp: 3 }, x: { level: -2 } });
+    expect(n.brasa.level).toBe(61);
+    expect(n.x.level).toBe(1);
+    expect(n.brasa.v).toBe(2);
   });
 
-  it('as habilidades 2 e 3 abrem nos domínios 5 e 13', () => {
-    expect(UNLOCK).toEqual([1, 5, 13]);
+  it('as habilidades 2 e 3 abrem nas maestrias 41 e 121', () => {
+    expect(UNLOCK).toEqual([1, 41, 121]);
   });
 });
 
@@ -186,10 +191,10 @@ describe('recargas (revisão)', () => {
     expect(s.p.cast(0, [t], true)).toBe(true);
     const cd = s.p.cooldown[0];
     expect(cd).toBeGreaterThan(0);
-    s.p.setFruit(fruit('geada'), powersOf(fruit('geada')), 100); // como trocar de slot ou subir de nível
+    s.p.setFruit(fruit('geada'), powersOf(fruit('geada')), 1000); // como trocar de slot ou subir de nível
     expect(s.p.cooldown[0]).toBe(cd);
     expect(s.p.casting).not.toBeNull();
-    s.p.setFruit(fruit('brasa'), powersOf(fruit('brasa')), 100); // fruta nova: zera
+    s.p.setFruit(fruit('brasa'), powersOf(fruit('brasa')), 1000); // fruta nova: zera
     expect(s.p.cooldown[0]).toBe(0);
   });
 

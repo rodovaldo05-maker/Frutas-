@@ -11,6 +11,7 @@ import { STATUS_KEYS, STATUS_INFO, TRAINED_TWIN, allocate, resetStatus, maxHealt
 import { ICONS } from './icons.js';
 import { fruitName } from '../fruits/catalog.js';
 import { domainProgress } from '../progression/domain.js';
+import { stageOf, marcosOf, MARCOS, AWAKEN_TITLES, MASTERY_AWAKEN, normalizeMastery } from '../progression/mastery.js';
 import { RACES, raceXpToNext, SPECS, SPEC_LEVEL, SPEC_UP_LEVEL, SPEC_CHANGE_COST, RACE_TRIAL, RACE_MAX, AWAKENED_TEXT } from '../races/races.js';
 import { ITEMS, SLOTS, SLOT_NAMES, QUALITY, gearTotals, equipItem, unequip, isBroken, itemMult, itemLabel } from '../items/items.js';
 
@@ -19,8 +20,10 @@ const fmt = (n) => n.toLocaleString('pt-BR');
 const ICON = { forca: 'fist', defesa: 'shield', fruta: 'fruit', espada: 'sword', vitalidade: 'vital' };
 
 export class StatusScreen {
-  constructor({ save, onChange, profHtml = () => '', raceActions = {}, outfitHtml = () => '' }) {
+  constructor({ save, onChange, profHtml = () => '', raceActions = {}, outfitHtml = () => '', envNow = () => null, beast = () => false }) {
     this.save = save;
+    this.envNow = envNow; // multiplicador de ambiente agora (maestria, atualização 23)
+    this.beast = beast;
     this.outfitHtml = outfitHtml; // aba Roupas (guarda-roupa)
     this.onChange = onChange;
     this.profHtml = profHtml; // aba Profissões (atualização 12)
@@ -80,8 +83,19 @@ export class StatusScreen {
     $('status-xp-bar').style.transform = `scaleX(${s.level >= MAX_LEVEL ? 1 : Math.min(1, (s.xp || 0) / need)})`;
     $('status-xp-text').textContent = s.level >= MAX_LEVEL ? 'Nível máximo' : `${fmt(Math.floor(s.xp || 0))} / ${fmt(need)} exp`;
     const eaten = s.eaten?.fruit;
-    const dom = eaten ? s.domain?.[eaten] ?? { level: 1, xp: 0 } : null;
-    const domLine = dom ? `<span>Domínio de ${fruitName(eaten)} <b>Nv. ${dom.level}</b> (${Math.floor(domainProgress(dom) * 100)}%)</span>` : '';
+    const dom = eaten ? normalizeMastery(s.domain?.[eaten]) : null;
+    let domLine = '';
+    if (dom) {
+      // maestria 1–1000: estágio, trilhas, ambiente agora, marcos e despertar (atualização 23)
+      const env = this.envNow();
+      const tr = dom.tracks;
+      const mk = marcosOf(dom);
+      const awake = dom.level >= MASTERY_AWAKEN.from ? ` · Despertar: <b>${AWAKEN_TITLES[eaten]}</b>` : '';
+      domLine = `<span>Maestria de ${fruitName(eaten)} <b>Nv. ${dom.level}/1000</b> (${Math.floor(domainProgress(dom) * 100)}%) · ${stageOf(dom.level).nome}${awake}</span>`
+        + `<span>Afinidade <b>${tr.afinidade.level}</b> · Técnica <b>${tr.tecnica.level}</b>${this.beast(eaten) ? ` · Sincronia <b>${tr.sincronia.level}</b> (${mk.length}/${MARCOS.length} marcos)` : ''}</span>`
+        + (env ? `<span>Ambiente agora: <b>${env.label}</b> ×${String(env.mult).replace('.', ',')} (${env.tier})</span>` : '')
+        + (eaten === 'tormenta' ? `<span>Batismo do Trovão: <b>${dom.batismo ? 'recebido' : 'aguardando um raio natural'}</b></span>` : '');
+    }
     const race = RACES[s.race];
     const g = gearTotals(s);
     $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status) + g.vida)}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t) + g.folego)}</b></span>${domLine}<span>Tipo corporal <b>${race ? race.nome : 'a escolher'}</b></span>`;

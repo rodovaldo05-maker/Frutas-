@@ -56,6 +56,7 @@ import { powersOf } from './fruits/powers.js';
 import { fruitStyle } from './combat/rules.js';
 import { FRUTOMotion } from './animation/fruto-motion.js';
 import { domainOf, addDomainXp, domainBonus } from './progression/domain.js';
+import { envMultiplier, stageOf, addTrackXp, marcoMods, MARCOS, naturalLightning, envImmune, affinityCostMult, techniqueCdMult, MASTERY_AWAKEN, AWAKEN_TITLES } from './progression/mastery.js';
 import { PowerFx } from './vfx/powerFx.js';
 import { SkillBar } from './ui/skillBar.js';
 import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
@@ -257,6 +258,13 @@ async function boot() {
   let playerTint = '#000000';
   let wingBurst = 0;
   let form = null; // forma de fera ativa { id, shape, rig } (atualizações 13 e 21)
+  // números da forma + marcos de transformação da sincronia (atualização 23)
+  function formModsNow() {
+    const fm = formMods(form?.id, form?.shape);
+    if (!form) return fm;
+    const mk = marcoMods(domainOf(save, form.id), !!WINGED[form.id]);
+    return { ...fm, speed: fm.speed + mk.speed, melee: fm.melee + mk.melee, fruit: fm.fruit + mk.fruit, mitigation: fm.mitigation + mk.mitigation, extraJumps: fm.extraJumps + mk.extraJumps, reach: mk.reach, energy: mk.energy, transform: mk.transform };
+  }
   let raceParts = save.race ? addRaceParts(player.body, save.race) : null;
   const raceSys = new RaceSystem({ ctl, save, onEvent: (name, d) => onRaceEvent(name, d) });
   let baseRegen = 1;
@@ -271,7 +279,7 @@ async function boot() {
     baseRegen = b.staminaRegen * (1 - g.pesoPenalty);
     ctl.stamina.regenMult = baseRegen;
     const rm = raceSys.mods;
-    const fm = formMods(form?.id, form?.shape);
+    const fm = formModsNow();
     ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed * rm.glideSpeed * fm.glide, glideFall: b.glideFall * rm.glideFall };
     ctl.race = { extraJumps: rm.extraJumps + fm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda) * fm.fall, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
     ctl.speedMult = fm.speed;
@@ -281,9 +289,12 @@ async function boot() {
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
     powers?.setEnergyMax(maxEnergy(save.status) + g.energia);
     if (powers) {
-      powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen);
+      powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen) * (1 + (form ? formModsNow().energy : 0));
       powers.dmgMult = fm.fruit;
       powers.cdMult = rm.fruitCd;
+      // técnica da fruta: até −10% de recarga (atualização 23)
+      const ef = eatenFruit();
+      if (ef) powers.cdMult *= techniqueCdMult(domainOf(save, ef.id));
     }
   };
   let gearParts = [];
@@ -365,7 +376,7 @@ async function boot() {
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
       const g = gearTotals(save);
-      const fm = formMods(form?.id, form?.shape);
+      const fm = formModsNow();
       const wake = powers?.awakened && save.equipped === 'fruta' ? AWAKEN.damage : 1; // combo da fruta desperta
       return { melee: m.melee * rm.meleeMult * fm.melee * wake, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
@@ -381,6 +392,7 @@ async function boot() {
           // evento de impacto da animação (M1): efeito da fruta e som saem uma vez por golpe
           const a = d.attack;
           if (!a.m1) break;
+          m1Technique(a, d.landed, d.target);
           const f = eatenFruit();
           const dir = { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) };
           const at = m1Point(a, d.target);
@@ -438,6 +450,8 @@ async function boot() {
           if (d.attack.weapon) grantProf(t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           else tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
           if (d.attack.fruit) grantDomain(d.attack.fruit, t.hostile ? 1 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
+          // sincronia: combater transformado (completa vale mais)
+          if (form && t.hostile && d.attack.fruit === form.id) grantTrack(form.id, 'sincronia', form.shape === 'completa' ? 1.5 : 1, `${t.id}:${t.life}`, true);
           if (d.result === 'break') floats.add({ ...at, y: at.y + 0.8 }, 'Guarda quebrada!', 'perfeita');
           break;
         }
@@ -486,7 +500,7 @@ async function boot() {
   });
   // forma híbrida ativa: o M1 usa a variante híbrida dos golpes (mesmo quadro de impacto)
   combat.formShape = () => form?.shape ?? null;
-  combat.formReach = () => (form?.shape === 'completa' ? 1.35 : form ? 1.1 : 1);
+  combat.formReach = () => (form?.shape === 'completa' ? 1.35 : form ? 1.1 : 1) * (1 + (form ? formModsNow().reach : 0));
   // Ponto do impacto do M1: o encaixe do golpe (punho, palma, pé, boca) no corpo animado;
   // com alvo atingido, entre o encaixe e o peito do alvo
   const m1Tmp = new THREE.Vector3();
@@ -689,7 +703,7 @@ async function boot() {
     form = { id: f.id, shape, rig };
     showForm(player.body, rig);
     animator.form = rig;
-    ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME); // invulnerável durante a troca
+    ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME * formModsNow().transform); // invulnerável durante a troca (o marco Controle inicial encurta)
     fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f.color, { count: shape === 'completa' ? 48 : 32, speed: 6, up: 4 });
     fx.ring(ctl.pos, f.color, shape === 'completa' ? 5 : 3.5, FORM_TIME);
     audio.play('base', 'wing', 0.9);
@@ -712,6 +726,74 @@ async function boot() {
     if (!['ground', 'air', 'glide'].includes(ctl.state)) return hud.toast('Transforme-se em terra ou no ar.');
     setForm(next);
   }
+  // ===== Maestria 1–1000 (atualização 23; Prompt Mestre, seção 6) =====
+  // contexto de ambiente para o multiplicador de XP da fruta
+  function envContext(foe = null) {
+    const p = ctl.pos;
+    const seaIsland = sea.find((s) => s.field.inside(p.x, p.z));
+    let biome = seaIsland?.def.biome ?? null;
+    let crater = false;
+    if (seaIsland && biome === 'vulcao') crater = Math.hypot(p.x - seaIsland.def.x, p.z - seaIsland.def.z) < seaIsland.def.R * 0.4;
+    if (!biome) biome = village.field.inside(p.x, p.z) ? 'cidade' : island.field.inside(p.x, p.z) ? 'floresta' : null;
+    const ground = world.sample(p.x, p.z);
+    const weather = crossing ? 'tempestade' : save.weather?.state ?? 'sol';
+    const night = daylight(hourOf(save.clock)).k < 0.3;
+    const sea0 = !biome || boat.aboard;
+    return {
+      biome, crater, weather, night, sun: weather === 'sol' && !night, sea: sea0,
+      nearWater: sea0 || ['swim', 'dive'].includes(ctl.state) || ground < 1.2,
+      flying: ['glide', 'air'].includes(ctl.state) && p.y - ground > 3,
+      altitude: p.y > 34, form: form?.shape ?? null, lowHealth: ctl.health < ctl.maxHealth * 0.3,
+      strongTarget: !!foe && ((foe.level ?? foe.def?.level ?? 0) > save.level || foe.boss || foe.isBeast),
+      boss: !!foe && (foe.boss || foe.isBeast),
+    };
+  }
+  const envFor = (fruitId, foe = null) => envMultiplier(fruitId, envContext(foe));
+  let envLabel = null;
+  let envAt = -99;
+  function showEnv(env) {
+    if (env.label === envLabel && performance.now() - envAt < 60000) return;
+    envLabel = env.label;
+    envAt = performance.now();
+    hud.notice(`Afinidade: ${env.label} · maestria ×${String(env.mult).replace('.', ',')}`, 'zone', 'afinidade');
+  }
+  // trilhas: afinidade, técnica e sincronia (1 a 100); marcos de transformação na sincronia
+  function grantTrack(fruitId, track, xp, key = null, hostile = true) {
+    let amount = xp;
+    if (!hostile) amount *= tracker.farm.repetition(`trilha:${track}:${key}`, ctl.pos, tracker.now);
+    if (!(amount > 0)) return;
+    const m = domainOf(save, fruitId);
+    const before = m.tracks[track].level;
+    const levels = addTrackXp(m, track, amount);
+    if (!levels) return;
+    const label = { afinidade: 'Afinidade', tecnica: 'Técnica', sincronia: 'Sincronia' }[track];
+    const marco = track === 'sincronia' ? MARCOS.find((k) => k.nivel > before && k.nivel <= m.tracks.sincronia.level) : null;
+    if (marco) hud.toast(`Marco de transformação: ${marco.nome} — ${marco.desc}`, 'gold');
+    else if (m.tracks[track].level % 5 === 0) hud.toast(`${label} da fruta nível ${m.tracks[track].level}`, 'good');
+    applyStatus();
+    refreshEquip();
+  }
+  // técnica: sequência de M1 completa (4/4) acertando um inimigo em todos os golpes
+  let m1Run = 0;
+  function m1Technique(a, landed, target) {
+    if (a.m1 === 1) m1Run = 0;
+    m1Run = landed && target?.hostile ? m1Run + 1 : -99;
+    if (a.m1 === 4 && m1Run === 4 && a.fruit) grantTrack(a.fruit, 'tecnica', 3, `${target.id}:${target.life}`, true);
+  }
+  // Batismo do Trovão (Tormenta): raio natural acerta o jogador
+  function naturalStrike() {
+    const f = eatenFruit();
+    if (f?.id !== 'tormenta') return;
+    const m = domainOf(save, 'tormenta');
+    const r = naturalLightning(m, Math.floor(save.clock / 24));
+    if (r.batismo) {
+      hud.toast('Batismo do Trovão! +1 nível de maestria da Tormenta', 'gold');
+      fx.ring(ctl.pos, '#ffe45a', 4, 1.2);
+    } else if (r.xp) floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3.4, z: ctl.pos.z }, `+${r.xp} maestria (raio)`, 'perfeita');
+    powers.domainLevel = m.level;
+    refreshEquip();
+    saveNow(true);
+  }
   const domainBudget = new Map();
   let deniedAt = -9;
   function grantDomain(fruitId, xp, key, hostile, foe) {
@@ -723,13 +805,22 @@ async function boot() {
       domainBudget.set(k, used + amount);
     } else amount *= tracker.farm.repetition(`dominio:${key}`, ctl.pos, tracker.now);
     if (amount <= 0) return;
+    // ambiente (atualização 23): favorável 1,5x, ideal 2x, extremo 2,5x, raro até 4x (teto 4x)
+    const env = envFor(fruitId, foe);
+    amount *= env.mult;
+    if (env.mult > 1) {
+      grantTrack(fruitId, 'afinidade', amount * 0.3);
+      showEnv(env);
+    }
     const before = domainOf(save, fruitId).level;
     const levels = addDomainXp(save, fruitId, amount);
     if (!levels) return;
     const d = domainOf(save, fruitId);
     const f = DATA.fruits.find((x) => x.id === fruitId);
     const opened = powers.powers.filter((p) => p.unlock > before && p.unlock <= d.level).map((p) => p.nome);
-    hud.toast(`Domínio de ${f?.name ?? fruitId} nível ${d.level}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length ? 'gold' : 'good');
+    const stage = stageOf(d.level);
+    const newStage = stageOf(before).nome !== stage.nome;
+    hud.toast(`Maestria de ${f?.name ?? fruitId} nível ${d.level}${newStage ? ` · estágio ${stage.nome}!` : ''}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length || newStage ? 'gold' : 'good');
     audio.play('base', 'wing', 0.9);
     powers.domainLevel = d.level;
     refreshEquip();
@@ -785,6 +876,9 @@ async function boot() {
           else if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
           else {
             grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
+            // técnica: habilidade que acerta um inimigo; sincronia se transformado
+            if (t.hostile) grantTrack(d.power.fruit, 'tecnica', 1, `${t.id}:${t.life}:${d.power.slot}`, true);
+            if (t.hostile && form?.id === d.power.fruit) grantTrack(form.id, 'sincronia', 1, `${t.id}:${t.life}`, true);
             // Prova do Despertar: habilidades da fruta acertando inimigos
             if (t.hostile && d.power.fruit === eatenFruit()?.id) {
               const lv = domainOf(save, d.power.fruit).level;
@@ -889,6 +983,9 @@ async function boot() {
     if (!f && save.equipped === 'fruta') save.equipped = 'estilo';
     const level = f ? domainOf(save, f.id).level : 1;
     powers.domainLevel = level;
+    // despertar da maestria (851+): o despertar da fruta gasta menos e bate um pouco mais
+    powers.awakenDrain = level >= MASTERY_AWAKEN.from ? MASTERY_AWAKEN.drain : 1;
+    powers.awakenDamage = level >= MASTERY_AWAKEN.from ? MASTERY_AWAKEN.damage : 1;
     const w = WEAPONS[save.weapon] ?? null;
     if (!w && save.equipped === 'arma') save.equipped = 'estilo';
     const fruitOn = save.equipped === 'fruta' && !!f;
@@ -1118,6 +1215,7 @@ async function boot() {
       audio.play('tormenta', 'acerto', 0.9);
       if (Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < CROSSING.strikeRadius + 1) {
         fleet.damageHull(Math.round(fleet.maxHull * CROSSING.strikeDamage), m);
+        naturalStrike(); // raio natural da travessia também batiza a Tormenta
         conditions.apply('choque', { stacks: 1 });
       } else if (Math.random() < 0.5) {
         floats.add({ x: m.x, y: m.y + 2, z: m.z }, 'Desviou!', 'esquiva');
@@ -1140,6 +1238,9 @@ async function boot() {
     weatherTick -= dt;
     if (weatherTick <= 0) {
       weatherTick = 1;
+      // afinidade: no ambiente favorável a fruta gasta menos energia (atualização 23)
+      const ef = eatenFruit();
+      powers.costMult = ef ? affinityCostMult(domainOf(save, ef.id), envFor(ef.id).mult) : 1;
       save.weather ??= { state: 'sol', until: 0, sea: 1 };
       const prev = save.weather.state;
       if (stepWeather(save.weather, save.clock, seaOf(ctl.pos.z))) {
@@ -1172,9 +1273,15 @@ async function boot() {
       fx.bolt({ x: m.x, y: m.y + 24, z: m.z }, { x: m.x, y: m.y + 0.2, z: m.z }, '#fff4b0', 0.25);
       storm.flash(settings.reduceFx ? 0.25 : 1);
       audio.play('tormenta', 'acerto', 0.8);
-      if (boat.aboard && Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < STRIKE.radius + 1) fleet.damageHull(Math.round(fleet.maxHull * STRIKE.hull), m);
-      else if (!boat.aboard && Math.hypot(ctl.pos.x - m.x, ctl.pos.z - m.z) < STRIKE.radius && Math.abs(ctl.pos.y - m.y) < 4) {
-        enemyHit({ id: 'raio', pos: m, yaw: 0, life: 1 }, { id: 'raio-tempestade', posture: 10, knock: 1.5, reaction: 'media', element: 'raio', effects: { choque: { stacks: 2 } } }, Math.round(ctl.maxHealth * STRIKE.damage), m);
+      if (boat.aboard && Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < STRIKE.radius + 1) {
+        fleet.damageHull(Math.round(fleet.maxHull * STRIKE.hull), m);
+        naturalStrike();
+      } else if (!boat.aboard && Math.hypot(ctl.pos.x - m.x, ctl.pos.z - m.z) < STRIKE.radius && Math.abs(ctl.pos.y - m.y) < 4) {
+        naturalStrike(); // Batismo do Trovão (Tormenta)
+        // maestria 451+ da Tormenta: imune ao raio natural comum (não a ataques de chefes)
+        const ef = eatenFruit();
+        if (ef && envImmune(ef.id, domainOf(save, ef.id).level, 'raio-natural')) floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Absorveu o raio', 'esquiva');
+        else enemyHit({ id: 'raio', pos: m, yaw: 0, life: 1 }, { id: 'raio-tempestade', posture: 10, knock: 1.5, reaction: 'media', element: 'raio', effects: { choque: { stacks: 2 } } }, Math.round(ctl.maxHealth * STRIKE.damage), m);
       }
     }
   }
@@ -1524,6 +1631,8 @@ async function boot() {
   });
   const statusScreen = new StatusScreen({
     save,
+    envNow: () => (eatenFruit() ? envFor(eatenFruit().id) : null),
+    beast: (id) => hasForm(id),
     profHtml: () => forgeUi.profHtml(),
     outfitHtml: () => outfitHtml(),
     raceActions: {
@@ -2181,7 +2290,7 @@ async function boot() {
       if (inp.formPressed) toggleForm();
       // vida por segundo: Fênix híbrida e Maré Viva (na água)
       {
-        const regen = formMods(form?.id, form?.shape).regen + ((ctl.state === 'swim' || ctl.state === 'dive') ? raceSys.mods.waterRegen : 0);
+        const regen = formModsNow().regen + ((ctl.state === 'swim' || ctl.state === 'dive') ? raceSys.mods.waterRegen : 0);
         if (regen > 0 && ctl.faint <= 0 && ctl.health < ctl.maxHealth) ctl.health = Math.min(ctl.maxHealth, ctl.health + regen * dt);
       }
       raceSys.update(dt);
@@ -2195,7 +2304,7 @@ async function boot() {
             const st = awakenState(save, f?.id, lv);
             if (st === 'liberado') powers.toggleAwaken();
             else if (st === 'prova') hud.toast(`Prova do Despertar: acerte ${AWAKEN.trialHits} habilidades da fruta em inimigos (${trialProgress(save, f.id)}/${AWAKEN.trialHits}).`);
-            else hud.toast(`Despertar: domínio ${AWAKEN.level} da fruta.`);
+            else hud.toast(`Despertar: maestria ${AWAKEN.level} da fruta.`);
           } else powers.cast(inp.skill, arena.targets, canCast);
         } else if (save.equipped === 'arma') {
           if (inp.skill < 3) blade.cast(inp.skill, arena.targets, canCast);

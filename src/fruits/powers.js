@@ -34,7 +34,7 @@ const SHAPES = {
 };
 
 // Domínio necessário para cada habilidade (equivale a 0, 25 e 75 de 600 na ficha da fruta)
-export const UNLOCK = [1, 5, 13];
+export const UNLOCK = [1, 41, 121]; // maestria 1–1000 (atualização 23; antes 1, 5 e 13)
 export const AWAKEN_LEVEL = 59; // despertar (atualização 13)
 
 // As três habilidades de uma fruta do laboratório, prontas para o jogo

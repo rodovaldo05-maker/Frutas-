@@ -5,7 +5,7 @@
 // completa (Lobo e Besta quadrúpedes, Falcão e Fênix aves, Dragão Ocidental com quatro patas e
 // asas). Só o Dragão Oriental completo é novo: serpente celestial articulada (orientalSerpent.js).
 // As animações de golpe das formas são novas (formM1.js); a locomoção é a do laboratório.
-// Híbrida: domínio 20 da fruta. Completa: domínio 50. Tecla H ou botão Forma: humana → híbrida
+// Híbrida: maestria 191 da fruta. Completa: maestria 491. Tecla H ou botão Forma: humana → híbrida
 // → completa → humana. Transformar leva 0,6 s, com invulnerabilidade; não gasta energia.
 
 import * as THREE from 'three';
@@ -16,8 +16,8 @@ import { OrientalSerpent } from '../characters/orientalSerpent.js';
 import { FRUTOMotion } from '../animation/fruto-motion.js';
 import { completeId, hybridOverlay } from './formM1.js';
 
-export const FORM_UNLOCK = 20; // forma híbrida
-export const COMPLETE_UNLOCK = 50; // forma completa
+export const FORM_UNLOCK = 191; // forma híbrida (maestria 1–1000; antes domínio 20)
+export const COMPLETE_UNLOCK = 491; // forma completa (antes domínio 50)
 export const FORM_TIME = 0.6;
 export const SHAPES = ['hibrida', 'completa'];
 
@@ -64,8 +64,8 @@ export function formMods(formId, shape = 'hibrida') {
 // Pode assumir esta forma agora? (motivo ou null)
 export function formBlock(fruitId, domainLevel, shape = 'hibrida') {
   if (!hasForm(fruitId)) return 'Só frutas de fera (Lobo, Falcão, Besta, Fênix e Dragões) têm forma híbrida.';
-  if (domainLevel < FORM_UNLOCK) return `Forma híbrida: domínio ${FORM_UNLOCK} da fruta.`;
-  if (shape === 'completa' && domainLevel < COMPLETE_UNLOCK) return `Forma completa: domínio ${COMPLETE_UNLOCK} da fruta.`;
+  if (domainLevel < FORM_UNLOCK) return `Forma híbrida: maestria ${FORM_UNLOCK} da fruta.`;
+  if (shape === 'completa' && domainLevel < COMPLETE_UNLOCK) return `Forma completa: maestria ${COMPLETE_UNLOCK} da fruta.`;
   return null;
 }
 
@@ -210,6 +210,12 @@ export function greyMap(rig) {
   return out;
 }
 
+const boxOf = (geo) => {
+  geo.computeBoundingBox();
+  const b = geo.boundingBox;
+  return { size: b.getSize(new THREE.Vector3()).toArray(), center: b.getCenter(new THREE.Vector3()).toArray() };
+};
+
 // look: { colorOf(segmentId) → cor, skin, hair, dress(joints) → peças de roupa/armadura, Face }
 export function dressHybrid(rig, look, lod = 1) {
   undressHybrid(rig);
@@ -220,21 +226,29 @@ export function dressHybrid(rig, look, lod = 1) {
   const hidden = [];
   const recolored = [];
   const replaced = new Set();
+  const fits = {};
   for (const [id, frac] of Object.entries(grey)) {
     const mesh = rig.meshes[id];
     if (frac >= 0.95 && human.meshes[id]) {
-      // troca pela peça do corpo do personagem
+      // troca pela peça do corpo do personagem, na medida da peça do laboratório (proporção
+      // da forma híbrida mantida: tronco largo, cintura firme); roupa e armadura acompanham
       const src = human.meshes[id];
       const mat = src.material.clone();
       mat.color.set(look.colorOf(id));
+      const fit = new THREE.Group();
+      fit.name = `${id}_medida`;
+      const lab = boxOf(mesh.geometry);
+      const hum = boxOf(src.geometry);
+      const k = [0, 1, 2].map((i) => Math.max(0.8, Math.min(1.6, lab.size[i] / Math.max(1e-3, hum.size[i]))));
+      fit.scale.set(...k);
+      fit.position.set(...[0, 1, 2].map((i) => lab.center[i] - hum.center[i] * k[i]));
       const m = new THREE.Mesh(src.geometry, mat);
-      m.position.copy(src.position);
-      m.rotation.copy(src.rotation);
-      m.scale.copy(src.scale);
       m.castShadow = m.receiveShadow = true;
       m.name = `${id}_personagem`;
-      rig.joints[id].add(m);
-      added.push(m);
+      fit.add(m);
+      rig.joints[id].add(fit);
+      fits[id] = fit;
+      added.push(fit);
       mesh.visible = false;
       hidden.push(mesh);
       replaced.add(id);
@@ -258,12 +272,12 @@ export function dressHybrid(rig, look, lod = 1) {
   }
   // roupa, armadura, rosto e cabelo só nas peças trocadas
   const sink = new THREE.Group();
-  const joints = new Proxy(rig.joints, { get: (o, k) => (replaced.has(k) ? o[k] : sink) });
+  const joints = new Proxy(rig.joints, { get: (o, k) => (replaced.has(k) ? fits[k] : sink) });
   if (look.dress) added.push(...(look.dress(joints) ?? []).filter((p) => p && p.parent && p.parent !== sink));
   let face = null;
   // cabeça humana (trocada ou com a pele recolorida): rosto e cabelo do personagem
   if ((grey.cabeca ?? 0) >= 0.6 && look.Face) {
-    face = new look.Face(rig.joints.cabeca, { hair: look.hair, skin: look.skin });
+    face = new look.Face(fits.cabeca ?? rig.joints.cabeca, { hair: look.hair, skin: look.skin });
     added.push(face.group);
   }
   rig.dressing = { added, hidden, recolored, face };

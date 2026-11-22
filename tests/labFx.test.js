@@ -28,7 +28,7 @@ describe('efeitos do laboratório nos poderes', () => {
     for (const f of catalog.fruits) {
       const { scene, lab } = setup();
       const p = new FruitPowers({ ctl: fakeCtl(), fx: null, lab, stats: () => ({ fruit: 1, domain: 1 }) });
-      p.setFruit(f, powersOf(f), 100);
+      p.setFruit(f, powersOf(f), 1000);
       const targets = [dummy(0, 4), dummy(1.5, 6), dummy(-1, 3)];
       let hits = 0;
       for (const slot of [0, 1, 2]) {
@@ -53,7 +53,7 @@ describe('efeitos do laboratório nos poderes', () => {
     const { lab, generic } = setup();
     const p = new FruitPowers({ ctl: fakeCtl(), fx: generic, lab, stats: () => ({ fruit: 1, domain: 1 }) });
     const f = catalog.fruits.find((x) => x.id === 'brasa');
-    p.setFruit(f, powersOf(f), 100);
+    p.setFruit(f, powersOf(f), 1000);
     const targets = [dummy(0, 4)];
     p.cast(0, targets, true);
     for (let i = 0; i < 120; i++) p.update(1 / 60, targets, true);
@@ -65,7 +65,7 @@ describe('efeitos do laboratório nos poderes', () => {
     const { scene, lab } = setup();
     const p = new FruitPowers({ ctl: fakeCtl(), fx: null, lab, stats: () => ({ fruit: 1, domain: 1 }) });
     const f = catalog.fruits.find((x) => x.id === 'cristal');
-    p.setFruit(f, powersOf(f), 100);
+    p.setFruit(f, powersOf(f), 1000);
     p.cast(0, [], true);
     expect(p.casting.focus).toBeTruthy();
     for (let i = 0; i < 120; i++) p.update(1 / 60, [], true);

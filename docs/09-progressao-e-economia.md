@@ -87,6 +87,43 @@ Fragmentos. A roleta, a garantia de 50 giros, a mochila de 60, a troca por fragm
 chaves e o comer já funcionam (regras em `src/fruits/roulette.js`, testadas). Os poderes
 de cada fruta chegam com o combate.
 
+## 3.9 Maestria das frutas 1–1000 (atualização 23; Prompt Mestre, seção 6)
+
+- **Maestria geral.** O antigo domínio da fruta (1 a 100) passa a ir de 1 a 1000; salvos
+  antigos migram sozinhos (nível × 10, sem perder progresso). Dez níveis novos custam o mesmo
+  que um nível antigo. Estágios: 1–100 Iniciação, 101–250 Adaptação, 251–450 Especialização,
+  451–650 Domínio, 651–850 Ascensão, 851–1000 Despertar. Bônus de dano das habilidades até
+  +30% (não cresce para sempre). Limiares na escala nova: habilidade 2 em 41, habilidade 3 em
+  121, forma híbrida em 191, forma completa em 491, Prova do Despertar em 581.
+- **Trilhas (1 a 100).** Afinidade: sobe ao ganhar maestria num ambiente favorável; até −15%
+  de energia nesse ambiente. Técnica: sequência de M1 completa (4/4) acertando um inimigo em
+  todos os golpes e habilidades que acertam inimigos; até −10% de recarga. Sincronia (frutas
+  de fera): acertos transformado (a completa vale mais); dá os 10 marcos de transformação —
+  Controle inicial (transformação 30% mais rápida), Estabilidade, Mobilidade, Eficiência,
+  Combate, Resistência, Domínio corporal (alcance), Sincronização, Ascensão (+1 batida no ar
+  ou velocidade) e Domínio completo.
+- **XP só por ação válida.** Inimigos de verdade (com limite por vida do inimigo); bonecos e
+  repetições rendem cada vez menos; flexões, agachamentos e meditação não dão maestria.
+- **Ambiente.** Neutro 1x, favorável 1,5x, ideal 2x, extremo 2,5x, evento raro até 4x; vale
+  a maior condição (não somam) e o teto combinado é 4x. Exemplos: Brasa no deserto 1,5x, no
+  vulcão 2x e na cratera 2,5x; Tormenta na chuva 1,5x, na tempestade 2x e na tempestade no
+  mar 3x; Lobo à noite 2x; Maré no mar aberto 2x; Falcão em voo 1,5x e nas montanhas 2x. Ao
+  entrar num ambiente favorável aparece um aviso com o multiplicador; a tela Personagem mostra
+  o ambiente atual, o estágio, as trilhas e os marcos.
+- **Batismo do Trovão.** Com a Tormenta, o primeiro raio natural (tempestade ou travessia) que
+  atinge o jogador dá exatamente um nível de maestria; os seguintes dão 40 de XP, até 5 por dia
+  do jogo. Raios do próprio jogador não contam.
+- **Imunidade limitada.** No estágio Domínio (451+) a Tormenta absorve o raio natural comum
+  (não ataques de chefes). A Maré continua fraca à água.
+- **Despertar da maestria (851+).** Título por fruta (Núcleo Cinético, Coração Incandescente,
+  Inverno Absoluto, Soberano das Tempestades, Lobo Alfa Ancestral, Domínio do Eclipse,
+  Soberano das Marés, Coração Prismático, Ressonância Absoluta, Predador dos Céus, Deserto
+  Infinito, Campo Magnético Absoluto, Predador Absoluto, Renascimento Celestial, Imperador dos
+  Céus, Coração do Cataclismo), integrado ao Despertar que já existe (tecla V): gasta 25% menos
+  energia e bate 10% mais. Nenhuma habilidade nova nem transformação nova é liberada.
+
+Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `tests/mastery.test.js`.
+
 ## 4. Mochila
 
 | Regra | Valor |

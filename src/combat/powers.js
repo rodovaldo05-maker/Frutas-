@@ -92,11 +92,11 @@ export class FruitPowers {
   blocked(slot, canAct) {
     const p = this.powers[slot];
     if (!this.fruit || !p) return 'Coma uma fruta para liberar os poderes.';
-    if (!this.unlocked(slot)) return p.weapon ? `${p.nome}: libera na proficiência ${p.unlock} com espadas.` : `${p.nome}: libera no domínio ${p.unlock} da fruta.`;
+    if (!this.unlocked(slot)) return p.weapon ? `${p.nome}: libera na proficiência ${p.unlock} com espadas.` : `${p.nome}: libera na maestria ${p.unlock} da fruta.`;
     if (!canAct) return 'agora não';
     if (this.casting) return 'agora não';
     if (this.cooldown[slot] > 0) return 'recarga';
-    if (this.energy < p.custo) return 'Energia insuficiente. Espere recuperar.';
+    if (this.energy < p.custo * (this.costMult ?? 1)) return 'Energia insuficiente. Espere recuperar.';
     return null;
   }
 
@@ -108,7 +108,7 @@ export class FruitPowers {
     }
     const p = this.powers[slot];
     const c = this.ctl;
-    this.energy -= p.custo;
+    this.energy -= p.custo * (this.costMult ?? 1); // afinidade: gasta menos no ambiente favorável
     this.idle = 0;
     this.cooldown[slot] = p.recarga * (this.cdMult ?? 1);
     // mira: alvo vivo mais perto à frente (ou para onde o personagem olha)
@@ -175,7 +175,7 @@ export class FruitPowers {
     for (let i = 0; i < this.cooldown.length; i++) this.cooldown[i] = Math.max(0, (this.cooldown[i] || 0) - dt * cdk); // todos os slots (estilos têm 4)
     // despertar: gasta energia por segundo e desliga sozinho sem energia
     if (this.awakened) {
-      this.energy -= AWAKEN.drain * dt;
+      this.energy -= AWAKEN.drain * dt * (this.awakenDrain ?? 1); // maestria 851+: gasta menos
       this.idle = 0;
       if (this.energy <= 0) {
         this.energy = 0;
@@ -228,7 +228,7 @@ export class FruitPowers {
     const s = this.stats();
     const base = p.dano * mult;
     if (base <= 0 && !Object.keys(effect).length) return null;
-    const wake = this.awakened ? AWAKEN.damage : 1;
+    const wake = this.awakened ? AWAKEN.damage * (this.awakenDamage ?? 1) : 1;
     // clima (atualização 19): chuva e tempestade enfraquecem as frutas de fogo
     const weather = this.weatherMult?.(p.fruit) ?? 1;
     const damage = base > 0 ? computeDamage(base, { mult: s.fruit * s.domain * wake * (this.dmgMult ?? 1) * weather, defense: target.defense ?? 0 }) : 0;

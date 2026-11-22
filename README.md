@@ -128,6 +128,13 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Maestria 1–1000 (atualização 23): a maestria de cada fruta vai de 1 a 1000 em seis estágios
+(Iniciação a Despertar), com trilhas de afinidade, técnica e sincronia, multiplicador de
+ambiente (favorável 1,5x a extremo 2,5x, raro até 4x, teto 4x), Batismo do Trovão para a
+Tormenta, 10 marcos de transformação e o despertar da maestria. Salvos antigos migram sozinhos.
+As híbridas usam o corpo do personagem no lugar da pele cinza, na proporção da forma, e o
+Dragão Oriental completo foi refeito como serpente fina carmim e creme.
+
 Formas de fera do laboratório (atualização 21): Lobo, Falcão, Besta, Fênix e os dois Dragões
 usam os corpos híbrido e completo do HTML do Laboratório Voxel (Edição 18), sem mudar os
 modelos: Lobo e Besta completos de quatro patas, Falcão e Fênix aves, Dragão Ocidental com

@@ -1,10 +1,10 @@
-// Despertar das frutas (atualização 13; doc 08): slot 4 (tecla V). Libera no domínio 59 da
+// Despertar das frutas (atualização 13; doc 08): slot 4 (tecla V). Libera na maestria 581 da
 // fruta depois da Prova do Despertar (acertar 30 habilidades da fruta em inimigos). Ligado,
 // exige 45 de energia, custa 15 para começar e 4 por segundo; desliga sozinho sem energia.
 // Enquanto ativo: +30% de dano da fruta (habilidades e combo), recargas 50% mais rápidas e
 // uma aura na cor da fruta — o corpo não muda de forma.
 
-export const AWAKEN = { level: 59, minEnergy: 45, start: 15, drain: 4, damage: 1.3, cdSpeed: 1.5, trialHits: 30 };
+export const AWAKEN = { level: 581, minEnergy: 45, start: 15, drain: 4, damage: 1.3, cdSpeed: 1.5, trialHits: 30 };
 
 export function normalizeAwaken(save) {
   const a = save.awakened && typeof save.awakened === 'object' ? save.awakened : {};

@@ -1,44 +1,27 @@
-// Domínio da fruta (documento mestre 4.0, seção 14): progresso próprio por ID de fruta, de
-// 1 a 100, com a curva dos atributos × 1,4. Sobe usando os poderes e o combo da fruta em
-// situações relevantes (acertar inimigos; bonecos rendem pouco e com repetição).
-// Trocar de fruta não apaga o domínio da anterior. Bônus: +0,3% de dano das habilidades
-// por nível (até +30%) e liberação das habilidades 2 e 3.
+// Domínio da fruta = maestria geral (atualização 23; antes: documento mestre 4.0, seção 14,
+// de 1 a 100). Agora vai de 1 a 1000, com as trilhas de afinidade, técnica e sincronia
+// (progression/mastery.js). Salvos antigos migram sozinhos: nível antigo × 10, sem perder
+// progresso. Trocar de fruta não apaga a maestria da anterior. Bônus: até +30% de dano das
+// habilidades; libera as habilidades 2 (41) e 3 (121), as formas (191 e 491) e o despertar (581).
 
-import { xpToNext as attrXp, MAX_LEVEL } from './training.js';
+import { normalizeMastery, addMasteryXp, masteryBonus, masteryProgress, masteryXpToNext, MASTERY_MAX } from './mastery.js';
 
-export const DOMAIN_MULT = 1.4;
-export const domainXpToNext = (L) => Math.round(attrXp(L) * DOMAIN_MULT);
+export const DOMAIN_MAX = MASTERY_MAX;
+export const domainXpToNext = masteryXpToNext;
 
 export function normalizeDomain(d) {
   const out = {};
-  if (d && typeof d === 'object') {
-    for (const [id, v] of Object.entries(d)) {
-      const level = Math.min(MAX_LEVEL, Math.max(1, Math.floor(Number(v?.level)) || 1));
-      const xp = Math.max(0, Number(v?.xp) || 0);
-      out[id] = { level, xp: level >= MAX_LEVEL ? 0 : xp };
-    }
-  }
+  if (d && typeof d === 'object') for (const [id, v] of Object.entries(d)) out[id] = normalizeMastery(v);
   return out;
 }
 
 export function domainOf(save, fruitId) {
   save.domain ??= {};
-  return (save.domain[fruitId] ??= { level: 1, xp: 0 });
+  const v = save.domain[fruitId];
+  if (!v || v.v !== 2) save.domain[fruitId] = normalizeMastery(v);
+  return save.domain[fruitId];
 }
 
-export function addDomainXp(save, fruitId, amount) {
-  const d = domainOf(save, fruitId);
-  if (!(amount > 0) || d.level >= MAX_LEVEL) return 0;
-  d.xp += amount;
-  let levels = 0;
-  while (d.level < MAX_LEVEL && d.xp >= domainXpToNext(d.level)) {
-    d.xp -= domainXpToNext(d.level);
-    d.level += 1;
-    levels += 1;
-  }
-  if (d.level >= MAX_LEVEL) d.xp = 0;
-  return levels;
-}
-
-export const domainBonus = (level) => 1 + Math.min(0.3, 0.003 * (level - 1));
-export const domainProgress = (d) => (d.level >= MAX_LEVEL ? 1 : Math.min(1, d.xp / domainXpToNext(d.level)));
+export const addDomainXp = (save, fruitId, amount) => addMasteryXp(domainOf(save, fruitId), amount);
+export const domainBonus = masteryBonus;
+export const domainProgress = masteryProgress;

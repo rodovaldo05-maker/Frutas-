@@ -66,8 +66,6 @@
         <button data-btn id="btn-menu" class="icon-btn" data-icon="gear" aria-label="Pausa e configurações"></button>
       </div>
 
-      <div id="zone-banner" class="zone-banner"><small>Você chegou a</small><b>Ilha de Treino</b></div>
-
       <div class="minimap" id="minimap">
         <canvas id="minimap-canvas" width="240" height="240"></canvas>
         <span class="dir n">N</span><span class="dir e">L</span><span class="dir s">S</span><span class="dir w">O</span>
@@ -83,7 +81,7 @@
         </div>
       </div>
 
-      <div id="hint" class="hint frame small"><b id="hint-title"></b><span id="hint-text"></span></div>
+      <div id="notice" class="notice" aria-live="polite"></div>
       <div id="toasts" class="toasts"></div>
       <pre id="stats" class="stats"></pre>
       <div id="state" class="state">Parado</div>
@@ -362,6 +360,20 @@
           <button data-mtab="principais" class="active">Principais</button><button data-mtab="secundarias">Secundárias</button><button data-mtab="diarias">Diárias</button><button data-mtab="faccao">De Facção</button>
         </div>
         <div id="mission-list" class="mission-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== Barqueiro (viagem rápida ou trazer o bote) ===== -->
+    <div id="boatman" class="overlay hidden">
+      <div class="frame window boatman-window">
+        <div class="frame-title" id="boatman-title" data-icon="map">Barqueiro</div>
+        <button class="close" data-close="boatman" data-icon="close" aria-label="Fechar"></button>
+        <p id="boatman-text" class="boatman-text"></p>
+        <div class="row-btns boatman-actions">
+          <button class="btn gold" id="btn-ferry" data-icon="run">Viagem rápida</button>
+          <button class="btn" id="btn-callboat" data-icon="flag">Trazer meu bote</button>
+        </div>
+        <p class="boatman-note">Com o bote você navega de verdade: embarque ao lado do cais e siga para o outro lado do mar.</p>
       </div>
     </div>
 

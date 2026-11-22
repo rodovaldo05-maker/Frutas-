@@ -17,6 +17,7 @@ import { Physics } from './physics/physics.js';
 import { buildTrainingIsland, ISLAND } from './islands/trainingIsland.js';
 import { buildVillageIsland, buildTrainingDock, BOATMEN, DOCKS, VILLAGE } from './islands/villageIsland.js';
 import { WorldField } from './terrain/offsetField.js';
+import { Boat } from './ships/boat.js';
 import { Ocean } from './ocean/ocean.js';
 import { createPlayer } from './characters/player.js';
 import { PlayerAnimator } from './animation/playerAnimator.js';
@@ -111,6 +112,7 @@ async function boot() {
   const sunDir = renderer.sunOffset.clone().normalize();
   const ocean = new Ocean({ scene: renderer.scene, field: island.field, level: ISLAND.waterLevel, sun: sunDir, sky: { top: new THREE.Color('#5aa7d6'), horizon: new THREE.Color('#cfe7e4') } });
   ocean.setDetail(renderer.quality.oceanDetail);
+  let boat = null; // bote do jogador (criado depois do personagem)
 
   await setLoading('Montando o personagem…', 74);
   const audio = createFruitAudio();
@@ -656,6 +658,50 @@ async function boot() {
   const cam = new FollowCamera(renderer.camera, physics);
   cam.snap(ctl.pos, ctl.yaw);
 
+  // ===== Bote do jogador (atualização 10) =====
+  boat = new Boat({ scene: renderer.scene, physics, ocean, ground: (x, z) => world.sample(x, z) });
+  {
+    const m = save.boat ?? DOCKS.treino.mooring;
+    boat.place(m.x, m.z, m.yaw);
+  }
+  const CROSS_XP = 60;
+  let boardedFrom = null; // ilha onde embarcou (a primeira travessia até a outra dá experiência)
+  const islandAt = (p) => (village.field.inside(p.x, p.z) ? 'porto' : island.field.inside(p.x, p.z) ? 'treino' : null);
+  function board() {
+    if (boat.aboard) return;
+    boardedFrom = islandAt(ctl.pos) ?? boardedFrom;
+    boat.aboard = true;
+    const st = boat.seat();
+    ctl.ride(st.x, st.y, st.z, st.yaw);
+    cam.snap(ctl.pos, ctl.yaw);
+    prev.copy(ctl.pos);
+    audio.play('base', 'land', 0.5);
+    if (!save.visited.includes('dica:bote')) {
+      save.visited.push('dica:bote');
+      hud.toast('No bote: o analógico aponta o rumo · Correr acelera · Pular ou Desembarcar desce');
+    }
+  }
+  function disembark() {
+    if (!boat.aboard) return;
+    const spot = boat.landing();
+    if (!spot.land && ctl.waterCursed) {
+      hud.toast('Sem chão por perto: usuário de fruta afunda. Encoste no cais ou na praia.', 'bad');
+      return;
+    }
+    boat.aboard = false;
+    boat.s.speed = 0;
+    ctl.leaveRide(spot.x, spot.y + 0.05, spot.z, boat.s.yaw);
+    prev.copy(ctl.pos);
+    const dest = spot.land ? islandAt(spot) : null;
+    if (dest && boardedFrom && dest !== boardedFrom && !save.visited.includes(`travessia:${dest}`)) {
+      save.visited.push(`travessia:${dest}`);
+      hud.toast(`Primeira travessia de bote até ${dest === 'porto' ? 'o' : 'a'} ${DOCKS[dest].island} · +${CROSS_XP} exp`, 'gold');
+      grantXp(CROSS_XP);
+    }
+    if (dest) boardedFrom = dest;
+    saveNow(true);
+  }
+
   await setLoading('Pintando o mapa…', 86);
   const minimap = new Minimap($('minimap-canvas'), island.field, island.signs);
   minimap.addIsland(village.localField, VILLAGE.offset, village.village);
@@ -858,6 +904,7 @@ async function boot() {
   let playTime = save.playTime || 0;
   async function saveNow(quiet = false) {
     save.player = ctl.snapshot();
+    if (boat) save.boat = boat.snapshot();
     save.playTime = Math.round(playTime);
     const ok = await saves.saveGame(save);
     if (!quiet) hud.toast(ok ? 'Jogo salvo' : 'Não foi possível salvar', ok ? 'good' : 'bad');
@@ -880,7 +927,10 @@ async function boot() {
     if (id === 'pause') menu.setOpen(true, opts);
     else if (id === 'travel') $(id).classList.add('on');
     else $(id).classList.remove('hidden');
-    if (id === 'worldmap') mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
+    if (id === 'worldmap') {
+      mapScreen.markers = boat.aboard ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
+      mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
+    }
     if (id === 'missions') renderMissionList();
     if (id === 'status') statusScreen.render();
     if (id === 'roulette') shop.renderRoulette();
@@ -943,7 +993,7 @@ async function boot() {
   });
   $('btn-status').addEventListener('click', () => openModal('status'));
   $('btn-bag').addEventListener('click', () => openModal('bag'));
-  // ===== Travessia com o Barqueiro (barcos de verdade chegam na atualização 10) =====
+  // ===== Viagem rápida com o Barqueiro (o bote navega de verdade; isto é o atalho) =====
   let traveling = false;
   function travel(to) {
     const d = DOCKS[to];
@@ -965,31 +1015,53 @@ async function boot() {
       }, 700);
     }, 900);
   }
-  // nome da ilha ao chegar (muda quando o jogador passa para outra ilha)
+  // nome da ilha ao chegar (aviso pequeno no topo quando o jogador passa para outra ilha)
   let zoneName = null;
-  let zoneTimer = 0;
-  function updateZone(dt) {
+  function updateZone() {
     const name = village.field.inside(ctl.pos.x, ctl.pos.z) ? VILLAGE.name : island.field.inside(ctl.pos.x, ctl.pos.z) ? ISLAND.name : null;
     if (name && name !== zoneName) {
       const first = zoneName === null;
       zoneName = name;
-      $('zone-banner').querySelector('b').textContent = name;
-      $('zone-banner').querySelector('small').textContent = first ? 'Você está em' : 'Você chegou a';
-      $('zone-banner').classList.add('show');
-      zoneTimer = 3.2;
-    }
-    if (zoneTimer > 0) {
-      zoneTimer -= dt;
-      if (zoneTimer <= 0) $('zone-banner').classList.remove('show');
+      hud.notice(`${first ? 'Você está em' : 'Você chegou a'} ${name}`, 'zone', 'zone');
     }
   }
 
-  // falar com o NPC perto
-  let nearNpc = null;
+  // Barqueiro: viagem rápida ou trazer o bote do jogador para este cais
+  let boatmanNpc = null;
+  function openBoatman(npc) {
+    boatmanNpc = npc;
+    const here = npc.to === 'porto' ? 'treino' : 'porto';
+    const m = DOCKS[here].mooring;
+    const moored = Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < 14;
+    $('boatman-title').lastChild.textContent = npc.name;
+    $('boatman-text').textContent = `Levo você ${npc.to === 'porto' ? 'ao' : 'à'} ${DOCKS[npc.to].island} num instante, ou trago o seu bote até este cais para você navegar.`;
+    $('btn-ferry').lastChild.textContent = `Viagem rápida: ${DOCKS[npc.to].island}`;
+    $('btn-callboat').disabled = moored;
+    $('btn-callboat').lastChild.textContent = moored ? 'Seu bote já está aqui' : 'Trazer meu bote';
+    openModal('boatman');
+  }
+  $('btn-ferry').addEventListener('click', () => {
+    closeModal('boatman');
+    if (boatmanNpc) travel(boatmanNpc.to);
+  });
+  $('btn-callboat').addEventListener('click', () => {
+    if (!boatmanNpc) return;
+    const m = DOCKS[boatmanNpc.to === 'porto' ? 'treino' : 'porto'].mooring;
+    boat.place(m.x, m.z, m.yaw);
+    closeModal('boatman');
+    hud.toast('Seu bote está amarrado ao lado do cais.', 'good');
+    saveNow(true);
+  });
+
+  // ação perto do jogador: falar com NPC, embarcar no bote ou desembarcar
+  let nearAction = null;
   const talk = () => {
-    if (!nearNpc || modals.length || mode !== 'game') return;
-    if (nearNpc.role === 'barqueiro') return travel(nearNpc.to);
-    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[nearNpc.id] || 'trader');
+    if (!nearAction || modals.length || mode !== 'game') return;
+    if (nearAction.kind === 'board') return board();
+    if (nearAction.kind === 'leave') return disembark();
+    const npc = nearAction.npc;
+    if (npc.role === 'barqueiro') return openBoatman(npc);
+    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[npc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
@@ -1069,13 +1141,14 @@ async function boot() {
       if (Math.abs(ctl.pos.y - sign.y) > 7 || Math.hypot(sign.x - ctl.pos.x, sign.z - ctl.pos.z) > 7.5) continue;
       save.visited.push(sign.title);
       raceSys.onDiscover();
-      hud.toast(`Área descoberta: ${sign.title} · +${AREA_XP} exp`, 'good');
+      hud.notice(`📍 ${sign.title} · descoberta +${AREA_XP} exp`, 'good', sign.title);
       grantXp(AREA_XP);
     }
   }
 
   // ===== Laço =====
   const prev = new THREE.Vector3().copy(ctl.pos);
+  if (save.boat?.aboard) board(); // salvou navegando: volta para o bote
   const view = new THREE.Vector3();
   let time = 0;
   let clock = 0;
@@ -1102,6 +1175,14 @@ async function boot() {
       if (mode !== 'game') return;
       prev.copy(ctl.pos);
       const inp = input.consume(cam.yaw);
+      if (boat.aboard) {
+        // no bote: sem luta, habilidades nem esquiva; Pular desce
+        inp.attackPressed = false;
+        inp.skill = -1;
+        inp.racePressed = false;
+        inp.dashPressed = false;
+        inp.block = false;
+      }
       combat.update(dt, inp, arena.targets);
       if (inp.equip >= 0) equip(inp.equip);
       if (inp.racePressed) raceSys.activate({ targets: arena.targets, powers, fx });
@@ -1123,7 +1204,23 @@ async function boot() {
       if (inp.sensePressed) vontade.toggle('sense');
       vontade.update(dt);
       arena.tagRange = vontade.sense ? 70 : 26;
-      ctl.step(dt, inp);
+      if (boat.aboard) {
+        // o analógico aponta o rumo em relação à câmera (igual a andar); Correr acelera
+        const fx = Math.sin(inp.camYaw);
+        const fz = Math.cos(inp.camYaw);
+        const r = boat.step(dt, { wx: fx * inp.moveY - fz * inp.moveX, wz: fz * inp.moveY + fx * inp.moveX, mag: Math.min(1, Math.hypot(inp.moveX, inp.moveY)), fast: inp.sprint });
+        if (r.bump) {
+          shake = Math.max(shake, 0.2);
+          audio.play('base', 'land', 0.7);
+        }
+        const st = boat.seat();
+        const v = boat.velocity;
+        ctl.ride(st.x, st.y, st.z, st.yaw, v.x, v.z);
+        if (inp.jumpPressed) disembark();
+      } else {
+        boat.step(dt, null);
+        ctl.step(dt, inp);
+      }
       conditions.update(dt, ctl);
       playerProxy.alive = ctl.faint <= 0;
       arena.update(dt, playerProxy);
@@ -1156,6 +1253,7 @@ async function boot() {
       feetY = view.y;
       const animDt = mode === 'title' ? dt : loop.paused ? 0 : dt;
       if (mode === 'title') ctl.input = titleIdle;
+      boat.render(alpha, animDt);
       animator.update(animDt, ctl, view);
       dust.update(animDt);
       market.update(mode === 'title' ? dt : animDt, view);
@@ -1245,17 +1343,30 @@ async function boot() {
         ctl, signs: island.signs, underwater: cam.underwater,
         stats: { fps: quality.fps, frameMs: quality.frameMs, quality: renderer.qualityId, scale: renderer.resolutionScale, calls: info.calls, triangles: info.triangles },
       });
-      // botão Falar perto do Mercador e do Trocador
-      const npc = ctl.state === 'ground' && !modals.length && !animator.eat ? market.nearest(ctl.pos) : null;
-      if (npc !== nearNpc) {
-        nearNpc = npc;
-        $('btn-interact').classList.toggle('hidden', !npc);
-        if (npc) $('interact-text').textContent = npc.role === 'barqueiro' ? `Atravessar com ${npc.art ?? 'o'} ${npc.name}` : `Falar com o ${npc.name}`;
+      // botão de ação: Falar (NPC perto), Embarcar (bote perto) ou Desembarcar (no bote)
+      let act = null;
+      if (!modals.length && !animator.eat) {
+        if (boat.aboard) act = { kind: 'leave', key: 'leave', text: 'Desembarcar' };
+        else {
+          const npc = ctl.state === 'ground' ? market.nearest(ctl.pos) : null;
+          const canBoard = (ctl.state === 'ground' || ctl.state === 'swim') && boat.near(ctl.pos);
+          const dBoat = Math.hypot(ctl.pos.x - boat.s.x, ctl.pos.z - boat.s.z) - 1.5;
+          if (npc && !(canBoard && dBoat < Math.hypot(ctl.pos.x - npc.x, ctl.pos.z - npc.z))) {
+            act = { kind: 'npc', npc, key: npc.id, text: `Falar com ${npc.art ?? 'o'} ${npc.name}` };
+          } else if (canBoard) act = { kind: 'board', key: 'board', text: 'Embarcar no bote' };
+        }
       }
-      updateZone(dt);
+      if ((act?.key ?? null) !== (nearAction?.key ?? null)) {
+        $('btn-interact').classList.toggle('hidden', !act);
+        if (act) $('interact-text').textContent = act.text;
+      }
+      nearAction = act;
+      document.body.classList.toggle('aboard', boat.aboard);
+      updateZone();
       minimapTimer -= dt;
       if (minimapTimer <= 0) {
         minimapTimer = 0.1;
+        minimap.markers = boat.aboard ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
         minimap.draw(view, ctl.yaw);
       }
     },
@@ -1420,6 +1531,9 @@ async function boot() {
     village,
     world,
     travel,
+    boat,
+    board,
+    disembark,
     teleport(x, z, y) {
       const h = y ?? world.sample(x, z) + 0.5;
       ctl.spawn(x, h, z, ctl.yaw);

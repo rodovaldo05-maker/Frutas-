@@ -17,20 +17,21 @@ export const VILLAGE = {
 };
 
 // Pontos de chegada da travessia (coordenadas do mundo) e os Barqueiros de cada cais
+// mooring: onde o bote do jogador fica amarrado ao lado de cada cais (proa para o mar)
 export const DOCKS = {
-  treino: { x: 96, z: 9.2, yaw: -Math.PI / 2, island: 'Ilha de Treino' },
-  porto: { x: VILLAGE.offset.x - 86, z: -0.8, yaw: Math.PI / 2, island: VILLAGE.name },
+  treino: { x: 96, z: 9.2, yaw: -Math.PI / 2, island: 'Ilha de Treino', mooring: { x: 104, z: 14.6, yaw: Math.PI / 2 } },
+  porto: { x: VILLAGE.offset.x - 86, z: -0.8, yaw: Math.PI / 2, island: VILLAGE.name, mooring: { x: VILLAGE.offset.x - 97, z: -4.6, yaw: -Math.PI / 2 } },
 };
 export const BOATMEN = [
   {
     id: 'barqueiro-treino', role: 'barqueiro', to: 'porto', name: 'Barqueiro', x: 101, z: 11.2, y: VILLAGE.deck, yaw: -Math.PI / 2, stall: false,
     look: { skin: '#b07850', hair: '#2a2018', shirt: '#2f6f8a', shorts: '#e8dcc0', shoes: '#4a3424' },
-    hint: 'Leva você ao Porto das Origens, a primeira vila. Fale com ele para atravessar.',
+    hint: 'Viagem rápida ao Porto das Origens ou trazer o seu bote até este cais.',
   },
   {
     id: 'barqueiro-porto', role: 'barqueiro', to: 'treino', name: 'Barqueira', art: 'a', x: VILLAGE.offset.x - 92, z: 1.2, y: VILLAGE.deck, yaw: Math.PI / 2, stall: false,
     look: { skin: '#d8a880', hair: '#7a3a1a', shirt: '#a8402a', shorts: '#2a3a55', shoes: '#4a3424' },
-    hint: 'Leva você de volta à Ilha de Treino. Fale com ela para atravessar.',
+    hint: 'Viagem rápida à Ilha de Treino ou trazer o seu bote até este cais.',
   },
 ];
 
@@ -132,21 +133,21 @@ export function buildVillageIsland({ scene, physics }) {
     if (lx % 6 === -1 && lx < -86) for (const s of [-1, 1]) sb.block({ x: o.x + lx, y: -8, z: o.z + s * 1.9, w: 0.4, h: 9.4, d: 0.4, style: 'madeira' });
   }
   sb.sign({ x: o.x + 4.5, y: base, z: o.z + village.plaza.r + 1.5, rotY: 0, title: VILLAGE.name, hint: 'Primeira vila do mar. Ruas, casas e serviços gerados pela semente; moradores e lojas chegam na atualização 11.' });
-  sb.sign({ x: o.x - 72, y: ground(-72, 4.5), z: o.z + 4.5, rotY: -Math.PI / 2, title: 'Cais do Porto', hint: 'Fale com o Barqueiro para voltar à Ilha de Treino. Barcos de verdade chegam na atualização 10.' });
+  sb.sign({ x: o.x - 72, y: ground(-72, 4.5), z: o.z + 4.5, rotY: -Math.PI / 2, title: 'Cais do Porto', hint: 'Embarque no seu bote para navegar até a Ilha de Treino (a oeste) ou fale com a Barqueira.' });
   sb.finish();
   for (const sg of sb.signs) if (sg.title === VILLAGE.name) sg.major = true; // nome da vila tem prioridade no mapa
   signs.push(...sb.signs);
   return { field, localField, village, signs, terrain };
 }
 
-// Cais da Ilha de Treino (costa leste), de onde parte o Barqueiro
+// Cais da Ilha de Treino (costa leste): o bote do jogador fica amarrado ao lado
 export function buildTrainingDock({ scene, physics, field }) {
   const sb = new StructureBuilder(scene, physics);
   for (let x = 86; x <= 110; x += 3) {
     sb.block({ x, y: Math.max(field.sample(x, 10) - 0.25, VILLAGE.deck - 0.35), z: 10, w: 3.2, h: 0.35, d: 4.2, style: 'madeira' });
     if (x % 6 === 2 && x > 92) for (const s of [-1, 1]) sb.block({ x, y: -8, z: 10 + s * 1.9, w: 0.4, h: 9.4, d: 0.4, style: 'madeira' });
   }
-  sb.sign({ x: 84, y: field.sample(84, 15), z: 15, rotY: -Math.PI / 2, title: 'Cais da Ilha de Treino', hint: 'Fale com o Barqueiro para ir ao Porto das Origens. Barcos de verdade chegam na atualização 10.' });
+  sb.sign({ x: 84, y: field.sample(84, 15), z: 15, rotY: -Math.PI / 2, title: 'Cais da Ilha de Treino', hint: 'Seu bote fica amarrado aqui. Navegue até o Porto das Origens (a leste) ou fale com o Barqueiro.' });
   sb.finish();
   return { signs: sb.signs };
 }

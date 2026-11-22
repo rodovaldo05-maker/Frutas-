@@ -245,19 +245,21 @@ body.touch.lefty .tracker { left: auto; right: calc(12px + var(--safe-r)); top: 
 .tracker-body .reward svg { width: 14px; height: 14px; }
 .tracker.done .tracker-body b { color: #9cf07f; }
 
-.hint {
-  position: absolute; left: calc(380px + var(--safe-l)); right: calc(160px + var(--safe-r)); max-width: 440px; margin: 0 auto;
-  top: calc(64px + var(--safe-t)); transform: translateY(-12px); padding: 10px 14px; opacity: 0; transition: opacity 0.2s, transform 0.2s;
-  display: grid; gap: 3px; text-align: center;
+/* aviso de local (placas, área descoberta, nome da ilha): pequeno, no topo, some em 0,2 s */
+.notice {
+  position: absolute; left: 50%; top: calc(8px + var(--safe-t)); transform: translate(-50%, -4px); z-index: 5; pointer-events: none;
+  max-width: 32vw; padding: 3px 12px; border-radius: 999px; font: 700 11px var(--body-font); color: #ffe9b3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.15s, transform 0.15s;
+  background: rgba(21, 17, 42, 0.82); border: 1px solid rgba(217, 166, 74, 0.8); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-.hint.on { opacity: 1; transform: none; }
-.hint b { font: 700 15px var(--title-font); color: var(--gold-hi); position: relative; z-index: 1; }
-.hint span { font-size: 12.5px; line-height: 1.35; position: relative; z-index: 1; }
+.notice.on { opacity: 1; transform: translate(-50%, 0); }
+.notice.good { color: #dcffd2; border-color: #6fd35e; }
+.notice.zone { color: #ffd36b; }
 
-.toasts { position: absolute; left: 50%; top: calc(172px + var(--safe-t)); transform: translateX(-50%); display: grid; gap: 5px; justify-items: center; }
+.toasts { position: absolute; left: 50%; top: calc(66px + var(--safe-t)); transform: translateX(-50%); display: grid; gap: 4px; justify-items: center; pointer-events: none; width: max-content; max-width: 58vw; }
 .toast {
-  padding: 5px 14px; border-radius: 999px; font: 700 12px var(--body-font); color: #fff1cf; white-space: nowrap;
-  background: linear-gradient(180deg, rgba(46, 33, 76, 0.95), rgba(21, 17, 42, 0.95)); border: 2px solid var(--gold);
+  padding: 3px 12px; border-radius: 999px; font: 700 11px var(--body-font); color: #fff1cf; white-space: normal; text-align: center;
+  background: linear-gradient(180deg, rgba(46, 33, 76, 0.95), rgba(21, 17, 42, 0.95)); border: 1.5px solid var(--gold);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45); transition: opacity 0.45s, transform 0.45s;
 }
 .toast.bad { border-color: #d0503d; color: #ffd1c6; }
@@ -438,7 +440,6 @@ body.lefty .act.sprint { right: auto; left: calc(36px + var(--safe-l)); }
   .icon-btn { width: 40px; height: 40px; }
   .tracker { top: calc(128px + var(--safe-t)); width: 196px; }
   body.touch .tracker { top: calc(128px + var(--safe-t)); }
-  .hint { left: calc(322px + var(--safe-l)); right: calc(132px + var(--safe-r)); top: calc(56px + var(--safe-t)); max-width: 400px; padding: 8px 12px; }
   .slot { width: 44px; height: 44px; }
   .state { bottom: calc(64px + var(--safe-b)); }
   .stats { top: calc(100px + var(--safe-t)); }
@@ -608,7 +609,7 @@ body.touch .interact kbd { display: none; }
   .fcard img { width: 66px; height: 66px; }
   .result-grid .fcard { height: 58px; }
   .result-grid .fcard img { width: 32px; height: 32px; }
-  .toasts { top: calc(150px + var(--safe-t)); }
+  .toasts { top: calc(62px + var(--safe-t)); }
   .btn.spin { min-height: 42px; }
   .fruit-grid .fcard { height: 108px; }
   .fruit-grid .fcard img { width: 54px; height: 54px; }
@@ -1101,23 +1102,23 @@ body.sense #game { filter: saturate(0.65) contrast(1.05); }
 #armory-tabs #btn-repair { margin-left: auto; min-height: 30px; font-size: 12px; padding: 0 10px; }
 @media (max-height: 450px) { .gear-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ===== Travessia e nome da ilha (atualização 9) ===== */
-.zone-banner {
-  position: absolute; left: 50%; top: calc(10px + var(--safe-t)); transform: translate(-50%, -8px); pointer-events: none; z-index: 5;
-  display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.6s, transform 0.6s;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75), 0 0 2px #2a1906;
-}
-.zone-banner.show { opacity: 1; transform: translate(-50%, 0); }
-.zone-banner small { font: 700 13px var(--body-font); color: #fff1cf; letter-spacing: 0.12em; text-transform: uppercase; }
-.zone-banner b { font: 900 34px Cinzel, Georgia, serif; color: #ffd36b; letter-spacing: 0.04em; white-space: nowrap; }
-.zone-banner b::after { content: ''; display: block; height: 3px; margin: 4px auto 0; width: 70%; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+/* ===== Travessia (atualização 9) ===== */
 .travel { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #0b1a26; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
 .travel.on { opacity: 1; pointer-events: auto; }
 .travel-box { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .travel-box b { font: 900 22px Cinzel, Georgia, serif; color: #ffe9b3; text-align: center; padding: 0 16px; }
 .travel-wave { width: 120px; height: 24px; background: radial-gradient(circle at 12px 0, transparent 11px, #47bcb3 12px, #47bcb3 14px, transparent 15px) 0 0 / 24px 24px repeat-x; animation: travel-wave 1.2s linear infinite; }
 @keyframes travel-wave { to { background-position: 24px 0; } }
-@media (max-width: 900px), (max-height: 520px) {
-  .zone-banner b { font-size: 24px; }
-  .zone-banner small { font-size: 11px; }
+
+/* ===== Barqueiro (atualização 10) ===== */
+.boatman-window { width: min(460px, calc(100vw - 32px)); padding: 30px 20px 16px; display: grid; gap: 12px; }
+.boatman-text { margin: 0; font-size: 13.5px; line-height: 1.45; color: #fff1cf; text-align: center; }
+.boatman-actions { justify-content: center; flex-wrap: wrap; }
+.boatman-note { margin: 0; font-size: 11.5px; color: #cdbf9e; text-align: center; }
+
+/* no bote: sem o botão grande no meio; o Pular vira Descer */
+body.aboard .interact { display: none !important; }
+body.aboard .act.jump::after {
+  content: 'Descer'; position: absolute; left: 50%; top: -18px; transform: translateX(-50%); pointer-events: none;
+  padding: 1px 8px; border-radius: 999px; font: 800 10px var(--body-font); color: #2b1805; background: var(--gold-hi); white-space: nowrap;
 }

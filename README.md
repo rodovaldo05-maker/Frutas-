@@ -61,6 +61,11 @@ semente (praça com chafariz, avenidas, anel de ruas, 19 casas com porta, Prefei
 Taverna, Ferreiro e Loja de Frutas) e validada (sem sobreposição, portas com acesso). Cais nas
 duas ilhas com Barqueiros que fazem a travessia; mapa e minimapa trocam de ilha.
 
+Bote (atualização 10): o bote do jogador fica amarrado no cais e navega de verdade entre as
+ilhas: o analógico aponta o rumo, Correr acelera, o bote para no raso e no cais, balança com as
+ondas e deixa esteira; Pular desce no cais ou na praia. Os Barqueiros trazem o bote até o cais
+deles. Os avisos de local (placas, área descoberta, ilha) aparecem pequenos no topo por 0,2 s.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

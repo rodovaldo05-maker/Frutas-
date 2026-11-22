@@ -103,6 +103,29 @@ multijogador.
 | Assumir canhão | Botão contextual | E perto do canhão | A |
 | Sair do leme | Botão Sair | F | B |
 
+### 3.3 O bote no jogo (atualização 10)
+
+O primeiro barco já navega de verdade entre a Ilha de Treino e o Porto das Origens, sem
+teleporte. O resto desta seção (velas com vento, seções de casco, canhões, convés andável)
+continua planejado.
+
+| Item | Como está |
+|---|---|
+| Onde fica | Amarrado ao lado do cais da Ilha de Treino no começo; fica onde o jogador o deixou (salvo) |
+| Embarcar | Chegar perto (em pé ou nadando) e tocar **Embarcar no bote** (E no PC) |
+| Pilotar | O analógico (ou WASD) aponta o rumo em relação à câmera, igual a andar; o bote gira com raio de curva até lá e acelera aos poucos. **Correr** usa a velocidade rápida |
+| Velocidade | 13 unidades/s (≈ 6 m/s); 19 com Correr. A travessia leva cerca de 10–15 s |
+| Raso e estruturas | O bote para ao encostar na praia (precisa de 0,7 de água sob a proa) e nos pilares e tábuas do cais, com um pequeno recuo e tremor; dá para sair do raso virando para o mar |
+| Ondas | Altura média das ondas sob o casco, arfagem e rolagem pelas ondas, inclinação nas curvas, esteira de espuma atrás |
+| Descer | **Pular** (o botão mostra "Descer") ou E: desce no chão firme mais perto (cais ou praia); sem chão por perto desce na água ao lado. Usuário de fruta não desce em água funda (afundaria): o jogo avisa para encostar |
+| No bote | Sem ataque, habilidades, esquiva e defesa; a câmera se afasta e segue o rumo |
+| Barqueiros | Continuam com a **viagem rápida** e agora também **trazem o bote** até o cais deles |
+| Primeira travessia | Descer na outra ilha pela primeira vez depois de navegar dá 60 de experiência (uma vez por ilha) |
+| Mapa | O bote aparece como ponto marrom no minimapa e no mapa ("Seu bote") |
+
+Código: `src/ships/boatRules.js` (regras puras, testadas em `tests/boat.test.js`) e
+`src/ships/boat.js` (modelo, balanço, esteira, onde descer).
+
 ## 4. Combate naval
 
 | Elemento | Regra |

@@ -181,6 +181,20 @@ export class Minimap {
       ctx.fill();
       ctx.stroke();
     }
+    // marcadores extras (o bote do jogador)
+    for (const m of this.markers ?? []) {
+      const x = r + (m.x - pos.x) * ppu;
+      const y = r + (m.z - pos.z) * ppu;
+      const d = Math.hypot(x - r, y - r);
+      const k = d > r - 10 ? (r - 10) / d : 1; // longe: fica preso na borda, apontando a direção
+      ctx.fillStyle = '#8a5a32';
+      ctx.strokeStyle = '#fff1cf';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(r + (x - r) * k, r + (y - r) * k, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
     // jogador: seta na direção em que olha
     ctx.translate(r, r);
     ctx.rotate(Math.PI - yaw); // (sen, cos) do rumo no plano x/z

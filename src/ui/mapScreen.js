@@ -121,6 +121,25 @@ export class MapScreen {
     ctx.textBaseline = 'bottom';
     // nomes que se sobrepõem a outro já escrito ficam só com o ponto (aproxime para ver)
     const placed = [];
+    // marcadores extras (o bote do jogador), só na ilha mostrada
+    for (const m of this.markers ?? []) {
+      if (Math.max(Math.abs(m.x - o.x), Math.abs(m.z - o.z)) > this.field.half) continue;
+      const [x, y] = toScreen(m.x, m.z);
+      ctx.fillStyle = '#8a5a32';
+      ctx.strokeStyle = '#fff3d0';
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+      ctx.arc(x, y, 6 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const tw = ctx.measureText(m.label).width;
+      placed.push([x - tw / 2 - 2, y - 8 * dpr - font, x + tw / 2 + 2, y - 8 * dpr]);
+      ctx.lineWidth = 4 * dpr;
+      ctx.strokeStyle = 'rgba(255, 243, 208, 0.9)';
+      ctx.strokeText(m.label, x, y - 8 * dpr);
+      ctx.fillStyle = '#5a3a22';
+      ctx.fillText(m.label, x, y - 8 * dpr);
+    }
     for (const sign of [...this.signs].sort((a, b) => (b.major ? 1 : 0) - (a.major ? 1 : 0))) {
       if (Math.max(Math.abs(sign.x - o.x), Math.abs(sign.z - o.z)) > this.field.half) continue;
       const [x, y] = toScreen(sign.x, sign.z);

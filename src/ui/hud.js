@@ -1,9 +1,11 @@
 // HUD da fase de movimento: vida, fôlego (só aparece quando gasta), ar embaixo d'água,
-// estado do movimento, dica da placa mais próxima, avisos curtos e painel de desempenho.
+// estado do movimento, aviso de local (placa mais próxima, área descoberta, ilha), avisos
+// curtos e painel de desempenho.
 
 import { MOVE } from '../movement/config.js';
 
 const $ = (id) => document.getElementById(id);
+export const NOTICE_MS = 200; // quanto tempo o aviso de local fica na tela
 
 export function stateLabel(ctl) {
   const s = ctl.state;
@@ -21,7 +23,7 @@ export function stateLabel(ctl) {
   return {
     climb: 'Escalando', hang: 'Pendurado na borda', mantle: 'Subindo', swim: ctl.speed > 0.4 ? 'Nadando' : 'Boiando',
     dive: 'Mergulhando', glide: 'Planando', wallrun: 'Correndo na parede', slide: 'Deslizando', slopeSlide: 'Escorregando',
-    roll: 'Rolamento', faint: 'Desmaiado', sink: 'Afundando (usuário de fruta)',
+    roll: 'Rolamento', faint: 'Desmaiado', sink: 'Afundando (usuário de fruta)', boat: ctl.speed > 0.5 ? 'Navegando' : 'No bote',
   }[s] || s;
 }
 
@@ -33,7 +35,7 @@ export class Hud {
       air: $('bar-air'), airBox: $('box-air'),
       level: $('txt-level'), coins: $('txt-coins'), frags: $('txt-frags'), questBadge: $('quest-badge'),
       xp: $('bar-xp'), xpText: $('txt-xp'), badge: $('status-badge'),
-      state: $('state'), hint: $('hint'), hintTitle: $('hint-title'), hintText: $('hint-text'),
+      state: $('state'), notice: $('notice'),
       toasts: $('toasts'), stats: $('stats'), sprint: $('btn-sprint'), water: $('water-overlay'),
       vignette: $('damage-overlay'), keys: $('keys'),
       tracker: $('tracker'), trackerTitle: $('tracker-title'), trackerStep: $('tracker-step'), trackerReward: $('tracker-reward'),
@@ -110,6 +112,41 @@ export class Hud {
     while (this.el.toasts.children.length > 3) this.el.toasts.firstChild.remove();
   }
 
+  // Aviso de local: pequeno, no topo central, visível por 0,2 s. Avisos seguidos entram em fila
+  // (no máximo 3); um aviso com a mesma chave substitui o que ainda espera na fila.
+  notice(text, kind = '', key = text) {
+    const q = (this.noticeQueue ??= []);
+    if (this.noticeBusy && this.noticeKey === key) {
+      // o mesmo lugar já está na tela: só troca o texto (ex.: nome → área descoberta)
+      this.el.notice.textContent = text;
+      this.el.notice.className = `notice on ${kind}`;
+      return;
+    }
+    const i = q.findIndex((n) => n.key === key);
+    if (i >= 0) q[i] = { text, kind, key };
+    else q.push({ text, kind, key });
+    while (q.length > 3) q.shift();
+    if (!this.noticeBusy) this.nextNotice();
+  }
+
+  nextNotice() {
+    const n = this.noticeQueue.shift();
+    const el = this.el.notice;
+    if (!n) {
+      this.noticeBusy = false;
+      this.noticeKey = null;
+      return;
+    }
+    this.noticeBusy = true;
+    this.noticeKey = n.key;
+    el.textContent = n.text;
+    el.className = `notice on ${n.kind}`;
+    setTimeout(() => {
+      el.classList.remove('on');
+      setTimeout(() => this.nextNotice(), 160);
+    }, NOTICE_MS);
+  }
+
   damageFlash() {
     this.flash = 1;
   }
@@ -140,7 +177,7 @@ export class Hud {
     el.staminaText.textContent = `Fôlego ${Math.round(ctl.stamina.value)} / ${Math.round(ctl.stamina.max)}`;
     el.state.textContent = stateLabel(ctl);
 
-    // placa mais próxima
+    // placa mais próxima: avisa o nome do lugar uma vez ao chegar perto
     let near = null;
     let best = 7.5;
     for (const s of signs) {
@@ -152,11 +189,7 @@ export class Hud {
     }
     if (near !== this.lastHint) {
       this.lastHint = near;
-      el.hint.classList.toggle('on', !!near);
-      if (near) {
-        el.hintTitle.textContent = near.title;
-        el.hintText.textContent = near.hint;
-      }
+      if (near) this.notice(`📍 ${near.title}`, '', near.title);
     }
 
     if (this.showStats && stats) {

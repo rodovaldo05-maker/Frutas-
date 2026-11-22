@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { clamp, damp, lerp, lerpAngle, wrapAngle } from '../core/math.js';
 
-const DISTANCE = { sink: 8.4, ground: 8.6, air: 9.2, climb: 9.6, hang: 9, mantle: 9, swim: 8.4, dive: 8, glide: 11, wallrun: 9.6, slide: 8.4, slopeSlide: 8.6, roll: 8.6, faint: 9 };
+const DISTANCE = { sink: 8.4, ground: 8.6, air: 9.2, climb: 9.6, hang: 9, mantle: 9, swim: 8.4, dive: 8, glide: 11, wallrun: 9.6, slide: 8.4, slopeSlide: 8.6, roll: 8.6, faint: 9, boat: 14 };
 
 export class FollowCamera {
   constructor(camera, physics) {

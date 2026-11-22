@@ -137,6 +137,32 @@ export class CharacterController {
     this.safe.copy(this.pos);
   }
 
+  // ===== Bote (atualização 10) =====
+  // Em pé no bote: o bote leva o jogador; o controlador não anda nem nada enquanto isso
+  ride(x, y, z, yaw, vx = 0, vz = 0) {
+    if (this.state !== 'boat') {
+      this.reset();
+      this.setCrouched(false, true);
+      this.state = 'boat';
+    }
+    this.pos.set(x, y, z);
+    this.yaw = yaw;
+    this.vel.set(vx, 0, vz);
+    this.breath = this.breathMax;
+    this.syncCollider();
+  }
+
+  // Desce do bote num ponto (chão, cais ou água) sem curar nem mover o ponto seguro
+  leaveRide(x, y, z, yaw) {
+    this.pos.set(x, y, z);
+    this.yaw = yaw;
+    this.reset();
+    this.state = 'air';
+    this.grounded = false;
+    this.vel.set(0, 2.5, 0);
+    this.syncCollider();
+  }
+
   // ===== Física =====
   syncCollider() {
     this.collider.setTranslation({ x: this.pos.x, y: this.pos.y + this.halfHeight + MOVE.radius, z: this.pos.z });

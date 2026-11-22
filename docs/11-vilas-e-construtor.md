@@ -1,8 +1,10 @@
 # 11 — Vilas e construtor de mundo
 
 Plano da Parte B da especificação "Sistemas de Frutas e Vilas" (World Builder e gerador
-procedural de vilas 3D), adaptado ao motor do FRUTO Legacy. Nada desta parte está pronto
-ainda; a Parte A (raridades, catálogo e sorteio) já está no jogo (docs 08, 09 e 10).
+procedural de vilas 3D), adaptado ao motor do FRUTO Legacy. A Parte A (raridades, catálogo
+e sorteio) já está no jogo (docs 08, 09 e 10). Da Parte B, o gerador (B2) e a primeira vila
+estão no jogo desde a atualização 9 (seção 10); o editor visual (B1) e as fases B3–B6
+continuam planejadas.
 
 ## 1. Encaixe no motor atual
 
@@ -104,3 +106,34 @@ frequência e perfis Leve, Médio e Alto, como no resto do jogo.
 
 Primeira vila planejada: "Porto das Origens" (costeira tropical, tamanho médio), numa
 nova ilha ligada à Ilha de Treino.
+
+## 10. O que já está no jogo (atualização 9)
+
+**Ilhas no mundo.** Cada ilha tem o seu campo de alturas em coordenadas locais.
+`OffsetHeightfield` (`src/terrain/offsetField.js`) desloca o campo no mundo: relevo, colisão e
+quem amostra o chão funcionam sem saber do deslocamento. `WorldField` junta as ilhas: a altura
+vem da ilha que contém o ponto e, fora de todas, é o fundo do mar. O Porto das Origens fica em
+(340, 0), meia largura 130, com a Ilha de Treino a oeste e mar fundo entre as duas.
+
+**Gerador** (`src/world/village.js`, versão 1). Mesma semente + mesmos parâmetros + mesma
+versão = mesma vila. Ordem: praça (raio 10) → 4 avenidas de largura 5 (a primeira aponta
+para o cais e vai até a praia) → anel de 16 trechos (largura 3,6) → lotes dos dois lados das
+avenidas e do anel, embaralhados pela semente e ordenados pela distância da praça → serviços
+nos lotes mais centrais (Prefeitura, Mercado, Taverna, Ferreiro, Loja de Frutas) →
+residências pequenas, médias e grandes → postes nas avenidas → validação. Lote sem espaço é
+descartado e entra no relatório (nunca sobrepõe em silêncio).
+
+**Validações** (`validateVillage`): casas sem sobreposição, porta a até 4 unidades de uma
+rua, nenhuma casa em cima de rua, serviços obrigatórios (Prefeitura, Mercado, Taverna) e toda
+avenida ligada à praça. Os testes rodam várias sementes e exigem zero problemas.
+
+**Construção** (`src/islands/villageIsland.js`). Praça plana (altura 3,2), praia e um morro a
+nordeste. Ruas e praça em lajes de pedra, chafariz no centro, casas com piso de tábuas,
+paredes de tijolo, reboco ou madeira, porta de 3,2 de largura virada para a rua, janelas e
+telhado em degraus (vermelho ou azul); placas nos serviços. Cais de tábuas nas duas ilhas com
+Barqueiros: falar com eles faz a travessia (tela de transição) até o outro cais. Ao chegar, o
+nome da ilha aparece no alto da tela; o mapa (M) e o minimapa mostram a ilha onde o jogador
+está, com ruas, praça e casas desenhadas por cima do relevo.
+
+**Ainda não:** editor visual, interiores mobiliados, NPCs com rotina e lojas da vila
+(atualização 11), barco de verdade (atualização 10).

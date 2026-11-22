@@ -15,6 +15,15 @@ export const STYLES = {
   trepadeira: { color: '#56804c', top: '#6f9a5f', climbable: true, material: 'planta', tile: [0.8, 0.8], offset: true, jitter: 0.2 },
   lonaRoxa: { color: '#5b2a86', top: '#6b3aa0', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.02 },
   lonaOuro: { color: '#e0a83a', top: '#f2c14e', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.02 },
+  // vila (atualização 9)
+  tijolo: { color: '#b5583a', top: '#c86a48', climbable: false, material: 'pedra', tile: [0.7, 0.32], offset: true, jitter: 0.08 },
+  reboco: { color: '#efe4cc', top: '#f6eedb', climbable: false, material: 'pedra', tile: [3, 3], offset: false, jitter: 0.03 },
+  telhado: { color: '#b84a2a', top: '#c85a34', climbable: false, material: 'pedra', tile: [0.6, 0.4], offset: true, jitter: 0.06 },
+  telhadoAzul: { color: '#3a6a9c', top: '#4a7cb0', climbable: false, material: 'pedra', tile: [0.6, 0.4], offset: true, jitter: 0.06 },
+  caminho: { color: '#b7ab92', top: '#c9bd9f', climbable: false, material: 'pedra', tile: [0.9, 0.9], offset: true, jitter: 0.1 },
+  janela: { color: '#2a3a58', top: '#2a3a58', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.02 },
+  agua: { color: '#4fb6d8', top: '#7fd0ea', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.03 },
+  lanterna: { color: '#ffd45e', top: '#fff2a0', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.02 },
 };
 
 const FACES = [

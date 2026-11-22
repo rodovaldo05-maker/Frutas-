@@ -13,7 +13,44 @@ const PARCH = {
   deep: hex('#6aa7b7'), shallow: hex('#a8d4cf'), land: hex('#ecd9a6'), high: hex('#d8bd84'), rock: hex('#bfa16b'), line: hex('#7a5524'),
 };
 
-export function renderIslandImage(field, size, style = 'mini') {
+// Planta da vila por cima do relevo: ruas, praça e casas (telhado visto de cima)
+function drawPlan(ctx, plan, size, half, style) {
+  const k = size / (2 * half);
+  const P = (x, z) => [(x + half) * k, (z + half) * k];
+  const mini = style === 'mini';
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = mini ? '#d8c79c' : '#b8955a';
+  for (const s of plan.streets) {
+    ctx.lineWidth = Math.max(1.5, s.w * k);
+    ctx.beginPath();
+    ctx.moveTo(...P(...s.a));
+    ctx.lineTo(...P(...s.b));
+    ctx.stroke();
+  }
+  ctx.fillStyle = mini ? '#d8c79c' : '#c9a86c';
+  ctx.beginPath();
+  ctx.arc(...P(plan.plaza.x, plan.plaza.z), plan.plaza.r * k, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = mini ? '#4fb6d8' : '#8fc4c8';
+  ctx.beginPath();
+  ctx.arc(...P(plan.plaza.x, plan.plaza.z), 2.6 * k, 0, Math.PI * 2);
+  ctx.fill();
+  for (const b of plan.buildings) {
+    ctx.save();
+    ctx.translate(...P(b.x, b.z));
+    ctx.rotate(-b.rotY);
+    ctx.fillStyle = mini ? (b.telhado === 'telhadoAzul' ? '#4a7cb0' : '#c85a34') : '#a77c46';
+    ctx.strokeStyle = mini ? '#3b250b' : '#6a4520';
+    ctx.lineWidth = 1;
+    ctx.fillRect((-b.w / 2) * k, (-b.d / 2) * k, b.w * k, b.d * k);
+    ctx.strokeRect((-b.w / 2) * k, (-b.d / 2) * k, b.w * k, b.d * k);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+export function renderIslandImage(field, size, style = 'mini', plan = null) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
@@ -67,22 +104,48 @@ export function renderIslandImage(field, size, style = 'mini') {
     }
   }
   ctx.putImageData(img, 0, 0);
+  if (plan) drawPlan(ctx, plan, size, half, style);
   return canvas;
 }
 
 // Minimapa: norte para cima, jogador no centro
+// (field em coordenadas locais da ilha; origin = onde fica o centro da ilha no mundo)
 export class Minimap {
-  constructor(canvas, field, signs) {
+  constructor(canvas, field, signs, origin = { x: 0, z: 0 }) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.field = field;
     this.signs = signs;
-    this.image = renderIslandImage(field, 384, 'mini');
+    this.islands = [];
+    this.addIsland(field, origin);
     this.range = 42; // raio visível em unidades do mundo
   }
 
+  addIsland(field, origin = { x: 0, z: 0 }, plan = null) {
+    const isl = { field, origin, plan, image: null };
+    this.islands.push(isl);
+    return isl;
+  }
+
+  // ilha mais próxima do jogador (a imagem é feita na primeira vez que aparece)
+  pick(pos) {
+    let best = this.islands[0];
+    let bd = Infinity;
+    for (const isl of this.islands) {
+      const d = Math.max(Math.abs(pos.x - isl.origin.x), Math.abs(pos.z - isl.origin.z)) - isl.field.half;
+      if (d < bd) {
+        bd = d;
+        best = isl;
+      }
+    }
+    best.image ??= renderIslandImage(best.field, best.plan ? 768 : 384, 'mini', best.plan);
+    return best;
+  }
+
   draw(pos, yaw) {
-    const { ctx, canvas, field } = this;
+    const { ctx, canvas } = this;
+    const isl = this.pick(pos);
+    const { field, origin } = isl;
+    this.image = isl.image;
     const w = canvas.width;
     const r = w / 2;
     const ppu = r / this.range; // pixels por unidade
@@ -95,8 +158,8 @@ export class Minimap {
     ctx.fillStyle = '#1d5a78';
     ctx.fillRect(0, 0, w, w);
     ctx.imageSmoothingEnabled = true;
-    const sx = (pos.x + field.half) * ipu;
-    const sz = (pos.z + field.half) * ipu;
+    const sx = (pos.x - origin.x + field.half) * ipu;
+    const sz = (pos.z - origin.z + field.half) * ipu;
     ctx.translate(r, r);
     ctx.scale(ppu / ipu, ppu / ipu);
     ctx.drawImage(this.image, -sx, -sz);

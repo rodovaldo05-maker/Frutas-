@@ -15,6 +15,8 @@ import { FollowCamera } from './renderer/camera.js';
 import { AutoQuality } from './optimization/quality.js';
 import { Physics } from './physics/physics.js';
 import { buildTrainingIsland, ISLAND } from './islands/trainingIsland.js';
+import { buildVillageIsland, buildTrainingDock, BOATMEN, DOCKS, VILLAGE } from './islands/villageIsland.js';
+import { WorldField } from './terrain/offsetField.js';
 import { Ocean } from './ocean/ocean.js';
 import { createPlayer } from './characters/player.js';
 import { PlayerAnimator } from './animation/playerAnimator.js';
@@ -93,7 +95,13 @@ async function boot() {
   await Promise.race([document.fonts?.load('700 64px Cinzel'), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
   await setLoading('Erguendo a Ilha de Treino…', 35);
   const island = buildTrainingIsland({ scene: renderer.scene, physics });
-  const market = buildMarket({ scene: renderer.scene, physics, field: island.field, data: DATA });
+  island.signs.push(...buildTrainingDock({ scene: renderer.scene, physics, field: island.field }).signs);
+  await setLoading('Erguendo o Porto das Origens…', 48);
+  const village = buildVillageIsland({ scene: renderer.scene, physics });
+  island.signs.push(...village.signs);
+  // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
+  const world = new WorldField([island.field, village.field]);
+  const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: BOATMEN });
   island.signs.push(...market.signs);
   const arena = buildArena({ scene: renderer.scene, physics, field: island.field, data: DATA });
   physics.world.updateSceneQueries?.();
@@ -401,7 +409,7 @@ async function boot() {
   const playerProxy = { pos: ctl.pos, get yaw() { return ctl.yaw; }, alive: true };
 
   // ===== Poderes das frutas (atualização 3): energia, habilidades 1–3 e domínio =====
-  const fx = new PowerFx(renderer.scene, { ground: (x, z) => island.field.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
+  const fx = new PowerFx(renderer.scene, { ground: (x, z) => world.sample(x, z), light: renderer.qualityId === 'leve' || renderer.qualityId === 'baixa' });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
   const domainBudget = new Map();
@@ -445,7 +453,7 @@ async function boot() {
           }
           break;
         case 'heal': floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, `+${d.amount}`, 'info'); break;
-        case 'teleport': ctl.spawn(d.x, island.field.sample(d.x, d.z) + 0.4, d.z, d.yaw); break;
+        case 'teleport': ctl.spawn(d.x, world.sample(d.x, d.z) + 0.4, d.z, d.yaw); break;
         case 'hit': {
           const t = d.target;
           const at = { x: t.pos.x, y: t.pos.y + 3.2, z: t.pos.z };
@@ -639,7 +647,7 @@ async function boot() {
     const h = island.field.sample(ISLAND.spawn.x, ISLAND.spawn.z);
     ctl.spawn(ISLAND.spawn.x, h + 0.5, ISLAND.spawn.z, ISLAND.spawn.yaw);
   };
-  if (save.player && Number.isFinite(save.player.x) && island.field.inside(save.player.x, save.player.z)) {
+  if (save.player && Number.isFinite(save.player.x) && world.inside(save.player.x, save.player.z)) {
     ctl.spawn(save.player.x, save.player.y + 0.4, save.player.z, save.player.yaw ?? 0);
     if (save.player.safe) ctl.safe.set(save.player.safe.x, save.player.safe.y, save.player.safe.z);
     ctl.health = Math.max(30, save.player.health ?? 100);
@@ -650,7 +658,11 @@ async function boot() {
 
   await setLoading('Pintando o mapa…', 86);
   const minimap = new Minimap($('minimap-canvas'), island.field, island.signs);
-  const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
+  minimap.addIsland(village.localField, VILLAGE.offset, village.village);
+  const mapScreen = new MapScreen({
+    canvas: $('map-canvas'), signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out'), title: $('worldmap').querySelector('.frame-title'),
+    islands: [{ name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 } }, { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village }],
+  });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
   const armory = new Armory({
@@ -866,6 +878,7 @@ async function boot() {
     if (modals.includes(id)) return;
     modals.push(id);
     if (id === 'pause') menu.setOpen(true, opts);
+    else if (id === 'travel') $(id).classList.add('on');
     else $(id).classList.remove('hidden');
     if (id === 'worldmap') mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
     if (id === 'missions') renderMissionList();
@@ -881,10 +894,12 @@ async function boot() {
   }
   function closeModal(id = modals[modals.length - 1]) {
     if (!id) return;
+    if (id === 'travel' && traveling) return; // a travessia termina sozinha
     if (id === 'race-select' && !save.race) return; // a escolha da raça é obrigatória
     const i = modals.indexOf(id);
     if (i >= 0) modals.splice(i, 1);
     if (id === 'pause') menu.setOpen(false);
+    else if (id === 'travel') $(id).classList.remove('on');
     else $(id).classList.add('hidden');
     shop.onModalClosed(id);
     if (id === 'fruit-detail') catalog.stopViewer();
@@ -928,10 +943,52 @@ async function boot() {
   });
   $('btn-status').addEventListener('click', () => openModal('status'));
   $('btn-bag').addEventListener('click', () => openModal('bag'));
+  // ===== Travessia com o Barqueiro (barcos de verdade chegam na atualização 10) =====
+  let traveling = false;
+  function travel(to) {
+    const d = DOCKS[to];
+    if (!d || traveling) return;
+    traveling = true;
+    $('travel-text').textContent = `Atravessando para ${to === 'porto' ? 'o' : 'a'} ${d.island}…`;
+    openModal('travel');
+    audio.play('base', 'wing', 0.4);
+    setTimeout(() => {
+      ctl.spawn(d.x, VILLAGE.deck + 0.4, d.z, d.yaw);
+      ctl.safe.set(d.x, VILLAGE.deck + 0.1, d.z);
+      cam.snap(ctl.pos, ctl.yaw);
+      prev.copy(ctl.pos);
+      conditions?.reset();
+      saveNow(true);
+      setTimeout(() => {
+        traveling = false;
+        closeModal('travel');
+      }, 700);
+    }, 900);
+  }
+  // nome da ilha ao chegar (muda quando o jogador passa para outra ilha)
+  let zoneName = null;
+  let zoneTimer = 0;
+  function updateZone(dt) {
+    const name = village.field.inside(ctl.pos.x, ctl.pos.z) ? VILLAGE.name : island.field.inside(ctl.pos.x, ctl.pos.z) ? ISLAND.name : null;
+    if (name && name !== zoneName) {
+      const first = zoneName === null;
+      zoneName = name;
+      $('zone-banner').querySelector('b').textContent = name;
+      $('zone-banner').querySelector('small').textContent = first ? 'Você está em' : 'Você chegou a';
+      $('zone-banner').classList.add('show');
+      zoneTimer = 3.2;
+    }
+    if (zoneTimer > 0) {
+      zoneTimer -= dt;
+      if (zoneTimer <= 0) $('zone-banner').classList.remove('show');
+    }
+  }
+
   // falar com o NPC perto
   let nearNpc = null;
   const talk = () => {
     if (!nearNpc || modals.length || mode !== 'game') return;
+    if (nearNpc.role === 'barqueiro') return travel(nearNpc.to);
     openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[nearNpc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
@@ -1193,8 +1250,9 @@ async function boot() {
       if (npc !== nearNpc) {
         nearNpc = npc;
         $('btn-interact').classList.toggle('hidden', !npc);
-        if (npc) $('interact-text').textContent = `Falar com o ${npc.name}`;
+        if (npc) $('interact-text').textContent = npc.role === 'barqueiro' ? `Atravessar com ${npc.art ?? 'o'} ${npc.name}` : `Falar com o ${npc.name}`;
       }
+      updateZone(dt);
       minimapTimer -= dt;
       if (minimapTimer <= 0) {
         minimapTimer = 0.1;
@@ -1359,8 +1417,11 @@ async function boot() {
     saveNow,
     openModal,
     closeModal,
+    village,
+    world,
+    travel,
     teleport(x, z, y) {
-      const h = y ?? island.field.sample(x, z) + 0.5;
+      const h = y ?? world.sample(x, z) + 0.5;
       ctl.spawn(x, h, z, ctl.yaw);
       cam.snap(ctl.pos, ctl.yaw);
     },

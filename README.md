@@ -56,6 +56,11 @@ Equipamento (atualização 8): armaduras e acessórios em 6 encaixes (cabeça, t
 botas, anel, amuleto) com qualidade, peso, durabilidade, conserto, tetos e sinergias de raça;
 as peças aparecem no corpo. Loja no Mestre de Armas e itens que caem dos Recrutas.
 
+Porto das Origens (atualização 9): segunda ilha, a leste, com a primeira vila gerada pela
+semente (praça com chafariz, avenidas, anel de ruas, 19 casas com porta, Prefeitura, Mercado,
+Taverna, Ferreiro e Loja de Frutas) e validada (sem sobreposição, portas com acesso). Cais nas
+duas ilhas com Barqueiros que fazem a travessia; mapa e minimapa trocam de ilha.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

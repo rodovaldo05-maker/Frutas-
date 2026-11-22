@@ -1100,3 +1100,24 @@ body.sense #game { filter: saturate(0.65) contrast(1.05); }
 #armory-tabs { margin: 0 40px 8px 0; position: relative; z-index: 1; align-items: center; }
 #armory-tabs #btn-repair { margin-left: auto; min-height: 30px; font-size: 12px; padding: 0 10px; }
 @media (max-height: 450px) { .gear-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ===== Travessia e nome da ilha (atualização 9) ===== */
+.zone-banner {
+  position: absolute; left: 50%; top: calc(10px + var(--safe-t)); transform: translate(-50%, -8px); pointer-events: none; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.6s, transform 0.6s;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75), 0 0 2px #2a1906;
+}
+.zone-banner.show { opacity: 1; transform: translate(-50%, 0); }
+.zone-banner small { font: 700 13px var(--body-font); color: #fff1cf; letter-spacing: 0.12em; text-transform: uppercase; }
+.zone-banner b { font: 900 34px Cinzel, Georgia, serif; color: #ffd36b; letter-spacing: 0.04em; white-space: nowrap; }
+.zone-banner b::after { content: ''; display: block; height: 3px; margin: 4px auto 0; width: 70%; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.travel { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #0b1a26; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+.travel.on { opacity: 1; pointer-events: auto; }
+.travel-box { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.travel-box b { font: 900 22px Cinzel, Georgia, serif; color: #ffe9b3; text-align: center; padding: 0 16px; }
+.travel-wave { width: 120px; height: 24px; background: radial-gradient(circle at 12px 0, transparent 11px, #47bcb3 12px, #47bcb3 14px, transparent 15px) 0 0 / 24px 24px repeat-x; animation: travel-wave 1.2s linear infinite; }
+@keyframes travel-wave { to { background-position: 24px 0; } }
+@media (max-width: 900px), (max-height: 520px) {
+  .zone-banner b { font-size: 24px; }
+  .zone-banner small { font-size: 11px; }
+}

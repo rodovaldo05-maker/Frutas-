@@ -25,6 +25,7 @@ const KEEP_CLEAR = [
   [-10.5, 46.5, 6], // barraca do Mestre de Armas (world/npcs.js)
   [58, -30, 14], // acampamento elemental (combat/enemies.js)
   [12, 56, 6], // barraca do Mestre de Luta (world/npcs.js)
+  [86, 11, 9], // cais do Barqueiro (islands/villageIsland.js)
 ];
 
 const noise = valueNoise2D(7);

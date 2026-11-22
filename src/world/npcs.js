@@ -1,5 +1,7 @@
 // Barracas e NPCs da Ilha de Treino: o Mercador de Frutas (roleta) e o Trocador de
-// Fragmentos. Os NPCs usam o corpo do laboratório com rosto, respiram, piscam e viram a
+// Fragmentos, o Mestre de Armas e o Mestre de Luta. NPCs extras (como os Barqueiros dos cais)
+// chegam por `extra`: podem ficar sem barraca (stall: false) e com altura própria (y).
+// Os NPCs usam o corpo do laboratório com rosto, respiram, piscam e viram a
 // cabeça para o jogador. Cada barraca tem colisão no balcão e nos postes.
 
 import * as THREE from 'three';
@@ -70,19 +72,20 @@ function label(text) {
   return sprite;
 }
 
-export function buildMarket({ scene, physics, field, data }) {
+export function buildMarket({ scene, physics, field, data, extra = [] }) {
   const sb = new StructureBuilder(scene, physics);
   const npcs = [];
-  for (const def of NPCS) {
-    const ground = field.sample(def.x, def.z);
+  for (const def of [...NPCS, ...extra]) {
+    const ground = def.y ?? field.sample(def.x, def.z);
     const fx = Math.sin(def.yaw);
     const fz = Math.cos(def.yaw);
-    const cx = def.x + fx * 1.6; // balcão na frente do NPC
-    const cz = def.z + fz * 1.6;
+    const stall = def.stall !== false;
+    const cx = def.x + fx * (stall ? 1.6 : 0.2) + (stall ? 0 : Math.cos(def.yaw) * 1.3); // balcão na frente do NPC
+    const cz = def.z + fz * (stall ? 1.6 : 0.2) - (stall ? 0 : Math.sin(def.yaw) * 1.3);
     const rot = def.yaw;
     // balcão, postes e toldo listrado
-    sb.block({ x: cx, y: ground - 0.4, z: cz, w: 4.4, h: 1.9, d: 1.1, rotY: rot, style: 'madeira' });
-    for (const side of [-1, 1]) {
+    if (stall) sb.block({ x: cx, y: ground - 0.4, z: cz, w: 4.4, h: 1.9, d: 1.1, rotY: rot, style: 'madeira' });
+    for (const side of stall ? [-1, 1] : []) {
       const px = def.x + Math.cos(rot) * side * 2.3 - fx * 0.6;
       const pz = def.z - Math.sin(rot) * side * 2.3 - fz * 0.6;
       sb.block({ x: px, y: ground - 0.3, z: pz, w: 0.3, h: 5.6, d: 0.3, rotY: rot, style: 'madeira' });
@@ -90,7 +93,7 @@ export function buildMarket({ scene, physics, field, data }) {
       const qz = cz - Math.sin(rot) * side * 2.3 + fz * 0.6;
       sb.block({ x: qx, y: ground - 0.3, z: qz, w: 0.3, h: 4.8, d: 0.3, rotY: rot, style: 'madeira' });
     }
-    for (let k = 0; k < 6; k++) {
+    for (let k = 0; k < (stall ? 6 : 0); k++) {
       const off = -2.1 + k * 0.84;
       const ax = def.x + fx * 1.0 + Math.cos(rot) * off;
       const az = def.z + fz * 1.0 - Math.sin(rot) * off;
@@ -110,9 +113,23 @@ export function buildMarket({ scene, physics, field, data }) {
 
     // mercadoria no balcão
     const props = new THREE.Group();
-    props.position.set(cx, ground + 1.5, cz);
+    props.position.set(cx, ground + (stall ? 1.5 : 0), cz);
     props.rotation.y = rot;
-    if (def.id === 'mestre') {
+    if (def.role === 'barqueiro') {
+      // remo encostado e rolo de corda no chão do cais
+      const wood = new THREE.MeshStandardMaterial({ color: '#8a5a32', roughness: 0.8 });
+      const rope = new THREE.MeshStandardMaterial({ color: '#d8c08a', roughness: 0.9 });
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 6), wood);
+      shaft.position.set(0, 1.5, -0.2);
+      shaft.rotation.z = 0.18;
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.9, 0.08), wood);
+      blade.position.set(-0.25, 0.4, -0.2);
+      blade.rotation.z = 0.18;
+      const coil = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.13, 6, 14), rope);
+      coil.rotation.x = Math.PI / 2;
+      coil.position.set(0.9, 0.12, 0.4);
+      props.add(shaft, blade, coil);
+    } else if (def.id === 'mestre') {
       // faixas de treino e um saco de pancada no balcão
       const belt = new THREE.MeshStandardMaterial({ color: '#2a2a33', roughness: 0.8 });
       const red = new THREE.MeshStandardMaterial({ color: '#b8321e', roughness: 0.8 });
@@ -172,6 +189,11 @@ export function buildMarket({ scene, physics, field, data }) {
     update(dt, playerPos, data2 = data) {
       for (const n of npcs) {
         n.clock += dt;
+        // longe do jogador (outra ilha): não anima
+        if (Math.abs(playerPos.x - n.x) > 90 || Math.abs(playerPos.z - n.z) > 90) {
+          n.tag.visible = false;
+          continue;
+        }
         FRUTOMotion.apply(THREE, n.body, data2, { id: 'idle', t: n.clock, clock: n.clock, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
         // vira a cabeça para o jogador quando ele chega perto
         const dx = playerPos.x - n.x;

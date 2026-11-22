@@ -1,14 +1,17 @@
 // Mapa da Ilha em pergaminho: aproximar/afastar, arrastar para mover, nomes das áreas
-// (as placas) e a posição do jogador.
+// (as placas) e a posição do jogador. Mostra a ilha onde o jogador está (cada ilha tem o seu
+// campo de alturas local e a origem no mundo).
 
 import { renderIslandImage } from './islandMap.js';
 
 export class MapScreen {
-  constructor({ canvas, field, signs, zoomIn, zoomOut }) {
+  constructor({ canvas, field, islands, signs, zoomIn, zoomOut, title }) {
     this.canvas = canvas;
-    this.field = field;
+    this.islands = islands ?? [{ name: 'Ilha de Treino', field, origin: { x: 0, z: 0 } }];
+    this.island = this.islands[0];
     this.signs = signs;
-    this.image = null;
+    this.title = title;
+    this.images = new Map();
     this.zoom = 1;
     this.center = { x: 0, z: 0 };
     this.player = { x: 0, z: 0, yaw: 0 };
@@ -42,10 +45,15 @@ export class MapScreen {
     this.draw();
   }
 
+  get field() {
+    return this.island.field;
+  }
+
   clampCenter() {
     const lim = this.field.half * (1 - 1 / this.zoom);
-    this.center.x = Math.max(-lim, Math.min(lim, this.center.x));
-    this.center.z = Math.max(-lim, Math.min(lim, this.center.z));
+    const o = this.island.origin;
+    this.center.x = Math.max(o.x - lim, Math.min(o.x + lim, this.center.x));
+    this.center.z = Math.max(o.z - lim, Math.min(o.z + lim, this.center.z));
   }
 
   // pixels por unidade do mundo
@@ -54,8 +62,25 @@ export class MapScreen {
     return (Math.min(c.width, c.height) / (2 * this.field.half)) * this.zoom * 1.1;
   }
 
+  // ilha que contém o ponto (ou a mais próxima)
+  islandAt(x, z) {
+    let best = this.islands[0];
+    let bd = Infinity;
+    for (const isl of this.islands) {
+      const d = Math.max(Math.abs(x - isl.origin.x), Math.abs(z - isl.origin.z)) - isl.field.half;
+      if (d < bd) {
+        bd = d;
+        best = isl;
+      }
+    }
+    return best;
+  }
+
   open(player) {
-    if (!this.image) this.image = renderIslandImage(this.field, 768, 'parchment');
+    this.island = this.islandAt(player.x, player.z);
+    if (!this.images.has(this.island)) this.images.set(this.island, renderIslandImage(this.field, this.island.plan ? 1024 : 768, 'parchment', this.island.plan));
+    this.image = this.images.get(this.island);
+    if (this.title) this.title.lastChild.textContent = `Mapa · ${this.island.name}`;
     this.player = player;
     this.center = { x: player.x, z: player.z };
     this.clampCenter();
@@ -78,7 +103,8 @@ export class MapScreen {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#9ccbcb';
     ctx.fillRect(0, 0, w, h);
-    const [ox, oy] = toScreen(-this.field.half, -this.field.half);
+    const o = this.island.origin;
+    const [ox, oy] = toScreen(o.x - this.field.half, o.z - this.field.half);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.image, ox, oy, 2 * this.field.half * s, 2 * this.field.half * s);
     // moldura de pergaminho
@@ -93,8 +119,15 @@ export class MapScreen {
     ctx.font = `700 ${font}px Cinzel, Georgia, serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    for (const sign of this.signs) {
+    // nomes que se sobrepõem a outro já escrito ficam só com o ponto (aproxime para ver)
+    const placed = [];
+    for (const sign of [...this.signs].sort((a, b) => (b.major ? 1 : 0) - (a.major ? 1 : 0))) {
+      if (Math.max(Math.abs(sign.x - o.x), Math.abs(sign.z - o.z)) > this.field.half) continue;
       const [x, y] = toScreen(sign.x, sign.z);
+      const tw = ctx.measureText(sign.title).width;
+      const box = [x - tw / 2 - 2, y - 6 * dpr - font, x + tw / 2 + 2, y - 6 * dpr];
+      const free = !placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]);
+      if (free) placed.push(box);
       ctx.fillStyle = '#7a2a20';
       ctx.strokeStyle = '#fff3d0';
       ctx.lineWidth = 2 * dpr;
@@ -102,6 +135,7 @@ export class MapScreen {
       ctx.arc(x, y, 4 * dpr, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      if (!free) continue;
       ctx.lineWidth = 4 * dpr;
       ctx.strokeStyle = 'rgba(255, 243, 208, 0.9)';
       ctx.strokeText(sign.title, x, y - 6 * dpr);

@@ -10,9 +10,12 @@ export class FloatText {
     this.layer = layer;
     this.items = [];
     this.v = new THREE.Vector3();
+    this.numbers = true; // ajuste "Números de dano"
   }
 
   add(pos, text, kind = 'dano') {
+    // sem números de dano: some só o número; avisos ("Esquiva!", "Defendeu") continuam
+    if (!this.numbers && /^[−-]?\d[\d.]*$/.test(text)) return;
     const el = document.createElement('span');
     el.className = `float-text ${KINDS[kind] ?? ''}`;
     el.textContent = text;

@@ -14,6 +14,7 @@ import { makeSword } from '../weapons/swordModel.js';
 import { WEAPONS } from '../weapons/weapons.js';
 import { clamp, damp, lerp, wrapAngle } from '../core/math.js';
 import { trimShadows, LOD_FAR, LOD_FACE } from '../characters/shadows.js';
+import { bakeStatic } from '../optimization/bake.js';
 
 const NPCS = [
   {
@@ -188,6 +189,7 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
       props.add(chest, ring, shaft, bit);
     }
     props.traverse((o) => (o.castShadow = !!o.isMesh));
+    bakeStatic(props);
     scene.add(props);
 
     npcs.push({ ...def, ground, body, face, tag, props, headYaw: 0, clock: Math.random() * 10 });

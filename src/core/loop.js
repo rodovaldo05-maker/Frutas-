@@ -13,6 +13,8 @@ export class Loop {
     this.last = 0;
     this.running = false;
     this.paused = false;
+    this.minFrame = 0; // ms entre quadros desenhados (limite de qps; 0 = sem limite)
+    this.lastDraw = 0;
     this.frame = this.frame.bind(this);
   }
 
@@ -27,8 +29,19 @@ export class Loop {
     this.running = false;
   }
 
+  // limite de quadros por segundo (30 ou 60)
+  setFpsCap(fps) {
+    this.minFrame = fps && fps < 60 ? 1000 / fps : 0;
+  }
+
   frame(now) {
     if (!this.running) return;
+    // com limite, pula este quadro da tela (o tempo continua contando para o próximo)
+    if (this.minFrame && now - this.lastDraw < this.minFrame - 2) {
+      requestAnimationFrame(this.frame);
+      return;
+    }
+    this.lastDraw = now;
     // Nunca negativo (o carimbo do primeiro quadro pode vir antes de "last")
     const dt = Math.min(0.25, Math.max(0, (now - this.last) / 1000));
     this.last = now;

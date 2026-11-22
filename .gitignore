@@ -8,3 +8,8 @@ android/app/src/main/assets/public/
 *.apk
 *.aab
 .DS_Store
+
+# chave de assinatura da loja (guardar fora do repositório)
+android/keystore/
+android/keystore.properties
+*.jks

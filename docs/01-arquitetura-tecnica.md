@@ -150,7 +150,7 @@ gera erro claro na tela de desenvolvimento, nunca uma falha silenciosa.
 | Resolução | Escala de resolução dinâmica (0,5× a 1,0× da tela) |
 | Controles | Toque multitoque, teclado Bluetooth, controles Bluetooth pela Gamepad API |
 | Recursos locais | Todos os assets dentro do APK |
-| Saídas | APK (testes) e AAB assinado (loja) |
+| Saídas | APK (testes) e AAB assinado (loja): `./gradlew bundleRelease` em `android/` lê a chave de `android/keystore.properties` (fora do git; guardar uma cópia segura) |
 
 ## 7. Desempenho
 
@@ -172,6 +172,34 @@ gera erro claro na tela de desenvolvimento, nunca uma falha silenciosa.
 | Personagens animados próximos | 20 |
 | Memória de texturas | 256 MB |
 | Tempo de CPU de simulação | 6 ms |
+
+### Situação medida (atualização 15)
+
+Perfil Médio, celular emulado (Pixel 7 na horizontal), meio-dia, chamadas de desenho por quadro:
+
+| Área | Antes | Depois | Meta |
+|---|---|---|---|
+| Início da Ilha de Treino (mercado, placas, bonecos) | 406 | 148 | 150 |
+| Praça do Porto das Origens (moradores) | 293 | 112 | 150 |
+| Cais da Ilha de Treino (bote) | 215 | 115 | 150 |
+| Ilhas do Primeiro Mar | 51–178 | — | 150 |
+
+O que fez a diferença:
+
+- **Corpo numa malha só** (`src/characters/mergeBody.js`): os 17 segmentos, o cabelo e enfeites
+  rígidos de NPCs, moradores e inimigos viram uma SkinnedMesh com cor por vértice, e cada
+  vértice segue a junta da sua peça (peso 1), então a animação é a mesma. Detalhes do rosto
+  ficam separados (somem a mais de 24). O jogador também, menos os braços (brilho da Vontade
+  de Armadura). ~36 chamadas → ~1 de longe e ~12 de perto, e 1 no mapa de sombras.
+- **Placas** (`StructureBuilder.sign`): moldura e poste nas malhas juntadas e todos os textos
+  de um construtor num atlas: 6 chamadas por placa → 1 para todas.
+- **Peças paradas** (`src/optimization/bake.js`): bancas do mercado, bonecos de treino e o bote
+  juntam as peças por tipo de material.
+- **Limite de qps**: 30 ou 60 (o passo da simulação continua 60 Hz); a qualidade automática
+  usa o alvo escolhido e respeita a resolução fixa do jogador.
+
+Ainda faltam (técnicas abaixo): streaming de regiões em Web Worker, pools de projéteis e o
+roteiro manual nos três perfis de aparelho real.
 
 ### Técnicas obrigatórias
 

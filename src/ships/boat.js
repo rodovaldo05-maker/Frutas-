@@ -3,6 +3,7 @@
 // fica em boatRules.js; aqui é o que se vê e o encaixe com o mundo (raso, cais, pilares).
 
 import * as THREE from 'three';
+import { bakeStatic } from '../optimization/bake.js';
 import { BOAT, boatStep, landingSpot } from './boatRules.js';
 import { damp, lerp, lerpAngle } from '../core/math.js';
 
@@ -90,6 +91,7 @@ function buildModel() {
       o.receiveShadow = true;
     }
   });
+  bakeStatic(g, { skip: [sail, flag] });
   return { group: g, sail, flag };
 }
 

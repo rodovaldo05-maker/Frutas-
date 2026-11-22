@@ -32,7 +32,37 @@ export const DEFAULT_SETTINGS = {
   buttonScale: 1,
   gliderOn: true, // asa-delta: segurar Pular caindo abre a asa
   reduceFx: false, // efeitos reduzidos (molduras, partículas e flashes)
+  // atualização 15: gráficos e acessibilidade
+  fpsCap: 60, // limite de quadros por segundo (30 economiza bateria)
+  resolution: 'auto', // 'auto' (qualidade automática ajusta) ou escala fixa 0,5–1
+  textScale: 1, // tamanho do texto das janelas e avisos (90–140%)
+  colorblind: 'nenhum', // 'nenhum', 'protan', 'deutan' ou 'tritan'
+  damageNumbers: true,
+  vibration: true,
 };
+
+// Ajustes salvos com valores fora do lugar voltam ao padrão ou ao limite
+export function normalizeSettings(s) {
+  const out = { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}) };
+  const num = (k, lo, hi) => {
+    const v = Number(out[k]);
+    out[k] = Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : DEFAULT_SETTINGS[k];
+  };
+  num('sensitivity', 0.4, 2);
+  num('volume', 0, 1);
+  num('buttonScale', 0.75, 1.3);
+  num('textScale', 0.9, 1.4);
+  out.fpsCap = Number(out.fpsCap) === 30 ? 30 : 60;
+  if (!['auto', 'leve', 'media', 'alta'].includes(out.quality)) out.quality = 'auto';
+  if (out.resolution !== 'auto') {
+    const r = Number(out.resolution);
+    out.resolution = Number.isFinite(r) ? String(Math.min(1, Math.max(0.5, r))) : 'auto';
+  }
+  if (!['nenhum', 'protan', 'deutan', 'tritan'].includes(out.colorblind)) out.colorblind = 'nenhum';
+  if (!['padrao', 'canhoto'].includes(out.layout)) out.layout = 'padrao';
+  for (const k of ['invertY', 'reduceMotion', 'showStats', 'gliderOn', 'reduceFx', 'damageNumbers', 'vibration']) out[k] = typeof out[k] === 'boolean' ? out[k] : DEFAULT_SETTINGS[k];
+  return out;
+}
 
 export function newSave() {
   return {
@@ -223,7 +253,7 @@ export class SaveSystem {
 
   async loadSettings() {
     const s = await this.read('settings');
-    return { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}) };
+    return normalizeSettings(s);
   }
 
   saveSettings(settings) {

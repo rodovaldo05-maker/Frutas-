@@ -365,6 +365,7 @@ async function boot() {
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           floats.add(head, `−${d.damage}`, 'jogador');
+          vibrate(d.damage >= 20 ? 60 : 25);
           audio.play('impacto', 'acerto', 0.5);
           shake = Math.max(shake, 0.18);
           tracker.combat('apanhar', { source: d.source, life: d.life, hostile: true, amount: d.damage }, p);
@@ -1098,6 +1099,7 @@ async function boot() {
   }
 
   // ===== Configurações =====
+  let fpsCapHook = () => {};
   const applySetting = (key, value) => {
     if (key === 'quality') {
       quality.apply(value);
@@ -1118,6 +1120,17 @@ async function boot() {
     if (key === 'layout') document.body.classList.toggle('lefty', value === 'canhoto');
     if (key === 'buttonScale') document.documentElement.style.setProperty('--btn', value);
     if (key === 'reduceFx') document.body.classList.toggle('reduce-fx', !!value);
+    // atualização 15: gráficos e acessibilidade
+    if (key === 'fpsCap') {
+      quality.setTarget(value);
+      fpsCapHook(value); // o laço é criado depois; até lá só guarda
+    }
+    if (key === 'resolution') quality.setFixedScale(value === 'auto' ? null : Number(value));
+    if (key === 'textScale') document.documentElement.style.setProperty('--text', value);
+    if (key === 'colorblind') {
+      for (const c of ['protan', 'deutan', 'tritan']) document.body.classList.toggle('cb-' + c, value === c);
+    }
+    if (key === 'damageNumbers') floats.numbers = !!value;
     if (key === 'gliderOn') {
       ctl.unlocks.glide = !!value && save.unlocks.glide !== false;
       if (!value && ctl.state === 'glide') ctl.setState('air');
@@ -1441,6 +1454,15 @@ async function boot() {
     cam3.lookAt(cam3.position.x + f.x * 10, view.y + 2.7, cam3.position.z + f.z * 10);
   }
 
+  // vibração curta (ajuste "Vibração"; no Android precisa da permissão VIBRATE)
+  function vibrate(ms) {
+    if (!settings.vibration) return;
+    try {
+      navigator.vibrate?.(ms);
+    } catch {
+      /* sem vibração neste aparelho */
+    }
+  }
   const loop = new Loop({
     update(dt) {
       if (mode !== 'game') return;
@@ -1742,6 +1764,9 @@ async function boot() {
       }
     },
   });
+  loop.setFpsCap(settings.fpsCap);
+  fpsCapHook = (fps) => loop.setFpsCap(fps);
+
 
   // ===== Menu inicial =====
   function enterTitle() {

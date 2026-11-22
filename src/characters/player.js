@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { FRUTOModels } from './fruto-models.js';
 import { Face } from './face.js';
+import { mergeBody } from './mergeBody.js';
 import { makeFruit } from '../fruits/fruitArt.js';
 
 export const BASE_LOOK = {
@@ -34,6 +35,8 @@ export function createPlayer(scene, data, { profile = 0, look = BASE_LOOK } = {}
     mesh.material.color.set(look[SEGMENT_PART[id] || 'skin']);
   }
   const face = new Face(body.joints.cabeca, { hair: look.hair, skin: look.skin });
+  // corpo e cabelo numa malha só; braços separados (brilho da Vontade de Armadura)
+  mergeBody(body, { keep: (id) => /^(braco|antebraco|mao)_/.test(id) });
 
   // Asa-delta: vela listrada em triângulo, tubos e barra de controle. Fica presa ao corpo
   // (nível com o chão, não gira com o tronco) e abre a partir da mochila nas costas.

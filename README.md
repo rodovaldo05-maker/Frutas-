@@ -88,6 +88,11 @@ Rubra (com lava), Arena do Coliseu Partido e Fenda Celeste — cada uma com biom
 inimigos por nível (Nv. 25 a 700) e um chefe com barra no topo e recompensas; Capitão
 Ferrugem (Nv. 25) no Porto das Origens; Carta do mar no mapa com nomes e faixas de nível.
 
+Polimento e Android (atualização 15): personagens, placas e enfeites juntados em poucas malhas
+(menos da metade das chamadas de desenho: 406 → 148 no início, 293 → 112 na vila); limite de
+30/60 qps e resolução fixa; aba Acessibilidade com tamanho do texto, modo daltônico, atenuar
+clarões e números de dano; vibração ao levar golpes; AAB assinado para a loja.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

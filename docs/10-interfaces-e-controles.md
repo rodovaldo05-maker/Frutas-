@@ -353,6 +353,14 @@ proa, canhões) com prévia 3D, e botão **Invocar** (só em porto ou perto da c
 
 ### 5.9 Ajustes
 
+No jogo hoje (atualização 15): Qualidade (Auto, Leve, Média, Alta), Resolução (Auto, 50%,
+75%, 100%), Limite de qps (30/60), sensibilidade da câmera, volume, inverter eixo, mostrar
+desempenho, asa-delta, vibração, layout e tamanho dos botões; aba **Acessibilidade** com
+tamanho do texto (90–140%), modo daltônico (Protanopia, Deuteranopia, Tritanopia), reduzir
+movimento da câmera, atenuar clarões e números de dano. Ainda não: editor de layout,
+mapeamento de teclas, áudio por canal, idioma, exportar save e legendas (o jogo ainda não tem
+falas gravadas).
+
 | Seção | Opções |
 |---|---|
 | Gráficos | Qualidade (Automática, Leve, Média, Alta), escala de resolução, distância de visão, sombras, água, partículas, limite de qps (30/60), medidor de qps |

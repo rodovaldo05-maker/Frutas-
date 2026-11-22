@@ -1208,3 +1208,11 @@ body.lefty .act.form { left: auto; right: calc(207px * var(--btn) + var(--safe-r
 body:has(.boss-bar:not(.hidden)) .toasts { top: calc(84px + var(--safe-t)); }
 
 .map-mode { position: absolute; left: 10px; top: 10px; z-index: 2; padding: 4px 12px; font-size: 12px; }
+
+/* ===== Acessibilidade (atualização 15) ===== */
+.window-body, #toasts, #notice, .float-text { zoom: var(--text, 1); }
+/* o rastreador fica ao lado dos botões da esquerda: cresce no máximo 15% */
+#hud #tracker { zoom: min(var(--text, 1), 1.15); }
+body.cb-protan #game, body.cb-protan #hud { filter: url(#cb-protan); }
+body.cb-deutan #game, body.cb-deutan #hud { filter: url(#cb-deutan); }
+body.cb-tritan #game, body.cb-tritan #hud { filter: url(#cb-tritan); }

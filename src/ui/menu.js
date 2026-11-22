@@ -19,8 +19,9 @@ export class PauseMenu {
     // botões de escolha (qualidade, layout)
     for (const group of this.root.querySelectorAll('[data-choice]')) {
       const key = group.dataset.choice;
+      const num = group.hasAttribute('data-num');
       for (const b of group.querySelectorAll('button')) {
-        b.addEventListener('click', () => this.set(key, b.dataset.value));
+        b.addEventListener('click', () => this.set(key, num ? Number(b.dataset.value) : b.dataset.value));
       }
     }
     for (const input of this.root.querySelectorAll('input[data-key]')) {

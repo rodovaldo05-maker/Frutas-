@@ -13,6 +13,8 @@ export class AutoQuality {
     this.fastTime = 0;
     this.fps = 60;
     this.frameMs = 16.7;
+    this.fixedScale = null; // escala de resolução fixa (ajuste do jogador) ou null (automática)
+    this.targetMs = 1000 / 60; // tempo de quadro alvo (60 ou 30 qps)
     this.apply(initial);
   }
 
@@ -23,8 +25,19 @@ export class AutoQuality {
       this.renderer.setQuality(touch ? 'media' : 'alta');
     } else {
       this.renderer.setQuality(mode);
-      this.renderer.setResolutionScale(1);
     }
+    this.renderer.setResolutionScale(this.fixedScale ?? 1);
+  }
+
+  setFixedScale(scale) {
+    this.fixedScale = scale;
+    this.renderer.setResolutionScale(scale ?? 1);
+  }
+
+  setTarget(fps) {
+    this.targetMs = 1000 / fps;
+    this.slowTime = 0;
+    this.fastTime = 0;
   }
 
   sample(dt) {
@@ -39,10 +52,12 @@ export class AutoQuality {
     this.fps = Math.round(1000 / avg);
     if (this.mode !== 'auto') return;
 
-    if (avg > 24) {
+    // lento: 45% acima do alvo; folga: abaixo de 78% do alvo de 60 qps (com limite de 30 qps
+    // o quadro sempre dura ~33 ms e a qualidade só desce)
+    if (avg > this.targetMs * 1.45) {
       this.slowTime += 0.5;
       this.fastTime = 0;
-    } else if (avg < 13) {
+    } else if (avg < 13 && this.targetMs < 20) {
       this.fastTime += 0.5;
       this.slowTime = 0;
     } else {
@@ -52,17 +67,17 @@ export class AutoQuality {
     const r = this.renderer;
     if (this.slowTime >= 4) {
       this.slowTime = 0;
-      if (r.resolutionScale > 0.65) r.setResolutionScale(r.resolutionScale - 0.15);
+      if (this.fixedScale === null && r.resolutionScale > 0.65) r.setResolutionScale(r.resolutionScale - 0.15);
       else {
         const i = ORDER.indexOf(r.qualityId);
         if (i > 0) {
           r.setQuality(ORDER[i - 1]);
-          r.setResolutionScale(1);
+          r.setResolutionScale(this.fixedScale ?? 1);
         }
       }
     } else if (this.fastTime >= 10) {
       this.fastTime = 0;
-      if (r.resolutionScale < 1) r.setResolutionScale(r.resolutionScale + 0.15);
+      if (this.fixedScale === null && r.resolutionScale < 1) r.setResolutionScale(r.resolutionScale + 0.15);
       else {
         const i = ORDER.indexOf(r.qualityId);
         if (i < ORDER.length - 1) r.setQuality(ORDER[i + 1]);

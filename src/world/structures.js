@@ -31,6 +31,7 @@ export const STYLES = {
   gelo: { color: '#9fd8f0', top: '#d8f4ff', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.04 },
   rochaEscura: { color: '#3e3634', top: '#544a46', climbable: true, material: 'pedra', tile: [1.4, 1.0], offset: true, jitter: 0.1 },
   lava: { color: '#ff6a1a', top: '#ffb040', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.05 },
+  placa: { color: '#b8862f', top: '#c8963f', climbable: false, material: 'madeira', tile: [9, 9], offset: false, jitter: 0.03 },
   cacto: { color: '#3f8a4a', top: '#5aa860', climbable: false, material: 'madeira', tile: [0.3, 9], offset: false, jitter: 0.05 },
 };
 
@@ -113,6 +114,7 @@ export class StructureBuilder {
     this.parts = new Map(); // estilo -> geometrias
     this.edges = [];
     this.signs = [];
+    this.pendingSigns = [];
     this.group = new THREE.Group();
     this.group.name = 'Estruturas';
     scene.add(this.group);
@@ -166,47 +168,82 @@ export class StructureBuilder {
   }
 
   // Placa com texto (indica cada desafio). `hint` aparece na tela quando o jogador chega perto.
+  // O poste e a moldura entram nas malhas juntadas; os textos de todas as placas do construtor
+  // vão para uma única textura (atlas) desenhada em finish(): uma chamada de desenho para
+  // todas as placas, em vez de 6 por placa (atualização 15).
   sign({ x, y, z, rotY = 0, title, hint }) {
     this.block({ x, y, z, w: 0.35, h: 2.4, d: 0.35, rotY, style: 'madeira' });
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 192;
-    const ctx = canvas.getContext('2d');
-    const g = ctx.createLinearGradient(0, 0, 0, 192);
-    g.addColorStop(0, '#2b2142');
-    g.addColorStop(1, '#171327');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 512, 192);
-    ctx.strokeStyle = '#d9a64a';
-    ctx.lineWidth = 10;
-    ctx.strokeRect(5, 5, 502, 182);
-    ctx.strokeStyle = '#6b4a1c';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(16, 16, 480, 160);
-    ctx.fillStyle = '#ffe9b3';
-    ctx.font = 'bold 64px Cinzel, Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title, 256, 98, 470);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const frame = new THREE.MeshStandardMaterial({ color: '#b8862f', roughness: 0.5, metalness: 0.3 });
-    const board = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.05, 0.12), [
-      frame,
-      frame,
-      frame,
-      frame,
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }),
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }),
-    ]);
-    board.position.set(x, y + 2.75, z);
-    board.rotation.y = rotY;
-    board.castShadow = true;
-    this.group.add(board);
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y + 2.75, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY), new THREE.Vector3(1, 1, 1));
+    const frame = patternedBox(2.8, 1.05, 0.12, STYLES.placa, (this.count || 0) * 7 + 5);
+    frame.applyMatrix4(m);
+    this.addGeometry('placa', frame, new THREE.BoxGeometry(2.8, 1.05, 0.12).applyMatrix4(m));
+    this.pendingSigns.push({ title, m });
     this.signs.push({ x, y, z, title, hint });
   }
 
+  // Textos das placas: atlas com uma célula de 512×192 por placa
+  buildSignBoards() {
+    const list = this.pendingSigns;
+    if (!list.length) return;
+    this.pendingSigns = [];
+    const W = 512;
+    const H = 192;
+    const cols = Math.min(4, list.length);
+    const rows = Math.ceil(list.length / cols);
+    const canvas = document.createElement('canvas');
+    canvas.width = W * cols;
+    canvas.height = H * rows;
+    const ctx = canvas.getContext('2d');
+    const geos = [];
+    list.forEach(({ title, m }, i) => {
+      const cx = (i % cols) * W;
+      const cy = Math.floor(i / cols) * H;
+      ctx.save();
+      ctx.translate(cx, cy);
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#2b2142');
+      g.addColorStop(1, '#171327');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#d9a64a';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, 502, 182);
+      ctx.strokeStyle = '#6b4a1c';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(16, 16, 480, 160);
+      ctx.fillStyle = '#ffe9b3';
+      ctx.font = 'bold 64px Cinzel, Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, 256, 98, 470);
+      ctx.restore();
+      // u e v da célula (v cresce para cima na textura)
+      const u0 = (cx + 2) / canvas.width;
+      const u1 = (cx + W - 2) / canvas.width;
+      const v1 = 1 - (cy + 2) / canvas.height;
+      const v0 = 1 - (cy + H - 2) / canvas.height;
+      for (const back of [false, true]) {
+        const p = new THREE.PlaneGeometry(2.78, 1.03);
+        const uv = p.attributes.uv;
+        for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) ? u1 : u0, uv.getY(k) ? v1 : v0);
+        if (back) p.rotateY(Math.PI);
+        p.translate(0, 0, back ? -0.0615 : 0.0615);
+        p.applyMatrix4(m);
+        geos.push(p);
+      }
+    });
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    const boards = new THREE.Mesh(mergeGeometries(geos, false), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }));
+    boards.name = 'placas';
+    boards.receiveShadow = true;
+    this.group.add(boards);
+    geos.forEach((g) => g.dispose());
+  }
+
   finish() {
+    this.buildSignBoards();
     for (const [styleId, geos] of this.parts) {
       const merged = mergeGeometries(geos, false);
       const mesh = new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.02 }));

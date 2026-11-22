@@ -11,6 +11,7 @@ import { ATTACKS, Guard, computeDamage, inReach, isFrontal, reactionTime, timing
 import { MOVE } from '../movement/config.js';
 import { clamp, damp, lerp, lerpAngle, wrapAngle } from '../core/math.js';
 import { trimShadows, LOD_FAR, LOD_FACE } from '../characters/shadows.js';
+import { bakeStatic } from '../optimization/bake.js';
 
 export const ARENA = { x: -16, z: -10, radius: 15 };
 
@@ -161,6 +162,7 @@ export class Dummy {
     this.group.traverse((o) => {
       if (o.isMesh) o.castShadow = o.receiveShadow = true;
     });
+    bakeStatic(pivot);
     scene.add(this.group);
     physics?.addCylinder({ x, y: y + 1.6, z }, 1.6, 0.55, { material: 'madeira' });
     this.tag = makeTag(2.8);

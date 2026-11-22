@@ -26,8 +26,9 @@ export const calmAt = (x, z) => {
   return 0.32 + 0.68 * t * t * (3 - 2 * t);
 };
 
-export function waveHeight(x, z, time, level = 0) {
-  const calm = calmAt(x, z);
+// storm: 0 (normal) … 1 (tempestade da travessia: ondas 2,6× maiores)
+export function waveHeight(x, z, time, level = 0, storm = 0) {
+  const calm = calmAt(x, z) * (1 + storm * 1.6);
   let y = 0;
   for (const w of prepared) y += w.amp * Math.sin(w.k * (w.dx * x + w.dz * z - w.c * time));
   return level + y * calm;
@@ -41,6 +42,7 @@ const waveUniformBlock = prepared
 const common = /* glsl */ `
 uniform float uTime;
 uniform float uLevel;
+uniform float uStorm;
 ${waveUniformBlock}
 float calmAt(vec2 p) { float r = length(p); return 0.32 + 0.68 * smoothstep(70.0, 110.0, r); }
 vec3 gerstner(vec4 w, vec2 s, vec2 p, float calm, inout vec3 n) {
@@ -62,7 +64,7 @@ varying float vLift;
 void main() {
   vec4 world = modelMatrix * vec4(position, 1.0);
   vec2 p = world.xz;
-  float calm = calmAt(p);
+  float calm = calmAt(p) * (1.0 + uStorm * 1.6);
   vec3 n = vec3(0.0, 1.0, 0.0);
   vec3 d = gerstner(W0, S0, p, calm, n) + gerstner(W1, S1, p, calm, n) + gerstner(W2, S2, p, calm, n);
   world.xyz += d;
@@ -91,7 +93,7 @@ varying vec3 vWorld;
 varying float vLift;
 void main() {
   vec2 p = vWorld.xz;
-  float calm = calmAt(p);
+  float calm = calmAt(p) * (1.0 + uStorm * 1.6);
   vec3 n = vec3(0.0, 1.0, 0.0);
   gerstner(W0, S0, p, calm, n); gerstner(W1, S1, p, calm, n); gerstner(W2, S2, p, calm, n);
   // marolas só para o brilho
@@ -199,6 +201,7 @@ export class Ocean {
         {
           uTime: { value: 0 },
           uLevel: { value: level },
+          uStorm: { value: 0 },
           uDepth: { value: null },
           uHalf: { value: field.half },
           uDeep: { value: new THREE.Color('#1b5a74') },
@@ -240,7 +243,13 @@ export class Ocean {
     this.mesh.position.set(camera.position.x, 0, camera.position.z);
   }
 
+  // tempestade (atualização 17): ondas maiores enquanto dura
+  setStorm(k) {
+    this.storm = k;
+    this.material.uniforms.uStorm.value = k;
+  }
+
   heightAt(x, z) {
-    return waveHeight(x, z, this.time, this.level);
+    return waveHeight(x, z, this.time, this.level, this.storm ?? 0);
   }
 }

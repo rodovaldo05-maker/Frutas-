@@ -71,7 +71,9 @@ import { applyGearVisual } from './items/gearParts.js';
 import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
-import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor } from './islands/firstSea.js';
+import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
+import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked } from './islands/secondSea.js';
+import { Storm } from './world/storm.js';
 import { buildArena, Recruta, scaledDef, bossDef } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
@@ -116,11 +118,27 @@ async function boot() {
   island.signs.push(...village.signs);
   // Primeiro Mar (atualização 14): as ilhas 2 a 10
   await setLoading('Erguendo o Primeiro Mar…', 52);
-  const sea = SEA.map((def) => buildSeaIsland({ scene: renderer.scene, physics, def }));
+  const ALL_SEA = [...SEA, ...SEA2];
+  const sea = ALL_SEA.map((def) => buildSeaIsland({ scene: renderer.scene, physics, def }));
+  // Barqueiro do Cais das Correntes (Segundo Mar): leva de volta ao Porto das Origens
+  const correntes = SEA2[0];
+  const cLand = seaSpots(correntes).landing;
+  const SEA_DOCKS = {
+    correntes: {
+      island: correntes.nome, x: correntes.x + cLand.x * 0.92, z: correntes.z + cLand.z * 0.92, yaw: cLand.yaw + Math.PI, ground: true,
+      mooring: { x: correntes.x + cLand.x * 1.28, z: correntes.z + cLand.z * 1.28, yaw: cLand.yaw },
+    },
+  };
+  const ALL_DOCKS = { ...DOCKS, ...SEA_DOCKS };
+  const SEA_BOATMEN = [{
+    id: 'barqueiro-correntes', role: 'barqueiro', to: 'porto', name: 'Barqueiro das Correntes', x: SEA_DOCKS.correntes.x + 2, z: SEA_DOCKS.correntes.z + 2, yaw: cLand.yaw + Math.PI, stall: false, here: 'correntes',
+    look: { skin: '#8a5a3c', hair: '#e8e8e8', shirt: '#1f4f6a', shorts: '#e8dcc0', shoes: '#2a2018' },
+    hint: 'Viagem rápida ao Porto das Origens (Primeiro Mar) ou trazer o seu bote até este cais.',
+  }];
   for (const s of sea) island.signs.push(...s.signs);
   // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
   const world = new WorldField([island.field, village.field, ...sea.map((s) => s.field)]);
-  const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: BOATMEN });
+  const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: [...BOATMEN, ...SEA_BOATMEN] });
   // moradores do Porto das Origens (rotina pela hora do jogo)
   const villagers = new Villagers({ scene: renderer.scene, data: DATA, village: village.village, offset: VILLAGE.offset, physics, baseY: VILLAGE.plateau });
   // veios de minério e pontos de pesca (atualização 12)
@@ -804,10 +822,133 @@ async function boot() {
   }
 
   // ===== Combate naval (atualização 16): navios corsários, canhão da proa e casco =====
-  fleet = new Fleet({ scene: renderer.scene, physics, ocean, ground: (x, z) => world.sample(x, z), sea: SEA, fx, audio, onEvent: (n, d) => navalEvent(n, d) });
+  fleet = new Fleet({ scene: renderer.scene, physics, ocean, ground: (x, z) => world.sample(x, z), fx, audio, sea: ALL_SEA, onEvent: (n, d) => navalEvent(n, d) });
   fleet.setLevel(save.level, Number.isFinite(save.boatHull) ? save.boatHull : null);
   fleetLevelHook = (lv) => fleet.setLevel(lv);
   if (fleet.hull <= 0) fleet.hull = Math.round(fleet.maxHull * NAVAL.boatRespawnHull); // salvo no meio de um naufrágio
+  // ===== Travessia entre os mares (atualização 17): portões, tempestade e raios =====
+  const storm = new Storm(renderer.scene);
+  {
+    // boias altas com luz dourada marcam cada portão (uma de cada lado)
+    const buoyMat = new THREE.MeshStandardMaterial({ color: '#3a2a1a', roughness: 0.7 });
+    const lightMat = new THREE.MeshStandardMaterial({ color: '#ffd36b', emissive: '#ffb040', emissiveIntensity: 1.6 });
+    for (const g of Object.values(GATES)) {
+      for (const side of [-1, 1]) {
+        const b = new THREE.Group();
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 9, 8), buoyMat);
+        pole.position.y = 3;
+        const lamp = new THREE.Mesh(new THREE.OctahedronGeometry(0.9), lightMat);
+        lamp.position.y = 8;
+        b.add(pole, lamp);
+        b.position.set(g.x + side * (g.r + 2), 0, g.z);
+        b.name = 'boia_' + g.id;
+        renderer.scene.add(b);
+      }
+    }
+  }
+  let crossing = null; // { gate, t, dur, strikeT, marks: [] }
+  let gateBlockT = 0;
+  function startCrossing(gate) {
+    const back = gate.id === 'sul';
+    crossing = { gate, t: 0, dur: back ? CROSSING.back : CROSSING.time, strikeT: 2, marks: [] };
+    storm.set(true);
+    hud.notice(`${gate.nome}: tempestade! Desvie dos raios marcados na água`, 'bad', 'zone');
+    audio.play('tormenta', 'acerto', 0.8);
+  }
+  function crossingInput(inp, camYaw) {
+    // a corrente leva o bote; o analógico só desvia para os lados
+    const g = crossing.gate;
+    const fx = Math.sin(camYaw);
+    const fz = Math.cos(camYaw);
+    const sx = fx * inp.moveY - fz * inp.moveX;
+    const sz = fz * inp.moveY + fx * inp.moveX;
+    const dx = Math.sin(g.dir);
+    const dz = Math.cos(g.dir);
+    const side = sx * dz - sz * dx; // componente lateral do pedido
+    return { wx: dx + dz * side * 0.6, wz: dz - dx * side * 0.6, mag: 1, fast: true };
+  }
+  function endCrossing() {
+    const g = crossing.gate;
+    crossing = null;
+    storm.set(false);
+    const a = ARRIVALS[g.to];
+    $('travel-text').textContent = 'Saindo da tempestade…';
+    openModal('travel');
+    setTimeout(() => {
+      boat.place(a.x, a.z, a.yaw);
+      const st = boat.seat();
+      ctl.ride(st.x, st.y, st.z, st.yaw);
+      cam.snap(ctl.pos, ctl.yaw);
+      prev.copy(ctl.pos);
+      gateBlockT = 3;
+      if (a.mar === 2) {
+        save.seas ??= {};
+        if (!save.seas.segundo) {
+          save.seas.segundo = true;
+          hud.toast(`Você atravessou a tempestade! Bem-vindo ao Segundo Mar (Nv. 700+) · +${CROSSING.xp} exp`, 'gold');
+          hud.toast('A Barqueira do Porto das Origens agora leva você até o Cais das Correntes.', 'good');
+          grantXp(CROSSING.xp);
+        }
+        hud.notice('Segundo Mar', 'zone', 'zone');
+      } else hud.notice('Primeiro Mar', 'zone', 'zone');
+      saveNow(true);
+      setTimeout(() => closeModal('travel'), 600);
+    }, 700);
+  }
+  function crossingStep(dt) {
+    gateBlockT = Math.max(0, gateBlockT - dt);
+    if (!crossing) {
+      if (!boat.aboard || gateBlockT > 0 || fleet.sunk > 0) return;
+      for (const g of Object.values(GATES)) {
+        if (Math.hypot(boat.s.x - g.x, boat.s.z - g.z) > g.r) continue;
+        if (g.id === 'norte' && !crossingUnlocked(save)) {
+          hud.notice('Uma corrente furiosa empurra o bote de volta. Derrote a Guardiã da Fenda Celeste para atravessar.', 'bad', 'gate');
+          boat.s.yaw += Math.PI;
+          boat.s.speed = 4;
+          gateBlockT = 2;
+          return;
+        }
+        startCrossing(g);
+        return;
+      }
+      return;
+    }
+    if (!boat.aboard || fleet.sunk > 0) {
+      crossing = null;
+      storm.set(false);
+      return;
+    }
+    crossing.t += dt;
+    // raios: marca amarela na água onde o bote vai estar; cai depois de 1 s
+    crossing.strikeT -= dt;
+    if (crossing.strikeT <= 0 && crossing.t < crossing.dur - 1.5) {
+      const [a, b] = CROSSING.strikeEvery;
+      crossing.strikeT = a + Math.random() * (b - a);
+      const v = boat.velocity;
+      const at = { x: boat.s.x + v.x * CROSSING.telegraph + (Math.random() - 0.5) * 6, z: boat.s.z + v.z * CROSSING.telegraph + (Math.random() - 0.5) * 6 };
+      at.y = ocean.heightAt(at.x, at.z);
+      crossing.marks.push({ ...at, t: CROSSING.telegraph });
+      fx.mark(at, '#ffe45a', CROSSING.strikeRadius, CROSSING.telegraph);
+    }
+    for (let i = crossing.marks.length - 1; i >= 0; i--) {
+      const m = crossing.marks[i];
+      m.t -= dt;
+      if (m.t > 0) continue;
+      crossing.marks.splice(i, 1);
+      fx.bolt({ x: m.x, y: m.y + 26, z: m.z }, { x: m.x, y: m.y, z: m.z }, '#fff4b0', 0.3);
+      fx.burst(m, '#fff4b0', { count: 16, speed: 6, up: 5 });
+      storm.flash(settings.reduceFx ? 0.25 : 1);
+      audio.play('tormenta', 'acerto', 0.9);
+      if (Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < CROSSING.strikeRadius + 1) {
+        fleet.damageHull(Math.round(fleet.maxHull * CROSSING.strikeDamage), m);
+        conditions.apply('choque', { stacks: 1 });
+      } else if (Math.random() < 0.5) {
+        floats.add({ x: m.x, y: m.y + 2, z: m.z }, 'Desviou!', 'esquiva');
+      }
+    }
+    if (crossing.t >= crossing.dur) endCrossing();
+  }
+
   function updateHullBar() {
     const show = boat.aboard;
     $('hull-bar').classList.toggle('hidden', !show);
@@ -869,8 +1010,19 @@ async function boot() {
         hud.toast('O bote afundou! Um Barqueiro leva outro, meio consertado, até o cais da Ilha de Treino.', 'bad');
         break;
       case 'boatRestored': {
-        const m = DOCKS.treino.mooring;
+        const second = seaOf(boat.s.z) === 2 && save.seas?.segundo;
+        const dock = second ? ALL_DOCKS.correntes : DOCKS.treino;
+        const m = dock.mooring;
         boat.place(m.x, m.z, m.yaw);
+        // nadando longe de qualquer ilha: o Barqueiro resgata e leva até o cais
+        const nearLand = Math.min(...[{ x: 0, z: 0 }, VILLAGE.offset, ...ALL_SEA].map((i) => Math.hypot(ctl.pos.x - i.x, ctl.pos.z - i.z)));
+        if (!boat.aboard && nearLand > 260) {
+          const y = dock.ground ? world.sample(dock.x, dock.z) : VILLAGE.deck;
+          ctl.spawn(dock.x, y + 0.4, dock.z, dock.yaw);
+          cam.snap(ctl.pos, ctl.yaw);
+          prev.copy(ctl.pos);
+          hud.toast('Um Barqueiro resgatou você do mar.', 'good');
+        }
         fleet.hull = Math.round(fleet.maxHull * NAVAL.boatRespawnHull);
         saveNow(true);
         break;
@@ -931,9 +1083,9 @@ async function boot() {
   const mapScreen = new MapScreen({
     canvas: $('map-canvas'), signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out'), title: $('worldmap').querySelector('.frame-title'), seaButton: $('map-sea'),
     islands: [
-      { name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 }, faixa: 'Nv. 1–10' },
-      { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village, faixa: 'Nv. 1–25' },
-      ...sea.map((s) => ({ name: s.def.nome, field: s.localField, origin: { x: s.def.x, z: s.def.z }, faixa: `Nv. ${s.def.faixa[0]}–${s.def.faixa[1]}` })),
+      { name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 }, faixa: 'Nv. 1–10', mar: 1 },
+      { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village, faixa: 'Nv. 1–25', mar: 1 },
+      ...sea.map((s) => ({ name: s.def.nome, field: s.localField, origin: { x: s.def.x, z: s.def.z }, faixa: `Nv. ${s.def.faixa[0]}–${s.def.faixa[1]}`, mar: s.def.mar ?? 1 })),
     ],
   });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
@@ -1300,6 +1452,7 @@ async function boot() {
     else $(id).classList.remove('hidden');
     if (id === 'worldmap') {
       mapScreen.markers = boat.aboard ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
+      for (const g of Object.values(GATES)) mapScreen.markers.push({ x: g.x, z: g.z, label: g.nome, color: '#ffb040', chart: true });
       mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
     }
     if (id === 'missions') renderMissionList();
@@ -1373,15 +1526,17 @@ async function boot() {
   // ===== Viagem rápida com o Barqueiro (o bote navega de verdade; isto é o atalho) =====
   let traveling = false;
   function travel(to) {
-    const d = DOCKS[to];
+    const d = ALL_DOCKS[to];
     if (!d || traveling) return;
     traveling = true;
-    $('travel-text').textContent = `Atravessando para ${to === 'porto' ? 'o' : 'a'} ${d.island}…`;
+    const art = to === 'porto' || to === 'correntes' ? 'o' : 'a';
+    $('travel-text').textContent = `Atravessando para ${art} ${d.island}…`;
     openModal('travel');
     audio.play('base', 'wing', 0.4);
     setTimeout(() => {
-      ctl.spawn(d.x, VILLAGE.deck + 0.4, d.z, d.yaw);
-      ctl.safe.set(d.x, VILLAGE.deck + 0.1, d.z);
+      const y = d.ground ? world.sample(d.x, d.z) : VILLAGE.deck;
+      ctl.spawn(d.x, y + 0.4, d.z, d.yaw);
+      ctl.safe.set(d.x, y + 0.1, d.z);
       cam.snap(ctl.pos, ctl.yaw);
       prev.copy(ctl.pos);
       conditions?.reset();
@@ -1408,12 +1563,16 @@ async function boot() {
   let boatmanNpc = null;
   function openBoatman(npc) {
     boatmanNpc = npc;
-    const here = npc.to === 'porto' ? 'treino' : 'porto';
-    const m = DOCKS[here].mooring;
+    const here = npc.here ?? (npc.to === 'porto' ? 'treino' : 'porto');
+    boatmanNpc.dock = here;
+    const m = ALL_DOCKS[here].mooring;
     const moored = Math.hypot(boat.s.x - m.x, boat.s.z - m.z) < 14;
     $('boatman-title').lastChild.textContent = npc.name;
-    $('boatman-text').textContent = `Levo você ${npc.to === 'porto' ? 'ao' : 'à'} ${DOCKS[npc.to].island} num instante, ou trago o seu bote até este cais para você navegar.`;
-    $('btn-ferry').lastChild.textContent = `Viagem rápida: ${DOCKS[npc.to].island}`;
+    $('boatman-text').textContent = `Levo você ${npc.to === 'porto' ? 'ao' : 'à'} ${ALL_DOCKS[npc.to].island} num instante, ou trago o seu bote até este cais para você navegar.`;
+    $('btn-ferry').lastChild.textContent = `Viagem rápida: ${ALL_DOCKS[npc.to].island}`;
+    // a Barqueira do Porto leva ao Segundo Mar depois da primeira travessia pela tempestade
+    const second = here === 'porto' && save.seas?.segundo;
+    $('btn-ferry2').classList.toggle('hidden', !second);
     refreshRepair();
     $('btn-callboat').disabled = moored;
     $('btn-callboat').lastChild.textContent = moored ? 'Seu bote já está aqui' : 'Trazer meu bote';
@@ -1422,6 +1581,10 @@ async function boot() {
   $('btn-ferry').addEventListener('click', () => {
     closeModal('boatman');
     if (boatmanNpc) travel(boatmanNpc.to);
+  });
+  $('btn-ferry2').addEventListener('click', () => {
+    closeModal('boatman');
+    travel('correntes');
   });
   // conserto do casco (atualização 16): moedas por ponto que falta
   function refreshRepair() {
@@ -1447,7 +1610,7 @@ async function boot() {
   });
   $('btn-callboat').addEventListener('click', () => {
     if (!boatmanNpc) return;
-    const m = DOCKS[boatmanNpc.to === 'porto' ? 'treino' : 'porto'].mooring;
+    const m = ALL_DOCKS[boatmanNpc.dock].mooring;
     boat.place(m.x, m.z, m.yaw);
     closeModal('boatman');
     hud.toast('Seu bote está amarrado ao lado do cais.', 'good');
@@ -1665,7 +1828,7 @@ async function boot() {
         // o analógico aponta o rumo em relação à câmera (igual a andar); Correr acelera
         const fx = Math.sin(inp.camYaw);
         const fz = Math.cos(inp.camYaw);
-        const r = boat.step(dt, { wx: fx * inp.moveY - fz * inp.moveX, wz: fz * inp.moveY + fx * inp.moveX, mag: Math.min(1, Math.hypot(inp.moveX, inp.moveY)), fast: inp.sprint });
+        const r = boat.step(dt, crossing ? crossingInput(inp, inp.camYaw) : { wx: fx * inp.moveY - fz * inp.moveX, wz: fz * inp.moveY + fx * inp.moveX, mag: Math.min(1, Math.hypot(inp.moveX, inp.moveY)), fast: inp.sprint });
         if (r.bump) {
           shake = Math.max(shake, 0.2);
           audio.play('base', 'land', 0.7);
@@ -1673,12 +1836,16 @@ async function boot() {
         const st = boat.seat();
         const v = boat.velocity;
         ctl.ride(st.x, st.y, st.z, st.yaw, v.x, v.z);
-        if (inp.jumpPressed) disembark();
+        if (inp.jumpPressed) {
+          if (crossing) hud.notice('Não dá para descer no meio da tempestade!', 'bad', 'gate');
+          else disembark();
+        }
       } else {
         boat.step(dt, null);
         ctl.step(dt, inp);
       }
       fleet.step(dt, { boat, aboard: boat.aboard, player: ctl.pos });
+      crossingStep(dt);
       conditions.update(dt, ctl);
       // lava da Caldeira Rubra: queima quem pisa na cratera
       lavaT -= dt;
@@ -1740,16 +1907,24 @@ async function boot() {
       fleet.render(alpha, animDt, { aboard: boat.aboard, boat, camYaw: cam.yaw, playerPos: ctl.pos });
       villagers.render(animDt, view);
       // luz do dia (a cada meio segundo): céu, sol, neblina, mar e lampiões; relógio na tela
+      storm.update(dt, renderer.camera);
+      ocean.setStorm(storm.k);
       dayTimer -= dt;
+      if (storm.k > 0.01) dayTimer = 0; // na tempestade o céu muda a cada quadro (escuro e relâmpagos)
       if (dayTimer <= 0) {
         dayTimer = 0.5;
-        const dl = daylight(hourOf(save.clock));
+        const dl0 = daylight(hourOf(save.clock));
+        const dl = { ...dl0, k: dl0.k * (1 - 0.7 * storm.k) };
         const sky = renderer.setDaylight(dl);
         fogDay.color.copy(sky.horizon);
         ocean.material.uniforms.uSkyTop.value.copy(sky.top);
         ocean.material.uniforms.uSkyHorizon.value.copy(sky.horizon);
         ocean.material.uniforms.uSunColor.value.copy(renderer.sun.color).multiplyScalar(0.4 + 0.6 * dl.k);
         village.setNight(1 - dl.k);
+        if (storm.flashLight > 0) {
+          renderer.hemi.intensity += storm.flashLight * 2.2;
+          renderer.sun.intensity += storm.flashLight * 1.5;
+        }
         $('clock').textContent = `${dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`;
       }
       animator.update(animDt, ctl, view);
@@ -1919,6 +2094,9 @@ async function boot() {
         minimap.markers = boat.aboard || fleet.sunk > 0 ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
         for (const s of fleet.ships) {
           if (s.alive && Math.hypot(s.s.x - ctl.pos.x, s.s.z - ctl.pos.z) < 180) minimap.markers.push({ x: s.s.x, z: s.s.z, label: s.def.nome, color: '#c0392b' });
+        }
+        for (const g of Object.values(GATES)) {
+          if (Math.hypot(g.x - ctl.pos.x, g.z - ctl.pos.z) < 260) minimap.markers.push({ x: g.x, z: g.z, label: g.nome, color: '#ffb040' });
         }
         minimap.draw(view, ctl.yaw);
       }

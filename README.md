@@ -100,6 +100,10 @@ patrulhando as ilhas do Primeiro Mar que atacam o bote, afundam e deixam saque.
 Zoom com dois dedos (pinça) ou roda do mouse; Comprador de Itens na Ilha de Treino (e na
 Mercadora do Porto) para vender armaduras e acessórios que caem dos inimigos.
 
+Segundo Mar (atualização 17): depois de vencer a Guardiã da Fenda Celeste, o Portão das
+Correntes abre a travessia com tempestade (chuva, ondas grandes e raios que ferem o casco)
+até o Cais das Correntes, o Arquipélago Esmeralda e a Cidadela de Granito (Nv. 700–975).
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

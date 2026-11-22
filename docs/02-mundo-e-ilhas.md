@@ -84,6 +84,27 @@ acima é o alvo final.
 | 17 | Bastião Vulcânico | 1275–1375 | Vulcão ativo | Erupções programadas, cavernas de magma | Titã de Obsidiana |
 | 18 | Masmorra do Abismo | 1375–1500 | Masmorra | Andares com chaves, armadilhas | Carcereiro Sem-Rosto (acesso ao 3º Mar) |
 
+#### Situação no jogo (atualização 17)
+
+- **Onde fica:** ao norte do Primeiro Mar (z ≈ −2300 a −2850). A carta do mapa mostra só o mar
+  onde o jogador está ("Carta do Segundo Mar").
+- **Travessia:** o **Portão das Correntes** (boias douradas ao norte da Fenda Celeste) só deixa
+  passar depois de derrotar a Guardiã da Fenda Celeste; antes disso a corrente empurra o bote
+  de volta. Ao entrar no portão começa a **tempestade** (22 s): chuva, céu escuro, ondas 2,6×
+  maiores e relâmpagos. A corrente leva o bote; o analógico só desvia para os lados. Cada raio
+  marca um círculo amarelo na água onde o bote vai passar e cai 1 s depois: acertar o bote
+  tira 7% do casco e dá Choque. Não dá para descer no meio. No fim o bote sai ao sul do Cais
+  das Correntes. Primeira travessia: +500 de experiência.
+- **Volta:** o **Portão do Sul** (12 s de tempestade) leva de volta ao Portão das Correntes; ou
+  o **Barqueiro das Correntes** leva ao Porto das Origens. Depois da primeira travessia a
+  Barqueira do Porto também leva ao Cais das Correntes.
+- **Ilhas prontas:** Cais das Correntes (vila maior com estaleiro e cascos em construção;
+  Contramestre Corrente, Nv. 775), Arquipélago Esmeralda (selva com morro, cachoeira e templo em
+  ruínas; Serpente-Raiz, Nv. 875) e Cidadela de Granito (duas muralhas, torre de menagem e
+  catapultas; General Basalto, Nv. 975). Cada uma com acampamento de 4 inimigos do nível e um
+  navio corsário (Maré Traiçoeira, Cipó Negro, Punho de Granito).
+- **Ainda não:** as ilhas 14 a 18, caravelas no estaleiro, rios navegáveis e interiores.
+
 ### Terceiro Mar
 
 | # | Ilha | Níveis | Bioma | Destaques | Chefe |

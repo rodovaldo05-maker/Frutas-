@@ -65,13 +65,27 @@ export class MapScreen {
     let x1 = -Infinity;
     let z0 = Infinity;
     let z1 = -Infinity;
-    for (const i of this.islands) {
+    for (const i of this.seaIslands()) {
       x0 = Math.min(x0, i.origin.x - i.field.half * 0.7);
       x1 = Math.max(x1, i.origin.x + i.field.half * 0.7);
       z0 = Math.min(z0, i.origin.z - i.field.half * 0.7);
       z1 = Math.max(z1, i.origin.z + i.field.half * 0.7);
     }
+    // portões da travessia do mar mostrado entram na carta
+    for (const m of this.markers ?? []) {
+      if (!m.chart || (m.z < -1700 ? 2 : 1) !== (this.seaNo ?? 1)) continue;
+      x0 = Math.min(x0, m.x - 30);
+      x1 = Math.max(x1, m.x + 30);
+      z0 = Math.min(z0, m.z - 30);
+      z1 = Math.max(z1, m.z + 30);
+    }
     return { x0, x1, z0, z1 };
+  }
+
+  // ilhas do mar onde o jogador está (1: Primeiro Mar, 2: Segundo Mar)
+  seaIslands() {
+    const list = this.islands.filter((i) => (i.mar ?? 1) === (this.seaNo ?? 1));
+    return list.length ? list : this.islands;
   }
 
   seaCenter() {
@@ -80,7 +94,7 @@ export class MapScreen {
   }
 
   updateTitle() {
-    if (this.title) this.title.lastChild.textContent = this.mode === 'mar' ? 'Carta do Primeiro Mar' : `Mapa · ${this.island.name}`;
+    if (this.title) this.title.lastChild.textContent = this.mode === 'mar' ? `Carta do ${this.seaNo === 2 ? 'Segundo' : 'Primeiro'} Mar` : `Mapa · ${this.island.name}`;
     if (this.seaButton) this.seaButton.textContent = this.mode === 'mar' ? 'Mapa da ilha' : 'Carta do mar';
   }
 
@@ -126,6 +140,7 @@ export class MapScreen {
   }
 
   open(player) {
+    this.seaNo = player.z < -1700 ? 2 : 1;
     this.island = this.islandAt(player.x, player.z);
     // no mar (fora de todas as ilhas) abre direto a carta do mar
     const i = this.island;
@@ -240,7 +255,7 @@ export class MapScreen {
     ctx.imageSmoothingEnabled = true;
     const font = Math.round(10.5 * dpr * Math.min(1.5, 0.85 + this.zoom * 0.2));
     ctx.textAlign = 'center';
-    for (const i of this.islands) {
+    for (const i of this.seaIslands()) {
       if (!this.seaImages.has(i)) this.seaImages.set(i, renderIslandImage(i.field, 192, 'carta', i.plan));
       const [ox, oy] = toScreen(i.origin.x - i.field.half, i.origin.z - i.field.half);
       const size = 2 * i.field.half * s;
@@ -253,7 +268,7 @@ export class MapScreen {
     const small = Math.round(font * 0.8);
     const hits = (b) => placed.reduce((n, p) => n + Math.max(0, Math.min(b[2], p[2]) - Math.max(b[0], p[0])) * Math.max(0, Math.min(b[3], p[3]) - Math.max(b[1], p[1])), 0);
     ctx.textBaseline = 'top';
-    for (const i of this.islands) {
+    for (const i of this.seaIslands()) {
       ctx.font = `700 ${font}px Cinzel, Georgia, serif`;
       const tw = Math.max(ctx.measureText(i.name).width, i.faixa ? (ctx.font = `800 ${small}px Inter, sans-serif`, ctx.measureText(i.faixa).width) : 0) + 6 * dpr;
       const th = font * 1.1 + (i.faixa ? small * 1.1 : 0);
@@ -294,13 +309,21 @@ export class MapScreen {
     }
     for (const m of this.markers ?? []) {
       const [x, y] = toScreen(m.x, m.z);
-      ctx.fillStyle = '#8a5a32';
+      ctx.fillStyle = m.color ?? '#8a5a32';
       ctx.strokeStyle = '#fff3d0';
       ctx.lineWidth = 2 * dpr;
       ctx.beginPath();
       ctx.arc(x, y, 5 * dpr, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      if (m.chart) {
+        ctx.font = `800 ${Math.round(font * 0.8)}px Inter, sans-serif`;
+        ctx.textBaseline = 'top';
+        ctx.lineWidth = 3 * dpr;
+        ctx.strokeText(m.label, x, y + 7 * dpr);
+        ctx.fillStyle = '#7a4a10';
+        ctx.fillText(m.label, x, y + 7 * dpr);
+      }
     }
     this.drawPlayer(ctx, toScreen, dpr);
   }

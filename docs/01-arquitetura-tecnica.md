@@ -179,7 +179,7 @@ Perfil Médio, celular emulado (Pixel 7 na horizontal), meio-dia, chamadas de de
 
 | Área | Antes | Depois | Meta |
 |---|---|---|---|
-| Início da Ilha de Treino (mercado, placas, bonecos) | 406 | 148 | 150 |
+| Início da Ilha de Treino (mercado, placas, bonecos) | 406 | 148 (141 na 17, com a banca do Comprador) | 150 |
 | Praça do Porto das Origens (moradores) | 293 | 112 | 150 |
 | Cais da Ilha de Treino (bote) | 215 | 115 | 150 |
 | Ilhas do Primeiro Mar | 51–178 | — | 150 |
@@ -189,7 +189,7 @@ O que fez a diferença:
 - **Corpo numa malha só** (`src/characters/mergeBody.js`): os 17 segmentos, o cabelo e enfeites
   rígidos de NPCs, moradores e inimigos viram uma SkinnedMesh com cor por vértice, e cada
   vértice segue a junta da sua peça (peso 1), então a animação é a mesma. Detalhes do rosto
-  ficam separados (somem a mais de 24). O jogador também, menos os braços (brilho da Vontade
+  ficam separados (somem a mais de 16). O jogador também, menos os braços (brilho da Vontade
   de Armadura). ~36 chamadas → ~1 de longe e ~12 de perto, e 1 no mapa de sombras.
 - **Placas** (`StructureBuilder.sign`): moldura e poste nas malhas juntadas e todos os textos
   de um construtor num atlas: 6 chamadas por placa → 1 para todas.

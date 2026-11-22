@@ -23,7 +23,7 @@ const LOOKS = [
   { dark: '#3a2a10', wood: '#6a4a20', sail: '#e8c040', stripe: '#8a1a1a', flag: '#ffd040' },
   { dark: '#e8e8f0', wood: '#9fb8d0', sail: '#ffffff', stripe: '#ffe45a', flag: '#ffe45a' },
 ];
-const NAMES = ['Garra de Coral', 'Sombra do Bosque', 'Vela de Areia', 'Lâmina da Maré', 'Casco de Gelo', 'Lanterna Negra', 'Brasa Errante', 'Estandarte Partido', 'Asa do Vento'];
+const NAMES = ['Garra de Coral', 'Sombra do Bosque', 'Vela de Areia', 'Lâmina da Maré', 'Casco de Gelo', 'Lanterna Negra', 'Brasa Errante', 'Estandarte Partido', 'Asa do Vento', 'Maré Traiçoeira', 'Cipó Negro', 'Punho de Granito'];
 
 // Um navio por ilha do Primeiro Mar (nível no primeiro terço da faixa) e a Chalupa Ferrugem
 // entre a Ilha de Treino e o Porto das Origens (nível 12)
@@ -31,7 +31,7 @@ export function fleetPlan(sea) {
   const plan = [{ id: 'navio-casa', nome: 'Chalupa Ferrugem', level: 12, look: LOOKS[0], route: ringRoute(175, 215, 45, 6) }];
   sea.forEach((def, i) => {
     const [a, b] = def.faixa;
-    plan.push({ id: `navio-${def.id}`, nome: NAMES[i], level: Math.round(a + (b - a) * 0.3), look: LOOKS[i], route: ringRoute(def.x, def.z, def.R + 58, 6, i * 0.7) });
+    plan.push({ id: `navio-${def.id}`, nome: NAMES[i] ?? `Corsário ${i + 1}`, level: Math.round(a + (b - a) * 0.3), look: LOOKS[i % LOOKS.length], route: ringRoute(def.x, def.z, def.R + 58, 6, i * 0.7) });
   });
   return plan;
 }

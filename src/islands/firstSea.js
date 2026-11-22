@@ -82,8 +82,11 @@ const PALETTES = {
   vulcao: { low: '#4a4040', high: '#3a3232', sand: '#5a4a44', rock: '#2e2828' },
   arena: { low: '#7a9a56', high: '#8bb06c', sand: '#d8c08a', rock: '#9a8a6a' },
   ceu: { low: '#8bc06a', high: '#a8d880', sand: '#f0e8c8', rock: '#e8e8f0' },
+  // Segundo Mar (atualização 17)
+  selva: { low: '#2f7a3a', high: '#4a9a42', sand: '#e0d29a', rock: '#5a6a5a' },
+  granito: { low: '#6a8a5a', high: '#7a9068', sand: '#d8cca0', rock: '#8a8a90' },
 };
-const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3 };
+const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3, selva: 3.4, granito: 4 };
 
 // ===== Relevo =====
 export function seaHeight(def) {
@@ -99,6 +102,9 @@ export function seaHeight(def) {
     switch (def.biome) {
       case 'praia': return 1.2 * n2(x / 14, z / 14);
       case 'floresta': return 3.5 * n1(x / 26 + 3, z / 26) + n2(x / 10, z / 10);
+      // selva: morro no meio com penhasco da cachoeira
+      case 'selva': return 9 * Math.pow(Math.max(0, 1 - r / (R * 0.55)), 1.4) + 2.5 * n1(x / 18, z / 18) + n2(x / 9, z / 9);
+      case 'granito': return 0.4 * n2(x / 16, z / 16);
       case 'deserto': return 2.2 * Math.abs(Math.sin(x / 8 + n1(x / 30, z / 30) * 3)) + 1.2 * n2(x / 20, z / 20);
       case 'neve': return 34 * Math.pow(Math.max(0, 1 - r / (R * 0.68)), 1.6) + 1.5 * n1(x / 12, z / 12);
       case 'vulcao': {
@@ -128,7 +134,7 @@ export function seaSpots(def) {
   // praia de chegada: lado da ilha voltado para a Ilha de Treino
   // (vem do mar aberto até a areia e entra 4 unidades: a costa varia com o ângulo, e
   // andar de dentro para fora pararia em lagos e baixios do interior)
-  const toHome = Math.atan2(-def.z, -def.x);
+  const toHome = Math.atan2((def.home?.z ?? 0) - def.z, (def.home?.x ?? 0) - def.x);
   const h = seaHeight(def);
   let r = R * 1.5;
   while (r > 4 && h(Math.cos(toHome) * r, Math.sin(toHome) * r) < 0.8) r -= 0.5;
@@ -237,28 +243,60 @@ export function buildSeaIsland({ scene, physics, def }) {
       }
       break;
     }
+    case 'granito':
     case 'forte': {
       // muralha quadrada com portão voltado para a praia de chegada, torres nos cantos
-      const S = 22;
+      // (a Cidadela de Granito tem muralhas em camadas: def.walls)
       const g = spots.landing;
       const gateSide = Math.abs(g.x) > Math.abs(g.z) ? (g.x > 0 ? 'x+' : 'x-') : g.z > 0 ? 'z+' : 'z-';
       const base = ground(0, 0);
-      for (const side of ['x+', 'x-', 'z+', 'z-']) {
+      const style = def.biome === 'granito' ? 'pedraLisa' : 'muro';
+      const walls = def.walls ?? [22];
+      for (const [wi, S] of walls.entries()) for (const side of ['x+', 'x-', 'z+', 'z-']) {
         for (let k = -S; k <= S; k += 4) {
           if (side === gateSide && Math.abs(k) < 5) continue;
           const lx = side === 'x+' ? S : side === 'x-' ? -S : k;
           const lz = side === 'z+' ? S : side === 'z-' ? -S : k;
           const p = W(lx, lz);
-          sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 4, h: 6, d: 4, style: 'muro' });
+          sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 4, h: 6 + wi * 3, d: 4, style });
         }
       }
-      for (const [lx, lz] of [[S, S], [S, -S], [-S, S], [-S, -S]]) {
+      for (const [wi, S] of walls.entries()) for (const [lx, lz] of [[S, S], [S, -S], [-S, S], [-S, -S]]) {
         const p = W(lx, lz);
-        sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 6, h: 10, d: 6, style: 'muro' });
+        sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 6, h: 10 + wi * 4, d: 6, style });
       }
       const q = W(-8, -8);
-      sb.block({ x: q.x, y: base, z: q.z, w: 8, h: 4.5, d: 5, style: 'muro' }); // quartel
-      scatter(trees.broad, 10, S + 8, R - 8, 1.8, 6);
+      sb.block({ x: q.x, y: base, z: q.z, w: 8, h: 4.5, d: 5, style }); // quartel
+      if (def.biome === 'granito') {
+        // torre de menagem no centro e catapultas nos cantos de dentro
+        const k = W(0, 6);
+        sb.block({ x: k.x, y: base - 0.5, z: k.z, w: 7, h: 16, d: 7, style });
+        for (const [lx, lz] of [[12, 12], [-12, 12]]) {
+          const p = W(lx, lz);
+          sb.block({ x: p.x, y: base, z: p.z, w: 2.4, h: 0.8, d: 3.2, style: 'madeira' });
+          sb.block({ x: p.x, y: base + 0.8, z: p.z, w: 0.3, h: 3, d: 0.3, rotY: 0.4, style: 'madeira' });
+        }
+      }
+      scatter(trees.broad, 10, walls.at(-1) + 8, R - 8, 1.8, 6);
+      break;
+    }
+    case 'selva': {
+      // selva: árvores grandes e coqueiros, cachoeira descendo do morro e templo em ruínas
+      scatter(trees.broad, 34, 10, R - 10, 2.1, 6);
+      scatter(trees.palm, 12, R - 16, R - 6, 1.3, 6);
+      scatter(trees.bush, 24, 6, R - 8, 1.3);
+      const fa = (def.fallAngle ?? 1.2);
+      for (let k = 0; k < 6; k++) {
+        const d = 8 + k * 3.2;
+        const lx = Math.cos(fa) * d;
+        const lz = Math.sin(fa) * d;
+        const p = W(lx, lz);
+        const y = ground(lx, lz);
+        sb.block({ x: p.x, y: y - 0.4, z: p.z, w: 2.6, h: 0.6, d: 3.4, rotY: Math.PI / 2 - fa, style: 'agua' });
+      }
+      const t = W(Math.cos(fa + 2.4) * 20, Math.sin(fa + 2.4) * 20);
+      const ty = ground(Math.cos(fa + 2.4) * 20, Math.sin(fa + 2.4) * 20);
+      for (let k = 0; k < 4; k++) sb.block({ x: t.x, y: ty - 0.3 + k * 1.4, z: t.z, w: 12 - k * 2.6, h: 1.4, d: 12 - k * 2.6, rotY: fa, style: k % 2 ? 'trepadeira' : 'pedra' });
       break;
     }
     case 'neve': {
@@ -276,7 +314,7 @@ export function buildSeaIsland({ scene, physics, def }) {
     }
     case 'cidade': {
       // vila pequena gerada pela semente, só as fachadas (casas fechadas)
-      const v = generateVillage({ seed: def.seed, radius: 34, plaza: 8, dockAngle: Math.atan2(spots.landing.z, spots.landing.x) });
+      const v = generateVillage({ seed: def.seed, radius: def.villageR ?? 34, plaza: 8, dockAngle: Math.atan2(spots.landing.z, spots.landing.x) });
       const base = PLATEAU.cidade;
       for (const s of v.streets) {
         const p = W((s.a[0] + s.b[0]) / 2, (s.a[1] + s.b[1]) / 2);
@@ -294,6 +332,19 @@ export function buildSeaIsland({ scene, physics, def }) {
         sb.block({ x: p.x, y: base + 3.6, z: p.z, w: 0.6, h: 0.6, d: 0.6, style: 'lanterna' });
       }
       scatter(trees.palm, 10, R - 14, R - 6, 1.2, 6);
+      if (def.shipyard) {
+        // estaleiro: cascos de caravela em construção sobre berços, perto da praia de chegada
+        const a = Math.atan2(spots.landing.z, spots.landing.x) + 0.7;
+        for (let k = 0; k < 2; k++) {
+          const lx = Math.cos(a + k * 0.35) * (R - 18);
+          const lz = Math.sin(a + k * 0.35) * (R - 18);
+          const p = W(lx, lz);
+          const y = ground(lx, lz);
+          sb.block({ x: p.x, y: y + 0.6, z: p.z, w: 3.6, h: 2.2, d: 12, rotY: a, style: 'madeira' });
+          for (let r = -4; r <= 4; r += 2) sb.block({ x: p.x + Math.sin(a) * r, y: y - 0.2, z: p.z + Math.cos(a) * r, w: 4.4, h: 0.8, d: 0.5, rotY: a, style: 'moveis' });
+          sb.block({ x: p.x, y: y + 2.8, z: p.z, w: 0.4, h: 7, d: 0.4, style: 'madeira' });
+        }
+      }
       break;
     }
     case 'vulcao': {

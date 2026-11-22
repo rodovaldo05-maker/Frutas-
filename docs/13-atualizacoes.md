@@ -9,7 +9,7 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 |---|---|
 | Base e movimento | Ilha de Treino, corpo do laboratório com rosto, controles de celular, PC e controle, câmera, HUD, pausa, salvamento com migração, APK |
 | Mobilidade | Andar, correr, agachar, deslizar, pular, salto duplo, esquiva, escalar, bordas, parede, planar com asa-delta (liga/desliga), rolamento, nadar, mergulhar, rampas |
-| Mundo | Relevo sem linhas, árvores, pedras e construções em blocos, placas com dicas, mapa e minimapa |
+| Mundo | Relevo sem linhas, árvores grandes (escala ≈ 1,6–2,1: a copa mais baixa fica a 5 do chão e o personagem passa embaixo; pinheiros com tronco alto), pedras e construções em blocos, placas com dicas, mapa e minimapa |
 | Frutas | 16 fichas, 6 ranks de raridade, catálogo, roleta ×1/×10 com garantia, mochila, trocador e chaves, fruta na mão, comer, fraqueza à água |
 | Missões | Missão "Treino de movimento" com 11 objetivos e recompensa |
 | Evolução | Nível de aventureiro com **pontos de status distribuíveis** e **treino pela prática** (não distribuível) somando juntos — Atualização 1 |

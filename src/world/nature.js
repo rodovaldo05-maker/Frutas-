@@ -58,8 +58,9 @@ function broadleaf(variant) {
 }
 
 function pine() {
-  const parts = [cube(0.5, 2.2, 0.5, '#6b4628', { pos: [0, 1.1, 0] })];
-  const tiers = [[3.2, 2.0], [2.6, 3.1], [2.0, 4.1], [1.4, 5.0], [0.8, 5.8]];
+  // tronco alto: a primeira camada de galhos fica acima da cabeça (revisão de escala)
+  const parts = [cube(0.5, 3.8, 0.5, '#6b4628', { pos: [0, 1.9, 0] })];
+  const tiers = [[3.2, 3.6], [2.6, 4.7], [2.0, 5.7], [1.4, 6.6], [0.8, 7.4]];
   tiers.forEach(([s, y], i) => {
     parts.push(cube(s, 1.0, s, i % 2 ? '#2f5f3c' : '#356b43', { pos: [0, y, 0], rot: [0, i % 2 ? Math.PI / 4 : 0, 0], top: 1.25, bottom: 0.5 }));
   });
@@ -178,36 +179,39 @@ export function buildNature({ scene, physics, field, rand, keepClear = [] }) {
     kinds[key].items.push({ x, y, z, rotY, scale, tint });
   };
 
-  // árvores em bosques
+  // árvores em bosques. Escala grande (≈1,6–2,1): a copa mais baixa fica a ≥ 5 unidades do
+  // chão e o personagem (≈ 4,1) passa embaixo. Mais espaço entre elas para as copas não se
+  // fundirem.
+  const TREE_SCALE = 1.8;
   const broad = [broadleaf(0), broadleaf(1), broadleaf(2)];
   const groves = [[-62, -10, 15, 10], [-22, -24, 10, 6], [58, -34, 13, 8], [-64, 44, 9, 5], [40, 60, 11, 6], [-30, 68, 8, 3], [66, 8, 8, 4], [-40, 30, 6, 3]];
   let trees = 0;
   const tryTree = (x, z) => {
     const y = sample(x, z);
-    if (y < 1.5 || !flat(x, z) || !clear(x, z) || !free(x, z, 2.2)) return;
-    const scale = 0.85 + rand() * 0.4;
+    if (y < 1.5 || !flat(x, z) || !clear(x, z, 2) || !free(x, z, 2.9)) return;
+    const scale = (0.9 + rand() * 0.25) * TREE_SCALE;
     const v = Math.floor(rand() * 3);
     // no platô alto, pinheiros
     if (y > 12) {
-      add('pinheiro', null, x, y, z, { scale: scale * 1.1 });
-      physics.addCylinder({ x, y: y + 1.2 * scale, z }, 1.2 * scale, 0.3 * scale, { climbable: true, material: 'madeira' });
+      add('pinheiro', null, x, y, z, { scale: scale * 0.95 });
+      physics.addCylinder({ x, y: y + 1.9 * scale * 0.95, z }, 1.9 * scale * 0.95, 0.25 * scale, { climbable: true, material: 'madeira' });
     } else {
       add('arvore' + v, broad[v], x, y, z, { scale, tint: 0.92 + rand() * 0.16 });
-      physics.addCylinder({ x, y: y + 1.9 * scale, z }, 1.9 * scale, 0.34 * scale, { climbable: true, material: 'madeira' });
+      physics.addCylinder({ x, y: y + 1.9 * scale, z }, 1.9 * scale, 0.31 * scale, { climbable: true, material: 'madeira' });
     }
-    take(x, z, 2.2);
+    take(x, z, 2.9);
     trees += 1;
   };
   for (const [cx, cz, r, n] of groves) {
-    for (let k = 0; k < n * 3; k++) {
+    for (let k = 0; k < n * 6; k++) {
       const a = rand() * Math.PI * 2;
       const d = Math.sqrt(rand()) * r;
       tryTree(cx + Math.cos(a) * d, cz + Math.sin(a) * d);
     }
   }
-  for (let k = 0; k < 40; k++) tryTree((rand() * 2 - 1) * 78, (rand() * 2 - 1) * 74);
+  for (let k = 0; k < 90; k++) tryTree((rand() * 2 - 1) * 78, (rand() * 2 - 1) * 74);
   // pinheiros espalhados no platô
-  for (let k = 0; k < 40; k++) tryTree(-60 + rand() * 105, -44 - rand() * 22);
+  for (let k = 0; k < 80; k++) tryTree(-60 + rand() * 105, -44 - rand() * 22);
   kinds.pinheiro && (kinds.pinheiro.geo = pine());
 
   // coqueiros na areia
@@ -226,10 +230,10 @@ export function buildNature({ scene, physics, field, rand, keepClear = [] }) {
     if (y < 0.9 || y > 2.4 || !clear(px, pz) || !free(px, pz, 3.2)) continue;
     // inclina para o mar
     const rotY = -Math.atan2(pz, px) + (rand() - 0.5) * 0.8;
-    const scale = 0.9 + rand() * 0.35;
+    const scale = (0.9 + rand() * 0.35) * 1.3;
     add('coqueiro', palmModel.geo, px, y - 0.1, pz, { rotY, scale });
     const lean = palmModel.lean * scale * 0.35;
-    physics.addCylinder({ x: px + Math.cos(-rotY) * lean, y: y + palmModel.height * scale * 0.4, z: pz + Math.sin(-rotY) * lean }, palmModel.height * scale * 0.4, 0.28, { climbable: true, material: 'madeira' });
+    physics.addCylinder({ x: px + Math.cos(-rotY) * lean, y: y + palmModel.height * scale * 0.4, z: pz + Math.sin(-rotY) * lean }, palmModel.height * scale * 0.4, 0.3, { climbable: true, material: 'madeira' });
     take(px, pz, 3);
     if (kinds.coqueiro.items.length >= 26) break;
   }

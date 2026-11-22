@@ -1077,3 +1077,26 @@ body.sense #game { filter: saturate(0.65) contrast(1.05); }
 
 /* botões do alto no canto superior esquerdo (mesmo lado da janela da missão) */
 #hud .top-actions { left: calc(12px + var(--safe-l)); right: auto; top: calc(10px + var(--safe-t)); }
+
+/* ===== Equipamento ===== */
+.pane-gear { display: grid; gap: 8px; overflow: auto; min-height: 0; font-size: 12px; }
+.pane-gear h4 { margin: 2px 0; font: 700 13px var(--title-font); color: var(--gold-hi); }
+.gear-total { padding: 6px 10px; border-radius: 10px; background: rgba(14, 11, 28, 0.6); border: 1px solid rgba(217, 166, 74, 0.5); line-height: 1.5; }
+.gear-total b { color: #b9f2a8; }
+.gear-total i { color: #9be7ff; font-style: normal; }
+.gear-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.gear-slot, .gear-item {
+  display: grid; gap: 2px; align-content: start; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--qc);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--qc) 18%, rgba(20, 14, 32, 0.9)), rgba(14, 10, 26, 0.92));
+}
+.gear-slot small, .gear-item small { color: var(--muted); font-size: 10.5px; }
+.gear-slot b, .gear-item b { color: var(--qc); font-size: 12.5px; }
+.gear-slot span, .gear-item span { font-size: 11px; }
+.gear-item i { color: #9be7ff; font-style: normal; }
+.gear-slot .btn, .gear-item .btn { min-height: 26px; font-size: 11.5px; padding: 0 8px; justify-self: start; }
+.gear-bag { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.dur { font: 800 10.5px var(--body-font); color: #b9f2a8; }
+.dur.broken { color: #ff8a7a; }
+#armory-tabs { margin: 0 40px 8px 0; position: relative; z-index: 1; align-items: center; }
+#armory-tabs #btn-repair { margin-left: auto; min-height: 30px; font-size: 12px; padding: 0 10px; }
+@media (max-height: 450px) { .gear-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

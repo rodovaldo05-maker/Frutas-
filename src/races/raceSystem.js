@@ -88,7 +88,7 @@ export class RaceSystem {
       }
       default:
     }
-    this.cooldown = d.ativa.recarga;
+    this.cooldown = d.ativa.recarga * (this.cdMult ?? 1);
     this.onEvent('active', { race: d.id, nome: d.ativa.nome });
     return true;
   }

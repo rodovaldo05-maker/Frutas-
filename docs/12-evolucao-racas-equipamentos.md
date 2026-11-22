@@ -121,3 +121,27 @@ Código: `src/progression/training.js` (curva, atributos, bônus, antifarm, rast
 
 Código: `src/races/races.js`, `src/races/raceSystem.js`, `src/races/raceParts.js`; testes em
 `tests/races.test.js`.
+
+
+## 9. Situação: itens e equipamentos (atualização 8)
+
+- **Encaixes:** cabeça, torso, pernas, botas, anel e amuleto (Personagem › Equipamento).
+- **Qualidades:** Comum, Incomum, Rara, Épica, Lendária e Mítica (independentes da fruta e da
+  raça). Cada item tem nível recomendado, peso, durabilidade, preço, atributos e, às vezes,
+  uma sinergia pequena de raça.
+- **14 itens:** Bandana de Treino, Gibão de Couro, Calças Reforçadas, Botas Leves (Céu: −10% de
+  queda), Elmo de Ferro, Couraça de Escamas (Aquático: +5% nadando), Grevas de Aço, Botas do
+  Vento (Céu: −15% de queda), Manto de Brasa, Anel de Cobre, Colar de Conchas, Foco Arcano
+  (Ghoul: +5% de energia), Bracelete Técnico (Humano: −10% de recarga da Adaptação) e Amuleto
+  da Maré (Aquático: +5% nadando).
+- **Atributos somados com teto:** defesa (até 30), vida (60), fôlego (40), energia (25) e
+  resistência elemental (15%). Peso acima de 6 reduz 2% da recuperação de fôlego por unidade
+  (até −20%).
+- **Durabilidade:** cada golpe recebido gasta 1 de uma peça de armadura; quebrada não dá bônus
+  até ser consertada no Mestre de Armas (25% do preço proporcional ao desgaste).
+- **Onde conseguir:** abas Armaduras e Acessórios do Mestre de Armas; Recrutas derrubam itens
+  (6%; elementais 15%) do nível deles.
+- **Visual:** capacete ou bandana, peitoral com ombreiras, perneiras, botas, amuleto e anel
+  aparecem no corpo com a cor do item.
+
+Código: `src/items/items.js`, `src/items/gearParts.js`; testes em `tests/items.test.js`.

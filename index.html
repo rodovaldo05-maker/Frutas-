@@ -178,8 +178,9 @@
             <div class="status-summary" id="status-summary"></div>
           </div>
           <div class="status-list">
-            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button><button data-ttab="raca">Raça</button></div>
+            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button><button data-ttab="raca">Raça</button><button data-ttab="equip">Equipamento</button></div>
             <div id="pane-race" class="pane-race hidden"></div>
+            <div id="pane-gear" class="pane-gear hidden"></div>
             <div id="pane-status" class="pane-status">
               <p class="muted small train-intro">Pontos de nível: cada nível de aventureiro dá 3 pontos e <b>você escolhe</b> onde colocar. O treino é separado e soma por cima.</p>
               <div class="status-head"><span>Pontos disponíveis <b id="status-points">0</b></span><button id="btn-respec" class="btn" data-icon="home">Redistribuir</button></div>
@@ -283,6 +284,7 @@
           <div class="wallet big"><span data-icon="coin"><b id="a-coins">0</b></span></div>
           <div class="armory-prof"><span>Proficiência com espadas <b id="a-prof">Nv. 1</b></span><div class="bar xp"><i id="a-prof-bar"></i><em><span id="a-prof-text">0%</span></em></div></div>
         </div>
+        <div class="top-tabs" id="armory-tabs"><button data-atab="espadas" class="active">Espadas</button><button data-atab="armaduras">Armaduras</button><button data-atab="acessorios">Acessórios</button><button class="btn" id="btn-repair" data-icon="home">Consertar tudo</button></div>
         <div class="armory-list" id="armory-list"></div>
       </div>
     </div>

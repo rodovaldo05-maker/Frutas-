@@ -52,6 +52,10 @@ Vontade e estilos (atualização 7): o Mestre de Luta ensina estilos de luta par
 a Vontade de Armadura (+dano, −dano recebido, braços escuros) e de Percepção (esquiva
 automática, aviso de ataque), com barra própria (G e H no PC).
 
+Equipamento (atualização 8): armaduras e acessórios em 6 encaixes (cabeça, torso, pernas,
+botas, anel, amuleto) com qualidade, peso, durabilidade, conserto, tetos e sinergias de raça;
+as peças aparecem no corpo. Loja no Mestre de Armas e itens que caem dos Recrutas.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com
@@ -132,6 +136,7 @@ src/combat      regras do combate, combate do jogador, poderes, bonecos e Recrut
 src/weapons     espadas (dados, combo, habilidades) e modelo voxel
 src/races       quatro raças: dados, passivas, ativas, maestria e partes visuais
 src/styles      estilos de luta e Vontade
+src/items       armaduras e acessórios (dados, totais, durabilidade) e visual no corpo
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática

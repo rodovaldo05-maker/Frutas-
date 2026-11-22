@@ -50,6 +50,8 @@ import { Armory } from './ui/armory.js';
 import { STYLES, styleCombo, stylePowers } from './styles/styles.js';
 import { Vontade } from './styles/vontade.js';
 import { Dojo } from './ui/dojo.js';
+import { ITEMS, gearTotals, wearArmor, addItem, dropFor, equipItem } from './items/items.js';
+import { applyGearVisual } from './items/gearParts.js';
 import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
@@ -185,18 +187,27 @@ async function boot() {
 
   // vida, fôlego e bônus de movimento: pontos distribuídos + treino pela prática
   // (cada ponto de Força e cada nível de treino de Força: +1 de fôlego)
+  // + equipamento (atualização 8): defesa, vida, fôlego, energia, elemental, peso e sinergias
   const applyStatus = () => {
     const b = bonuses(save.training);
-    ctl.stamina.setMax(maxStamina(save.status, save.training));
-    ctl.stamina.regenMult = b.staminaRegen;
-    baseRegen = b.staminaRegen;
+    const g = gearTotals(save);
+    ctl.stamina.setMax(maxStamina(save.status, save.training) + g.folego);
+    baseRegen = b.staminaRegen * (1 - g.pesoPenalty);
+    ctl.stamina.regenMult = baseRegen;
     const rm = raceSys.mods;
-    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed, glideFall: b.glideFall };
-    ctl.race = { extraJumps: rm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
+    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed, glideFall: b.glideFall };
+    ctl.race = { extraJumps: rm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda), noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
+    raceSys.cdMult = 1 - g.adaptCd;
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
-    ctl.maxHealth = maxHealth(save.status);
+    ctl.maxHealth = maxHealth(save.status) + g.vida;
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
-    powers?.setEnergyMax(maxEnergy(save.status));
+    powers?.setEnergyMax(maxEnergy(save.status) + g.energia);
+    if (powers) powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen);
+  };
+  let gearParts = [];
+  const applyGear = () => {
+    gearParts = applyGearVisual(player.body, save, gearParts);
+    applyStatus();
   };
   let powers = null;
   applyStatus();
@@ -226,7 +237,8 @@ async function boot() {
       const b = bonuses(save.training);
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
-      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation, elementalMit: b.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      const g = gearTotals(save);
+      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation, elementalMit: b.elementalMit + g.elemental, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -303,6 +315,14 @@ async function boot() {
           audio.play('impacto', 'acerto', 0.5);
           shake = Math.max(shake, 0.18);
           tracker.combat('apanhar', { source: d.source, life: d.life, hostile: true, amount: d.damage }, p);
+          {
+            // golpe gasta a armadura; peça quebrada para de dar bônus até consertar
+            const broke = wearArmor(save);
+            if (broke) {
+              hud.toast(`${ITEMS[broke.id].nome} quebrou! Conserte com o Mestre de Armas.`, 'bad');
+              applyStatus();
+            }
+          }
           break;
         default:
       }
@@ -361,6 +381,16 @@ async function boot() {
   for (const r of arena.recrutas) {
     r.onDefeated = (foe) => {
       save.coins += foe.def.coins;
+      const drop = dropFor(foe.def.level);
+      if (drop) {
+        const it = addItem(save, drop);
+        const d = ITEMS[drop];
+        if (!save.gear[d.slot]) {
+          equipItem(save, it.uid);
+          applyGear();
+        }
+        hud.toast(`Item encontrado: ${d.nome} (${d.qualidade})${save.gear[d.slot] === it.uid ? ' · equipado' : ''}`, 'gold');
+      }
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
       audio.play('base', 'death', 0.6);
@@ -625,6 +655,11 @@ async function boot() {
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
   const armory = new Armory({
     save,
+    onGear: () => {
+      applyGear();
+      refreshProfile();
+      saveNow(true);
+    },
     toast: (text, kind) => hud.toast(text, kind),
     onBuy: (id) => {
       save.weapon = id;
@@ -661,7 +696,7 @@ async function boot() {
   const statusScreen = new StatusScreen({
     save,
     onChange: () => {
-      applyStatus();
+      applyGear();
       refreshProfile();
       saveNow(true);
     },
@@ -1179,7 +1214,7 @@ async function boot() {
   // ===== Raça: escolha, aplicação e eventos =====
   function applyRace() {
     tracker.raceMult = raceSys.mods.xpPhysical;
-    powers.regenMult = raceSys.mods.energyRegen;
+    powers.regenMult = raceSys.mods.energyRegen * (1 + gearTotals(save).energiaRegen);
     applyStatus();
     refreshEquip();
     const r = RACES[save.race];
@@ -1257,6 +1292,7 @@ async function boot() {
     if (b) chooseRace(b.dataset.race);
   });
   applyRace();
+  applyGear();
 
   async function startGame() {
     if (mode === 'game') return;

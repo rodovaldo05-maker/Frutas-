@@ -12,6 +12,7 @@ import { ICONS } from './icons.js';
 import { fruitName } from '../fruits/catalog.js';
 import { domainProgress } from '../progression/domain.js';
 import { RACES, raceXpToNext } from '../races/races.js';
+import { ITEMS, SLOTS, SLOT_NAMES, QUALITY, gearTotals, equipItem, unequip, isBroken } from '../items/items.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString('pt-BR');
@@ -34,6 +35,13 @@ export class StatusScreen {
       if (!b) return;
       const amount = b.dataset.amount === 'max' ? this.save.statusPoints : Number(b.dataset.amount);
       if (allocate(this.save, b.dataset.key, amount)) this.changed();
+    });
+    $('pane-gear').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-gear]');
+      if (!b) return;
+      if (b.dataset.gear === 'equip') equipItem(this.save, Number(b.dataset.uid));
+      else unequip(this.save, b.dataset.slot);
+      this.changed();
     });
     $('btn-respec').addEventListener('click', () => {
       if (!this.save.freeRespec) return;
@@ -65,7 +73,8 @@ export class StatusScreen {
     const dom = eaten ? s.domain?.[eaten] ?? { level: 1, xp: 0 } : null;
     const domLine = dom ? `<span>Domínio de ${fruitName(eaten)} <b>Nv. ${dom.level}</b> (${Math.floor(domainProgress(dom) * 100)}%)</span>` : '';
     const race = RACES[s.race];
-    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status))}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t))}</b></span>${domLine}<span>Tipo corporal <b>${race ? race.nome : 'a escolher'}</b></span>`;
+    const g = gearTotals(s);
+    $('status-summary').innerHTML = `<span>Vida máxima <b>${fmt(maxHealth(status) + g.vida)}</b></span><span>Fôlego máximo <b>${fmt(maxStamina(status, t) + g.folego)}</b></span>${domLine}<span>Tipo corporal <b>${race ? race.nome : 'a escolher'}</b></span>`;
     const badge = $('tab-points');
     badge.classList.toggle('hidden', points < 1);
     badge.textContent = points > 99 ? '99+' : String(points);
@@ -73,8 +82,10 @@ export class StatusScreen {
     $('pane-status').classList.toggle('hidden', this.tab !== 'status');
     $('pane-train').classList.toggle('hidden', this.tab !== 'atributos' && this.tab !== 'historico');
     $('pane-race').classList.toggle('hidden', this.tab !== 'raca');
+    $('pane-gear').classList.toggle('hidden', this.tab !== 'equip');
     if (this.tab === 'status') this.renderStatus(status, points);
     else if (this.tab === 'raca') this.renderRace();
+    else if (this.tab === 'equip') this.renderGear();
     else this.renderTraining(t);
   }
 
@@ -150,6 +161,33 @@ export class StatusScreen {
         <div><h4>Marcos</h4><ul class="race-marcos">${marcos}</ul>
           <h4>Como treinar</h4><p>${r.treino}</p><p class="muted">${r.limitacao}</p></div>
       </div>`;
+  }
+
+  // Equipamento: encaixes, itens da mochila e totais (com tetos e peso)
+  renderGear() {
+    const s = this.save;
+    const t = gearTotals(s);
+    const dur = (it) => {
+      const max = ITEMS[it.id].dur;
+      return max ? `<span class="dur${isBroken(it) ? ' broken' : ''}">${isBroken(it) ? 'Quebrado' : `${it.dur}/${max}`}</span>` : '';
+    };
+    const attrs = (d) => Object.entries(d.attrs).map(([k, v]) => (k === 'elemental' ? `+${Math.round(v * 100)}% elemental` : `+${v} ${k === 'folego' ? 'fôlego' : k}`)).join(' · ');
+    const slots = SLOTS.map((slot) => {
+      const it = s.items.find((x) => x.uid === s.gear[slot]);
+      const d = it && ITEMS[it.id];
+      return `<div class="gear-slot" style="--qc:${d ? QUALITY[d.qualidade] : '#4a4458'}"><small>${SLOT_NAMES[slot]}</small>${d ? `<b>${d.nome}</b><span>${attrs(d)}</span>${dur(it)}<button class="btn" data-gear="off" data-slot="${slot}">Tirar</button>` : '<span class="muted">vazio</span>'}</div>`;
+    }).join('');
+    const free = s.items.filter((it) => !Object.values(s.gear).includes(it.uid));
+    const bag = free.length
+      ? free.map((it) => {
+        const d = ITEMS[it.id];
+        return `<div class="gear-item" style="--qc:${QUALITY[d.qualidade]}"><b>${d.nome}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · peso ${d.peso}</small><span>${attrs(d)}${d.sinergia ? ` · <i>${d.sinergia.texto}</i>` : ''}</span>${dur(it)}<button class="btn gold" data-gear="equip" data-uid="${it.uid}">Equipar</button></div>`;
+      }).join('')
+      : '<p class="muted">Sem itens guardados. Compre com o Mestre de Armas ou derrote Recrutas.</p>';
+    $('pane-gear').innerHTML = `
+      <div class="gear-total">Defesa <b>+${t.defesa}</b> · Vida <b>+${t.vida}</b> · Fôlego <b>+${t.folego}</b> · Energia <b>+${t.energia}</b> · Elemental <b>+${Math.round(t.elemental * 100)}%</b> · Peso <b>${t.peso.toLocaleString('pt-BR')}</b>${t.pesoPenalty ? ` (−${Math.round(t.pesoPenalty * 100)}% de recuperação de fôlego)` : ''}${t.sinergias.length ? `<br><i>${t.sinergias.join(' · ')}</i>` : ''}</div>
+      <div class="gear-slots">${slots}</div>
+      <h4>Guardados</h4><div class="gear-bag">${bag}</div>`;
   }
 
   reason(key) {

@@ -972,3 +972,9 @@ body.lefty .act.dash { right: auto; left: calc(108px * var(--btn) + var(--safe-l
 body.lefty .act.crouch { right: auto; left: calc(104px * var(--btn) + var(--safe-l)); }
 body.lefty .act.block { right: auto; left: calc(174px * var(--btn) + var(--safe-l)); }
 body.lefty .act.sprint { left: auto; right: calc(204px * var(--btn) + var(--safe-r)); }
+
+/* janela da missão: lado esquerdo, centralizada na altura (celular e PC) */
+#hud #tracker { left: calc(12px + var(--safe-l)); right: auto; top: 50%; transform: translateY(-50%); }
+body.touch #hud #tracker { width: 190px; padding: 14px 10px 8px; }
+body.touch #hud #tracker .tracker-body { font-size: 11px; gap: 2px; }
+body.touch #hud #tracker .tracker-body b { font-size: 12px; }

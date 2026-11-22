@@ -155,4 +155,6 @@ Legenda: Q = quadros totais; I = quadro de impacto; A = quadros ativos (colisão
 | `ocidental_m1_3` | Chicote de Cauda | tail | E | 30 | 15 | 4 | 6 | 1.05 | 0–7 · 8–14 · 15–18 · 19–24 · 25–30 | 1,7 m | cauda | media | humana, hibrida (cauda) | Implementado |
 | `ocidental_m1_4` | Esmagamento Dracônico | slam | E | 38 | 20 | 4 | 8 | 1.25 | 0–9 · 10–19 · 20–23 · 24–30 · 31–38 | 1,5 m, solo | esmagamento | pesada | humana, hibrida | Implementado |
 
+![Quadro de contato dos golpes](m1-golpes.png)
+
 Formas completas (quadrúpedes, aves e dragões inteiros) ainda não existem no jogo; as variantes delas ficam pendentes.

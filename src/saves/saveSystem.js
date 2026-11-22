@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS = {
   colorblind: 'nenhum', // 'nenhum', 'protan', 'deutan' ou 'tritan'
   damageNumbers: true,
   vibration: true,
+  camZoom: 1, // zoom da câmera (pinça com dois dedos ou roda do mouse): 0,5 perto … 1,8 longe
 };
 
 // Ajustes salvos com valores fora do lugar voltam ao padrão ou ao limite
@@ -52,6 +53,7 @@ export function normalizeSettings(s) {
   num('volume', 0, 1);
   num('buttonScale', 0.75, 1.3);
   num('textScale', 0.9, 1.4);
+  num('camZoom', 0.5, 1.8);
   out.fpsCap = Number(out.fpsCap) === 30 ? 30 : 60;
   if (!['auto', 'leve', 'media', 'alta'].includes(out.quality)) out.quality = 'auto';
   if (out.resolution !== 'auto') {

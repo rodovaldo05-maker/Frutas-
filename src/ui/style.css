@@ -1224,3 +1224,9 @@ body.cb-tritan #game, body.cb-tritan #hud { filter: url(#cb-tritan); }
 .hull-track i.low { background: linear-gradient(90deg, #a8321e, #ff8a3a); }
 .hull-bar small { font: 700 9px var(--body-font); color: #fff1cf; text-shadow: 0 1px 2px #000; opacity: 0.85; }
 body:has(.hull-bar:not(.hidden)) .toasts { top: calc(118px + var(--safe-t)); }
+
+/* ===== Comprador de Itens ===== */
+.item-sell .ic.q { width: 14px; height: 14px; border-radius: 4px; background: var(--qc); box-shadow: 0 0 6px var(--qc); align-self: center; }
+.item-sell b { color: var(--qc); }
+.tag-eq { font: 800 11px var(--body-font); color: #ffd36b; border: 1px solid #ffd36b; border-radius: 999px; padding: 3px 10px; }
+.sell-bulk { margin: 6px 0; flex-wrap: wrap; gap: 6px; }

@@ -353,6 +353,9 @@ proa, canhões) com prévia 3D, e botão **Invocar** (só em porto ou perto da c
 
 ### 5.9 Ajustes
 
+Zoom da câmera: pinça com dois dedos (afastar aproxima, juntar afasta) ou roda do mouse,
+de 0,5× a 1,8×; o zoom fica salvo nos ajustes.
+
 No jogo hoje (atualização 15): Qualidade (Auto, Leve, Média, Alta), Resolução (Auto, 50%,
 75%, 100%), Limite de qps (30/60), sensibilidade da câmera, volume, inverter eixo, mostrar
 desempenho, asa-delta, vibração, layout e tamanho dos botões; aba **Acessibilidade** com

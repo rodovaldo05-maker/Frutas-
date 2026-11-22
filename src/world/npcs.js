@@ -36,6 +36,12 @@ const NPCS = [
     awning: ['lonaRoxa', 'lonaOuro'],
   },
   {
+    id: 'comprador', name: 'Comprador de Itens', x: 12, z: 66, yaw: -Math.PI / 2,
+    look: { skin: '#d8a880', hair: '#6a4a2a', shirt: '#2f6a4a', shorts: '#3a2f22', shoes: '#4a3424' },
+    hint: 'Compra armaduras e acessórios que caem dos inimigos, chefes e navios: 35% do preço.',
+    awning: ['lonaOuro', 'lonaRoxa'],
+  },
+  {
     id: 'mestre', name: 'Mestre de Luta', x: 12, z: 56, yaw: -Math.PI / 2,
     look: { skin: '#8a5a3c', hair: '#e8e8e8', shirt: '#f2efe6', shorts: '#2a2a33', shoes: '#2a1f18' },
     hint: 'Ensina estilos de luta (slot 3) e a Vontade de Armadura e de Percepção.',

@@ -59,6 +59,7 @@ import { SkillBar } from './ui/skillBar.js';
 import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
 import { makeSword } from './weapons/swordModel.js';
 import { Fleet } from './ships/fleet.js';
+import { SellItemsUi } from './ui/sellItemsUi.js';
 import { shipLoot, repairCost, NAVAL } from './ships/naval.js';
 import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
 import { Armory } from './ui/armory.js';
@@ -1083,6 +1084,18 @@ async function boot() {
       saveNow(true);
     },
   });
+  // Comprador de Itens (banca na Ilha de Treino e na Mercadora do Porto)
+  const sellItemsUi = new SellItemsUi({
+    save,
+    onSold: (text, coins, bad) => {
+      hud.toast(text, bad ? 'bad' : 'gold');
+      if (coins > 0) {
+        audio.play('base', 'wing', 0.5);
+        refreshProfile();
+        saveNow(true);
+      }
+    },
+  });
   const buyTool = (id) => {
     const t = TOOLS[id];
     if (save.tools.includes(id)) return;
@@ -1102,6 +1115,7 @@ async function boot() {
     }
     if (m.papel === 'mercado') {
       out.push({ label: 'Vender materiais', icon: 'coin', run: () => villageUi.swap('sellmats') });
+      out.push({ label: 'Vender itens', icon: 'coin', run: () => villageUi.swap('sellitems') });
       if (!save.tools.includes('vara')) out.push({ label: `Vara de pesca · ${fmt(TOOLS.vara.preco)}`, icon: 'coin', run: () => buyTool('vara') });
     }
     return out;
@@ -1190,6 +1204,7 @@ async function boot() {
 
   // ===== Configurações =====
   let fpsCapHook = () => {};
+  let zoomSaveT = 0;
   const applySetting = (key, value) => {
     if (key === 'quality') {
       quality.apply(value);
@@ -1221,6 +1236,7 @@ async function boot() {
       for (const c of ['protan', 'deutan', 'tritan']) document.body.classList.toggle('cb-' + c, value === c);
     }
     if (key === 'damageNumbers') floats.numbers = !!value;
+    if (key === 'camZoom' && typeof cam !== 'undefined') cam.zoom = Number(value) || 1;
     if (key === 'gliderOn') {
       ctl.unlocks.glide = !!value && save.unlocks.glide !== false;
       if (!value && ctl.state === 'glide') ctl.setState('air');
@@ -1293,6 +1309,10 @@ async function boot() {
     if (id === 'trader') shop.renderTrader();
     if (id === 'forge') forgeUi.render();
     if (id === 'sellmats') forgeUi.renderSell();
+    if (id === 'sellitems') {
+      sellItemsUi.confirm = null;
+      sellItemsUi.render();
+    }
     if (id === 'armory') armory.render();
     if (id === 'dojo') dojo.render();
     if (id === 'catalog') catalog.render();
@@ -1449,7 +1469,7 @@ async function boot() {
       for (const n of villageUi.questTalk(npc.id, false)) hud.toast(n, 'good');
       return openBoatman(npc);
     }
-    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo' }[npc.id] || 'trader');
+    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory', mestre: 'dojo', comprador: 'sellitems' }[npc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
@@ -1696,7 +1716,13 @@ async function boot() {
       const playing = mode === 'game' && !loop.paused;
       if (playing) {
         cam.look(frame.look.x, frame.look.y);
-        if (frame.zoom) cam.zoomBy(frame.zoom);
+        if (frame.zoom) {
+          cam.zoomBy(frame.zoom);
+          // lembra o zoom (salva um pouco depois de parar de mexer)
+          settings.camZoom = Math.round(cam.zoom * 100) / 100;
+          clearTimeout(zoomSaveT);
+          zoomSaveT = setTimeout(() => saves.saveSettings(settings), 800);
+        }
       }
       // posição interpolada entre os dois últimos passos da física
       const teleport = prev.distanceToSquared(ctl.pos) > 9;

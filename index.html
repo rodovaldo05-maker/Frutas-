@@ -425,6 +425,17 @@
       </div>
     </div>
 
+    <!-- ===== Comprador de Itens (vender armaduras e acessórios) ===== -->
+    <div id="sellitems" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="coin">Comprador de Itens</div>
+        <button class="close" data-close="sellitems" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top"><div class="wallet big"><span data-icon="coin"><b id="si-coins">0</b></span></div><span class="store-restock">Paga 35% do preço (mais as melhorias e estrelas). Peça gasta vale menos; equipada não é vendida.</span></div>
+        <div class="row-btns sell-bulk"><button class="btn" data-sell-bulk="comuns">Vender Comuns</button><button class="btn" data-sell-bulk="todos">Vender todos</button></div>
+        <div id="si-list" class="mat-list"></div>
+      </div>
+    </div>
+
     <!-- ===== Loja de Frutas do Porto ===== -->
     <div id="fruitstore" class="overlay hidden">
       <div class="frame window wide">

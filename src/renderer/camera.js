@@ -42,7 +42,7 @@ export class FollowCamera {
   }
 
   zoomBy(delta) {
-    this.zoom = clamp(this.zoom + delta, 0.6, 1.5);
+    this.zoom = clamp(this.zoom + delta, 0.5, 1.8);
   }
 
   update(dt, ctl, pos, water) {

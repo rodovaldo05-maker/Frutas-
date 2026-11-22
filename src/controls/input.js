@@ -113,8 +113,21 @@ export class Input {
         this.setBlock('mouse', true);
         return;
       }
-      if (e.pointerType !== 'mouse' && leftSide && ![...pointers.values()].some((p) => p.kind === 'stick')) {
-        pointers.set(e.pointerId, { kind: 'stick', ox: e.clientX, oy: e.clientY });
+      // segundo dedo logo depois do primeiro, sem o joystick ter andado: vira pinça (zoom)
+      let pinchStart = false;
+      if (e.pointerType !== 'mouse') {
+        const stickP = [...pointers.entries()].find(([, p]) => p.kind === 'stick');
+        if (stickP && performance.now() - stickP[1].at < 300 && Math.hypot(this.touchMove.x, this.touchMove.y) < 0.05) {
+          const [id, p] = stickP;
+          pointers.set(id, { kind: 'look', x: p.ox, y: p.oy, sx: p.ox, sy: p.oy, at: p.at, mouse: false });
+          this.touchMove.x = this.touchMove.y = 0;
+          this.touchMove.active = false;
+          stick.base.classList.remove('on');
+          pinchStart = true;
+        }
+      }
+      if (e.pointerType !== 'mouse' && leftSide && !pinchStart && ![...pointers.values()].some((p) => p.kind === 'stick')) {
+        pointers.set(e.pointerId, { kind: 'stick', ox: e.clientX, oy: e.clientY, at: performance.now() });
         showStick(e.clientX, e.clientY);
         this.touchMove.active = true;
         this.usingTouch = true;
@@ -144,6 +157,18 @@ export class Input {
         this.touchMove.x = Math.cos(a) * mag;
         this.touchMove.y = -Math.sin(a) * mag;
       } else {
+        // dois dedos girando a câmera = pinça: afastar aproxima, juntar afasta (zoom)
+        const looks = [...pointers.values()].filter((q) => q.kind === 'look' && !q.mouse);
+        if (looks.length >= 2) {
+          const [a, b] = looks;
+          const before = Math.hypot(a.x - b.x, a.y - b.y);
+          p.x = e.clientX;
+          p.y = e.clientY;
+          const after = Math.hypot(a.x - b.x, a.y - b.y);
+          this.zoomDelta += (before - after) * 0.0045;
+          for (const q of looks) q.pinch = true; // não vira ataque ao soltar
+          return;
+        }
         this.lookDelta.x += e.clientX - p.x;
         this.lookDelta.y += e.clientY - p.y;
         p.x = e.clientX;
@@ -156,7 +181,7 @@ export class Input {
       pointers.delete(e.pointerId);
       if (p.kind === 'block') this.setBlock('mouse', false);
       // toque rápido na tela (ou clique sem arrastar) = Atacar; arrastar só gira a câmera
-      if (p.kind === 'look' && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < (p.mouse ? 6 : 12) && performance.now() - p.at < (p.mouse ? 350 : 280)) {
+      if (p.kind === 'look' && !p.pinch && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < (p.mouse ? 6 : 12) && performance.now() - p.at < (p.mouse ? 350 : 280)) {
         this.pressed.attack = true;
       }
       if (p.kind === 'stick') {

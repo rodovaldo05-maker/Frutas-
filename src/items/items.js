@@ -96,6 +96,45 @@ export function unequip(save, slot) {
   save.gear[slot] = null;
 }
 
+// ===== Venda (Comprador de Itens) =====
+// Paga 35% do preço da peça, mais o que ela foi melhorada (+8% por nível, +6% por estrela);
+// peça gasta vale menos (metade quando quebrada). Peça equipada não é vendida.
+export const SELL_RATE = 0.35;
+export function sellValue(it) {
+  const d = ITEMS[it?.id];
+  if (!d) return 0;
+  const wear = d.dur > 0 ? 0.5 + 0.5 * Math.max(0, Math.min(1, (it.dur ?? d.dur) / d.dur)) : 1;
+  return Math.max(1, Math.round(d.preco * SELL_RATE * itemMult(it) * wear));
+}
+
+export const isEquipped = (save, uid) => Object.values(save.gear ?? {}).includes(uid);
+
+export function sellItem(save, uid) {
+  const i = (save.items ?? []).findIndex((x) => x.uid === uid);
+  if (i < 0) return { ok: false, why: 'Item não encontrado' };
+  if (isEquipped(save, uid)) return { ok: false, why: 'Tire o item antes de vender' };
+  const it = save.items[i];
+  const coins = sellValue(it);
+  save.items.splice(i, 1);
+  save.coins = (save.coins ?? 0) + coins;
+  return { ok: true, coins, item: it };
+}
+
+// vende de uma vez os itens não equipados que passam no filtro; devolve { count, coins }
+export function sellMany(save, filter = () => true) {
+  let count = 0;
+  let coins = 0;
+  for (const it of [...(save.items ?? [])]) {
+    if (isEquipped(save, it.uid) || !filter(it, ITEMS[it.id])) continue;
+    const r = sellItem(save, it.uid);
+    if (r.ok) {
+      count++;
+      coins += r.coins;
+    }
+  }
+  return { count, coins };
+}
+
 export const equipped = (save) => SLOTS.map((s) => save.items.find((x) => x.uid === save.gear?.[s])).filter(Boolean);
 
 // Soma dos atributos dos itens equipados (quebrados não contam), com tetos; sinergias só

@@ -625,6 +625,23 @@ export const FRUTOMotion = (() => {
   const roll=onGround?.12*(1-smooth(f/.17))-.13*smooth((f-.82)/.18):-.12*Math.cos(f*Math.PI);
   return {onGround,z:reach*wave,lift:lift*.24*amount,roll:roll*amount,wave};
  }
+ // Golpes de perna do M1 (atualização 20): a perna do chute segue chaves próprias
+ // [t, lateral, altura, frente, ponta do pé], somadas ao alvo do tornozelo do passo.
+ function kickAt(kick,t){
+  const k=kick.keys;let i=1;
+  while(i<k.length-1&&t>k[i][0])i++;
+  const a=k[i-1],b=k[i],u=smooth((t-a[0])/Math.max(1e-4,b[0]-a[0]));
+  return [mix(a[1],b[1],u),mix(a[2],b[2],u),mix(a[3],b[3],u),mix(a[4]??0,b[4]??0,u)];
+ }
+ function kickLeg(kick,t,ankle,sign){const o=kickAt(kick,t);ankle.x+=sign*o[0];ankle.y+=o[1];ankle.z+=o[2];}
+ function kickRoll(kick,t){return kickAt(kick,t)[3];}
+ // Registra poses e clipes vindos de fora (fichas do M1 em combat/m1Catalog.js).
+ function define(def){
+  for(const [name,a] of Object.entries(def.poses||{}))P[name]=pose(...a);
+  const {poses,...rest}=def;
+  clips[def.id]={...rest,keys:[...def.keys].sort((a,b)=>a[0]-b[0])};
+  return clips[def.id];
+ }
  function apply(T,body,data,state){
   const j=body.joints,vec=(x,y,z)=>new T.Vector3(x,y,z),id=state.id||'idle',clip=clips[id],t=state.t||0;
   reset(body,data.segments);if(id==='rest')return;
@@ -691,7 +708,8 @@ export const FRUTOMotion = (() => {
    const wave=foot.wave;
    if(!state.externalLegs){
     const ankle=vec(sign*(.29+(clip?p.drop*.11:.01)),.25+foot.lift+(.06+(sign===1?.30:.16))*jump,sign*p.stance+foot.z+(sign===1?.10:-.12)*jump);
-    const roll=foot.roll-.13*jump+(clip?.dashFoot?signatureDashSole(clip,t,side,ankle):0);
+    if(clip?.kick&&clip.kick.side===side)kickLeg(clip.kick,t,ankle,sign);
+    const roll=foot.roll-.13*jump+(clip?.dashFoot?signatureDashSole(clip,t,side,ankle):0)+(clip?.kick&&clip.kick.side===side?kickRoll(clip.kick,t):0);
     if(dodge)dashStep(ankle,sign,dodge);
     twoBone(T,body,j['coxa_'+side],j['canela_'+side],j['pe_'+side],ankle,vec(sign*.35,.95,1.75),.73,.72,roll);
    }
@@ -755,5 +773,5 @@ export const FRUTOMotion = (() => {
    Object.defineProperty(clips,key,{value:{...clips[base],id:key,sourceId:base}});
   }
  }
- return {clips,baseMoveNames,baseDurations,gaitFrame,apply,eating,twoBone,socket,reset};
+ return {clips,poses:P,define,baseMoveNames,baseDurations,gaitFrame,apply,eating,twoBone,socket,reset};
 })();

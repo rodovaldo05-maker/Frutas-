@@ -167,11 +167,22 @@ export function removeFormParts(info) {
   for (const p of info?.parts ?? []) p.removeFromParent();
 }
 
-// Animação das partes: asas batendo (burst = impulso de uma batida) e cauda balançando
-export function animateForm(info, t, burst = 0, speed = 0) {
+// Animação das partes: asas batendo (burst = impulso de uma batida) e cauda balançando.
+// strike (M1 da forma híbrida, atualização 20): { part: 'cauda' | 'asas', k: 0..1, side }:
+// a cauda chicoteia da base para a ponta (cada segmento atrasado) e as asas varrem à frente.
+export function animateForm(info, t, burst = 0, speed = 0, strike = null) {
   if (!info) return;
-  for (const { group, side } of info.wings ?? []) group.rotation.z = side * (Math.sin(t * 5) * 0.08 + burst * 0.9 * Math.sin(Math.min(1, burst) * Math.PI));
+  const wingSweep = strike?.part === 'asas' ? Math.sin(Math.PI * strike.k) : 0;
+  for (const { group, side } of info.wings ?? []) {
+    group.rotation.z = side * (Math.sin(t * 5) * 0.08 + burst * 0.9 * Math.sin(Math.min(1, burst) * Math.PI) + wingSweep * 0.7);
+    group.rotation.y = -side * wingSweep * 0.9; // ponta da asa vem à frente no corte
+  }
   (info.tail ?? []).forEach((g, i) => {
-    g.rotation.y = Math.sin(t * (3 + speed * 0.4) - i * 0.7) * (0.25 + i * 0.05);
+    let y = Math.sin(t * (3 + speed * 0.4) - i * 0.7) * (0.25 + i * 0.05);
+    if (strike?.part === 'cauda') {
+      const u = Math.max(0, Math.min(1, strike.k * 1.25 - i * 0.08)); // a ponta chega depois
+      y += strike.side * (Math.sin(Math.PI * u) * (0.9 + i * 0.25) - 0.6 * (1 - u) * (u > 0 ? 1 : 0));
+    }
+    g.rotation.y = y;
   });
 }

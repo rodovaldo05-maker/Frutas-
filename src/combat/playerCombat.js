@@ -33,6 +33,13 @@ export class PlayerCombat {
     this.hitstop = Math.max(0, this.hitstop - dt);
     const slow = this.hitstop > 0 ? 0.08 : 1;
     const can = this.canFight() && !this.powers?.busy;
+    // controle incapacitante, desmaio ou morte: a sequência do M1 volta ao M1-1
+    if (c.stunned > 0 || c.faint > 0 || c.dead) {
+      if (this.runner.busy || this.runner.comboStep) {
+        this.runner.reset();
+        c.action = null;
+      }
+    }
     if (input.attackPressed && (can || this.runner.busy)) this.runner.press();
     // esquiva só cancela depois do contato; antes disso o golpe vai até o fim
     if (this.runner.busy && !this.runner.recovering) input.dashPressed = false;
@@ -64,7 +71,9 @@ export class PlayerCombat {
     if (cur && cur !== before) this.beginAttack(cur, input, targets);
     if (cur) {
       c.attackLock = Math.max(c.attackLock, 0.05);
-      c.action = { clip: this.runner.attacks[cur.id].clip, t: cur.t };
+      const a = this.runner.attacks[cur.id];
+      // forma híbrida: variante própria do golpe (mesmo tempo, mesmo quadro de impacto)
+      c.action = { clip: (this.hybrid?.() && a.clipHybrid) || a.clip, t: cur.t };
     } else if (!this.powers?.busy) c.action = null;
     if (strike) this.strike(strike, targets);
   }
@@ -97,7 +106,7 @@ export class PlayerCombat {
     const room = best ? clamp(bd - 2.4, 0, a.lunge) : a.lunge;
     const v = room / 0.16;
     c.shove(Math.sin(c.yaw) * v, Math.cos(c.yaw) * v, 0.16);
-    this.onEvent('swing', { attack: cur.id, step: cur.step });
+    this.onEvent('swing', { attack: cur.id, step: cur.step, total: this.runner.combo.length, m1: a.m1 ?? 0 });
   }
 
   strike(attack, targets) {
@@ -105,19 +114,27 @@ export class PlayerCombat {
     this.onEvent('slash', { attack });
     const s = this.stats();
     let landed = 0;
+    let first = null;
     for (const t of targets) {
       if (!t.alive) continue;
       if (!inReach(me, { x: t.pos.x, y: t.pos.y, z: t.pos.z }, attack, { radius: t.radius ?? 0.9, arc: attack.arc ?? 0.45 })) continue;
       // espada: pontos de Espada × proficiência; soco e combo de fruta: pontos de Força
       const mult = (attack.weapon ? s.weapon * (s.prof ?? 1) : s.melee * (attack.styleMult ?? 1)) * (s.armor ?? 1);
       const damage = computeDamage(attack.damage, { mult, defense: t.defense ?? 0 });
-      const r = t.receiveHit({ attacker: me, attack, damage, from: 'jogador' });
+      // reações do catálogo do M1: levantar um pouco (gancho, chifrada) ou puxar (atração)
+      let effect = null;
+      if (attack.effect?.hop) effect = { hop: attack.effect.hop };
+      if (attack.effect?.pullIn) effect = { pull: { x: me.x + Math.sin(me.yaw) * 2.4, z: me.z + Math.cos(me.yaw) * 2.4 } };
+      const r = t.receiveHit({ attacker: me, attack, damage, from: 'jogador', effect });
       if (!r) continue;
       landed += 1;
+      first ??= t;
       this.hitstop = Math.max(this.hitstop, attack.hitstop);
       this.onEvent('hit', { target: t, attack, damage: r.damage, result: r.result });
     }
     if (!landed) this.onEvent('whiff', { attack });
+    // evento de impacto da animação: efeito e som do golpe saem daqui, uma vez por golpe
+    this.onEvent('impact', { attack, target: first, landed });
   }
 
   // Golpe de um inimigo chega ao jogador. Devolve o resultado (para o inimigo reagir).

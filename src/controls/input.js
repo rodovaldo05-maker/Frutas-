@@ -47,7 +47,7 @@ export class Input {
       if (c === 'KeyR') this.toggleSprint();
       if (c === 'Escape') this.onPause();
       if (c === 'KeyU') this.onToggleGlider();
-      if (c === 'KeyJ') this.pressed.attack = true;
+      if (c === 'KeyJ' && !e.repeat) this.pressed.attack = true; // segurar não repete o M1
       if (c === 'KeyF') this.pressed.race = true;
       if (c === 'KeyH') this.pressed.form = true; // forma híbrida (frutas de fera)
       if (c === 'KeyG') this.pressed.armor = true;

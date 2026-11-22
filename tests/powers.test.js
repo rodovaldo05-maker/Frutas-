@@ -51,10 +51,11 @@ describe('poderes das frutas: dados', () => {
     expect(powersOf(fruit('lobo')).map((p) => p.nome)).toEqual(['Rasgo da Presa', 'Uivo de Caça', 'Caçada Lunar']);
   });
 
-  it('cada fruta tem o próprio combo (golpes assinados do laboratório)', () => {
+  it('cada fruta tem o próprio M1 de quatro golpes (catálogo oficial)', () => {
     const st = fruitStyle(fruit('brasa'));
-    expect(st.combo).toEqual(['brasa_j1', 'brasa_j2', 'brasa_j3']);
-    expect(st.attacks.brasa_j1.damage).toBe(9);
+    expect(st.combo).toEqual(['brasa_m1_1', 'brasa_m1_2', 'brasa_m1_3', 'brasa_m1_4']);
+    expect(st.attacks.brasa_m1_1.nome).toBe('Punho de Ignição');
+    expect(st.attacks.brasa_m1_1.damage).toBe(10); // unidade 34/2,85 × 0,85
     const r = new AttackRunner(st);
     r.press();
     const ids = [];
@@ -62,7 +63,7 @@ describe('poderes das frutas: dados', () => {
       const s = r.update(1 / 60);
       if (s) ids.push(s.id);
     }
-    expect(ids).toEqual(['brasa_j1']);
+    expect(ids).toEqual(['brasa_m1_1']);
     expect(fruitStyle(null).combo).toEqual(['jab', 'direto', 'gancho']);
   });
 

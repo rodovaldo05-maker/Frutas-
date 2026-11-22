@@ -117,6 +117,17 @@ Bestas marinhas e clima (atualização 19): Serpente de Coral, Mandíbula Cinzen
 Profundezas surgem no mar aberto com aviso e três fases e são enfrentadas com o canhão; clima
 por mar (sol, chuva, tempestade com raios) e destroços à deriva com baú.
 
+M1 das frutas (atualização 20, Prompt Mestre — fases A e C): cada uma das 16 frutas tem
+quatro ataques básicos próprios (M1-1 a M1-4, 64 no total, com os nomes do catálogo
+oficial: Jab de Pressão, Chute Solar, Mordida Predatória, Esmagamento Dracônico…). Um
+clique é um golpe; o próximo clique só entra nos últimos 8 quadros do golpe (guardado por
+0,35 s), há 0,65 s para continuar depois da recuperação e, após o M1-4, a sequência volta ao
+M1-1. Cada golpe tem ficha quadro a quadro (poses por articulação, quadro de impacto,
+colisão, hitstop de 3/4/5/7 quadros, dano 0,85/0,95/1,05/1,25), chutes com a perna guiada,
+efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (cauda e asas
+acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
+[docs/14-m1-fichas.md](docs/14-m1-fichas.md).
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

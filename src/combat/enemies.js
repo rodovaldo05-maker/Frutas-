@@ -295,7 +295,7 @@ export class Recruta {
       this.guard.holding = false;
       this.set('down');
       this.onDefeated?.(this);
-    } else if (this.frozen > 0 || this.lift > 0 || this.liftV > 0) {
+    } else if (this.frozen > 0 || ((this.lift > 0 || this.liftV > 0) && !effect?.hop)) {
       this.set('stun');
       this.stunTime = Math.max(this.frozen, 0.9);
     } else if (r.result !== 'break') {
@@ -519,6 +519,8 @@ export class Recruta {
       this.set('stun');
       this.stunTime = Math.max(e.freeze ?? 0, 0.9);
     }
+    // levantamento curto do M1 (gancho, chifrada, maré ascendente)
+    if (e.hop && this.frozen <= 0 && this.alive) this.liftV = Math.max(this.liftV, e.hop);
     if (e.launch && this.frozen <= 0) {
       this.liftV = 8 + 6 * e.launch;
       this.attack = null;

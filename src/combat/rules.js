@@ -5,6 +5,7 @@
 
 import { FRUTOMotion } from '../animation/fruto-motion.js';
 import { clamp } from '../core/math.js';
+import { m1Of, M1_BASE, M1_RULES, CATALOG, FPS } from './m1Catalog.js';
 
 export const M = 2.2;
 
@@ -41,21 +42,29 @@ export function timing(id, attacks = ATTACKS) {
   return clipTiming(attacks[id].clip);
 }
 
-// Combo próprio de uma fruta comida (golpes assinados do laboratório: fruta_j1..j3).
-// Sem clipes próprios (frutas míticas), usa Jab, Direto e Gancho com o dano da fruta.
+// Combo de M1 de uma fruta comida (atualização 20): os quatro golpes do catálogo oficial
+// (fruta_m1_1..4), com o dano da unidade básica da fruta × 0,85 / 0,95 / 1,05 / 1,25,
+// hitstop em quadros e o efeito de cada golpe. As frutas de fera têm a variante híbrida.
 export function fruitStyle(fruit) {
   if (!fruit?.combat) return { attacks: ATTACKS, combo: COMBO, nome: 'Combate Básico' };
+  const recs = m1Of(fruit.id);
+  if (recs.length !== 4) return { attacks: ATTACKS, combo: COMBO, nome: 'Combate Básico' };
   const dmg = fruit.combat.damage || [10, 12, 16];
+  const unit = dmg.reduce((a, b) => a + b, 0) / (M1_BASE.damage[0] + M1_BASE.damage[1] + M1_BASE.damage[2]);
   const attacks = {};
   const combo = [];
-  for (let i = 0; i < 3; i++) {
-    const own = FRUTOMotion.clips[`${fruit.id}_j${i + 1}`];
-    const base = ATTACKS[COMBO[i]];
-    const id = `${fruit.id}_j${i + 1}`;
-    attacks[id] = { ...base, clip: own ? id : base.clip, nome: own?.label || base.nome, damage: dmg[i] ?? base.damage, fruit: fruit.id };
-    combo.push(id);
+  for (const r of recs) {
+    const i = r.passo - 1;
+    attacks[r.id] = {
+      clip: r.id, clipHybrid: r.formas.includes('hibrida') ? `${r.id}_h` : null, nome: r.nome,
+      damage: Math.round(unit * r.dano), posture: M1_BASE.posture[i], range: r.hitbox.alcance * M, arc: r.hitbox.arco,
+      knock: M1_BASE.knock[i] * M, reaction: r.reacao, hitstop: r.hitstop / FPS, lunge: r.avanco * M,
+      heavy: r.passo === 4, fruit: fruit.id, m1: r.passo, vfx: r.vfx, sfx: r.sfx, effect: r.efeito, low: r.hitbox.baixo,
+      ground: r.hitbox.solo, appendage: r.apendice, kind: r.tipo, socket: r.hitbox.socket,
+    };
+    combo.push(r.id);
   }
-  return { attacks, combo, nome: fruit.combat.name || fruit.name };
+  return { attacks, combo, nome: CATALOG[fruit.id].estilo, m1: true };
 }
 
 // Fórmula do doc 05 (parte física): base × atributo × defesa do alvo × mitigação
@@ -75,7 +84,14 @@ export function inReach(attacker, target, attack, { radius = 0.9, arc = 0.45 } =
   return facing >= arc;
 }
 
-// Sequência de golpes: combo com janela, entrada guardada (buffer) e evento de contato.
+// Máquina do M1 (Prompt Mestre, seção 2), a mesma para fruta, estilo e espada:
+// - um clique válido executa UM golpe; segurar não repete;
+// - com um golpe em curso, o próximo clique só é aceito nos últimos 8 quadros dele e fica
+//   guardado (um só, sem duplicar) por até 0,35 s;
+// - os golpes não se sobrepõem: o próximo começa quando o atual termina;
+// - depois da recuperação há 0,65 s para continuar a sequência; passou disso, volta ao M1-1;
+// - depois do último golpe (M1-4 nas frutas) volta ao M1-1;
+// - reset() zera a sequência (troca de fruta, morte, atordoamento ou ação incompatível).
 export class AttackRunner {
   constructor({ speed = 1, attacks = ATTACKS, combo = COMBO } = {}) {
     this.speed = speed;
@@ -85,22 +101,31 @@ export class AttackRunner {
     this.buffer = 0;
     this.comboStep = 0;
     this.comboTimer = 0;
+    this.clicks = 0; // cliques aceitos (para testes e HUD)
   }
 
   get busy() {
     return !!this.current;
   }
 
-  // Aperto de Atacar; começa já ou guarda para emendar no próximo golpe
+  // Clique de Atacar
   press() {
-    this.buffer = 0.32;
+    const c = this.current;
+    if (c) {
+      const left = (c.tm.duration - c.t) / this.speed;
+      if (left > M1_RULES.bufferFrames / FPS) return false; // cedo demais: ignorado
+    }
+    if (this.buffer > 0) return false; // já há um clique guardado
+    this.buffer = M1_RULES.bufferExpire;
+    this.clicks += 1;
+    return true;
   }
 
-  // Troca o estilo (combo de uma fruta ou o Combate Básico)
+  // Troca o estilo (combo de uma fruta, de um estilo de luta ou da espada): recomeça do M1-1
   setStyle({ attacks, combo }) {
     this.attacks = attacks;
     this.combo = combo;
-    this.cancel();
+    this.reset();
   }
 
   start(step) {
@@ -110,16 +135,26 @@ export class AttackRunner {
     return this.current;
   }
 
+  // Interrompe o golpe e zera a sequência
   cancel() {
     this.current = null;
     this.buffer = 0;
     this.comboStep = 0;
+    this.comboTimer = 0;
   }
 
-  // Avança; devolve o golpe no quadro de contato (uma vez) e se pode emendar
+  reset() {
+    this.cancel();
+  }
+
+  // Próximo passo da sequência (0 = M1-1) e quanto resta da janela de continuação
+  get nextStep() {
+    return this.comboTimer > 0 ? this.comboStep : 0;
+  }
+
+  // Avança; devolve o golpe no quadro de impacto (uma vez)
   update(dt, canStart = true) {
     this.buffer = Math.max(0, this.buffer - dt);
-    this.comboTimer = Math.max(0, this.comboTimer - dt);
     let strike = null;
     const c = this.current;
     if (c) {
@@ -128,23 +163,22 @@ export class AttackRunner {
         c.struck = true;
         strike = { ...this.attacks[c.id], id: c.id, step: c.step };
       }
-      // depois do contato, um novo aperto emenda o próximo golpe
-      const chain = c.t >= c.tm.release + c.tm.active && this.buffer > 0 && c.step < this.combo.length - 1;
-      if (chain) {
-        this.start(c.step + 1);
-      } else if (c.t >= c.tm.duration) {
-        this.comboStep = c.step + 1 < this.combo.length ? c.step + 1 : 0;
-        this.comboTimer = c.step + 1 < this.combo.length ? 0.3 : 0;
+      if (c.t >= c.tm.duration) {
+        const next = c.step + 1;
+        const last = next >= this.combo.length;
+        this.comboStep = last ? 0 : next;
+        this.comboTimer = last ? 0 : M1_RULES.window;
         this.current = null;
       }
+    } else {
+      this.comboTimer = Math.max(0, this.comboTimer - dt);
+      if (this.comboTimer <= 0) this.comboStep = 0;
     }
-    if (!this.current && this.buffer > 0 && canStart) {
-      this.start(this.comboTimer > 0 ? this.comboStep : 0);
-    }
+    if (!this.current && this.buffer > 0 && canStart) this.start(this.nextStep);
     return strike;
   }
 
-  // Já passou do contato? (esquiva pode cancelar a recuperação)
+  // Já passou da janela de colisão? (esquiva pode cancelar a recuperação)
   get recovering() {
     const c = this.current;
     return !!c && c.t >= c.tm.release + c.tm.active;

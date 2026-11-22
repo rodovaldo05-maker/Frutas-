@@ -291,6 +291,17 @@ body.touch.lefty .tracker { left: auto; right: calc(12px + var(--safe-r)); top: 
 }
 .keys.fade { opacity: 0; }
 
+/* indicador discreto do M1 (1/4 a 4/4): aparece no golpe e some ao fim da janela */
+.m1-step {
+  position: absolute; left: calc(50% + 64px); top: 47%; display: flex; gap: 4px; align-items: center;
+  opacity: 0; transition: opacity 0.25s; pointer-events: none; font: 800 calc(11px * var(--text, 1)) var(--body-font);
+  color: rgba(255, 244, 216, 0.9); text-shadow: 0 1px 2px #000;
+}
+.m1-step.on { opacity: 0.85; }
+.m1-step i { width: 7px; height: 7px; border-radius: 2px; background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.m1-step i.lit { background: var(--m1c, #ffe7a3); }
+.m1-step b { margin-left: 3px; font-weight: 800; }
+
 /* botões de ação (toque) */
 .pad { display: none; }
 body.touch .pad { display: block; }

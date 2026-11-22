@@ -213,3 +213,40 @@ Código: `src/combat/rules.js`, `src/combat/playerCombat.js`, `src/combat/enemie
   (congelado), laranja piscando (queimando) ou amarelo (choque).
 
 Código: `src/combat/conditions.js`, `src/combat/enemies.js`; testes em `tests/elemental.test.js`.
+
+## 12. Situação: M1 de quatro golpes por fruta (atualização 20 — Prompt Mestre, fases A e C)
+
+- **Auditoria (fase A).** Antes: `AttackRunner` com 3 golpes por estilo, clique guardado por
+  0,32 s a qualquer momento e encadeamento logo depois do contato (o golpe seguinte cortava a
+  recuperação do anterior); as frutas usavam os golpes assinados do laboratório `fruta_j1..j3`
+  e as míticas repetiam os do Lobo; segurar J repetia golpes pela repetição do teclado.
+- **Catálogo (fase C).** `src/combat/m1Catalog.js` monta 64 fichas (`fruta_m1_1..4`) com os
+  nomes da seção 4 do Prompt Mestre. Cada uma tem quadros totais (18/20/24/30 × peso da fruta),
+  quadro de impacto (7/9/12/16 × peso), quadros ativos, fases (preparo, aceleração, colisão,
+  seguimento, recuperação), seis quadros-chave com os ângulos de quadril, tronco, cabeça,
+  ombros, braços, cotovelos, punhos e pernas, alvo do tornozelo nos chutes, hitbox, efeito,
+  som, reação, hitstop (3/4/5/7) e janela do próximo clique. A tabela está em
+  [14-m1-fichas.md](14-m1-fichas.md).
+- **Animação.** 32 tipos de movimento autorais (jab, cruzado, gancho, martelo, palma, palma potente,
+  cotovelada, chute circular, chute frontal, rasteira, chute aéreo, garra, garra rasteira,
+  mordida, salto com garras, corte espacial, passo com golpe, golpe reverso, palmas
+  convergentes, golpe ascendente, escudo, soco no chão, atração, corte de asa, mergulho, giro,
+  cauda, chifrada, investida de ombro, investida com soco, rugido, esmagamento) viram clipes
+  do FRUTOMotion (`FRUTOMotion.define`), com o lado ativo espelhado. A pose de contato cai
+  exatamente no quadro de impacto. Chutes guiam o tornozelo (`kick`) pela mesma IK das pernas.
+- **Máquina do M1.** Um clique = um golpe; com golpe em curso, só os cliques dos últimos 8
+  quadros contam (um só fica guardado, 0,35 s); golpes não se sobrepõem; 0,65 s de janela depois
+  da recuperação; M1-4 volta ao M1-1; troca de fruta, transformação, atordoamento e desmaio
+  zeram a sequência. Vale também para estilos de luta e espada (com 3 golpes).
+- **Impacto.** O golpe só procura alvos no quadro de impacto e solta o evento `impact` uma vez:
+  dele saem o efeito da fruta (`LabFx.m1`, contato do laboratório + detalhe do golpe: onda
+  cinética, chama, gelo, raio, garras, sombra, água, prisma, anéis sonoros, penas, areia,
+  linhas magnéticas, poeira, fogo azul, nuvens, rachaduras), o som e a trepidação. Gancho,
+  chifrada e golpes ascendentes levantam um pouco o alvo; a Atração Forçada puxa.
+- **Formas.** Lobo, Falcão, Besta, Fênix e os Dragões têm a variante híbrida `_h` (base mais
+  baixa, garras abertas, mesmo tempo de impacto); a cauda chicoteia da base para a ponta e as
+  asas varrem à frente nos golpes de cauda e de asa. Formas completas ainda não existem no jogo.
+- **Interface.** Indicador discreto 1/4 a 4/4 ao lado do personagem, na cor da fruta. Sem botão
+  novo: toque rápido na tela (Android) ou clique esquerdo / J (PC).
+
+Testes de aceitação em `tests/m1.test.js` (testes 1 a 5 e 7 da seção 18).

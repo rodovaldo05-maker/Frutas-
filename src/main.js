@@ -53,6 +53,7 @@ import { computeDamage } from './combat/rules.js';
 import { FruitPowers } from './combat/powers.js';
 import { powersOf } from './fruits/powers.js';
 import { fruitStyle } from './combat/rules.js';
+import { FRUTOMotion } from './animation/fruto-motion.js';
 import { domainOf, addDomainXp, domainBonus } from './progression/domain.js';
 import { PowerFx } from './vfx/powerFx.js';
 import { SkillBar } from './ui/skillBar.js';
@@ -370,7 +371,23 @@ async function boot() {
       const p = ctl.pos;
       const head = { x: p.x, y: p.y + 2.4, z: p.z };
       switch (name) {
-        case 'swing': audio.play('base', 'swing', 0.55 + d.step * 0.2); break;
+        case 'swing':
+          audio.play('base', 'swing', 0.55 + d.step * 0.2);
+          showM1Step(d.step, d.total, d.m1);
+          break;
+        case 'impact': {
+          // evento de impacto da animação (M1): efeito da fruta e som saem uma vez por golpe
+          const a = d.attack;
+          if (!a.m1) break;
+          const f = eatenFruit();
+          const dir = { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) };
+          const at = m1Point(a, d.target);
+          if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir);
+          audio.play(d.landed ? 'impacto' : 'base', d.landed ? 'acerto' : 'swing', a.heavy ? 1 : 0.55 + a.m1 * 0.08);
+          if (d.landed) shake = Math.max(shake, [0.08, 0.1, 0.14, 0.22][a.m1 - 1]);
+          if (d.landed && a.heavy) vibrate(30);
+          break;
+        }
         case 'slash': {
           // rastro do corte de espada: arco de cubos na cor da lâmina
           const w = WEAPONS[d.attack.weapon];
@@ -393,15 +410,17 @@ async function boot() {
           }
           floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
           // soco com a fruta equipada: contato do laboratório na cor da fruta
-          if (save.equipped === 'fruta' && eatenFruit() && !d.attack.id?.startsWith('espada')) lab.punch(eatenFruit().id, at, { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) }, d.attack.heavy ? 2 : 0);
+          if (save.equipped === 'fruta' && eatenFruit() && !d.attack.id?.startsWith('espada') && !d.attack.m1) lab.punch(eatenFruit().id, at, { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) }, d.attack.heavy ? 2 : 0);
           // faíscas do golpe (espada na cor do fio, soco em tom claro)
           {
             const c = d.attack.id?.startsWith('espada') ? WEAPONS[save.weapon]?.cores?.fio ?? '#ffffff' : '#fff0c8';
             fx.spark(at, c, { count: d.attack.heavy ? 7 : 4, speed: 4.5, size: 0.45, up: 2.5, life: 0.3 });
             if (d.attack.heavy) fx.flash(at, c, 1.8, 0.18);
           }
-          audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
-          shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
+          if (!d.attack.m1) {
+            audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
+            shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
+          }
           if (t.hostile) raceSys.onHostileHit(d.attack.weapon ? 'espada' : d.attack.fruit ? 'fruta' : 'soco');
           if (d.attack.style) grantStyle(d.attack.style, t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           if (vontade.armor && t.hostile) grantMastery('vontade:armadura', 'Vontade de Armadura', 1, 'arm', true, t);
@@ -463,6 +482,49 @@ async function boot() {
       }
     },
   });
+  // forma híbrida ativa: o M1 usa a variante híbrida dos golpes (mesmo quadro de impacto)
+  combat.hybrid = () => !!form;
+  // Ponto do impacto do M1: o encaixe do golpe (punho, palma, pé, boca) no corpo animado;
+  // com alvo atingido, entre o encaixe e o peito do alvo
+  const m1Tmp = new THREE.Vector3();
+  const m1Tmp2 = new THREE.Vector3();
+  function m1Point(a, target) {
+    const sk = player.body.sockets;
+    let p;
+    if (a.socket === 'palmas' && sk.palma_E && sk.palma_D) p = sk.palma_E.getWorldPosition(m1Tmp).add(sk.palma_D.getWorldPosition(m1Tmp2)).multiplyScalar(0.5);
+    else if (sk[a.socket]) p = sk[a.socket].getWorldPosition(m1Tmp);
+    else p = m1Tmp.set(ctl.pos.x + Math.sin(ctl.yaw) * 2, ctl.pos.y + 2.2, ctl.pos.z + Math.cos(ctl.yaw) * 2);
+    if (target?.pos) {
+      p.x = (p.x + target.pos.x) / 2;
+      p.z = (p.z + target.pos.z) / 2;
+      p.y = (p.y + target.pos.y + (a.low ? 0.6 : 2.2)) / 2;
+    }
+    return { x: p.x, y: p.y, z: p.z };
+  }
+  // Indicador discreto da sequência (1/4 a 4/4); some ao fim da janela de continuação
+  const m1El = $('m1-step');
+  let m1Hide = 0;
+  function showM1Step(step, total, m1) {
+    if (!m1El || !m1 || save.settings?.m1Indicator === false) return;
+    const dots = m1El.querySelectorAll('i');
+    dots.forEach((el, i) => el.classList.toggle('lit', i <= step));
+    m1El.querySelector('b').textContent = `${step + 1}/${total}`;
+    m1El.style.setProperty('--m1c', eatenFruit()?.color ?? '#ffe7a3');
+    m1El.classList.add('on');
+    clearTimeout(m1Hide);
+    m1Hide = setTimeout(() => m1El.classList.remove('on'), 1300);
+  }
+  // Cauda e asas da forma híbrida acompanham o golpe (chicote de cauda, corte de asa)
+  function m1Appendage() {
+    const cur = combat.runner.current;
+    if (!cur || !form) return null;
+    const a = combat.runner.attacks[cur.id];
+    if (!a?.appendage || (a.appendage !== 'cauda' && a.appendage !== 'asas')) return null;
+    const tm = cur.tm;
+    const k = Math.max(0, Math.min(1, (cur.t - tm.release * 0.45) / (tm.duration - tm.release * 0.45)));
+    return { part: a.appendage, k, side: a.kind === 'tail' && cur.step % 2 ? -1 : 1 };
+  }
+
   // ===== Condições (atualização 6): queimando, congelado, lento, choque, molhado =====
   const COND_FLOAT = { queimando: 'forte', congelado: 'esquiva', lento: 'esquiva', choque: 'perfeita' };
   const conditions = new Conditions({
@@ -586,6 +648,7 @@ async function boot() {
   // Forma híbrida (frutas de fera; atualização 13): partes no corpo e números próprios
   function toggleForm(off = false) {
     const f = eatenFruit();
+    combat.runner.reset(); // transformar é ação incompatível: a sequência do M1 recomeça
     if (form) {
       removeFormParts(form.info);
       form = null;
@@ -2275,7 +2338,7 @@ async function boot() {
       }
       wingBurst = Math.max(0, wingBurst - animDt * 2.2);
       if (raceParts?.wings) flapWings(raceParts, clock, wingBurst);
-      if (form) animateForm(form.info, clock, wingBurst, ctl.speed);
+      if (form) animateForm(form.info, clock, wingBurst, ctl.speed, m1Appendage());
       // aura do despertar: brilho pulsando na cor da fruta e faíscas em volta (o corpo não muda)
       if (powers.awakened && mode === 'game') {
         const c = eatenFruit()?.color ?? '#ffd36b';
@@ -2582,6 +2645,8 @@ async function boot() {
     sea,
     fleet,
     beasts,
+    motion: FRUTOMotion,
+    toggleForm: (off) => toggleForm(off),
     spawnWreck: () => spawnWreck(),
     forgeUi,
     toggleForm: () => toggleForm(),

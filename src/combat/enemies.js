@@ -19,6 +19,31 @@ export const RECRUTA = {
   look: { skin: '#b9825c', hair: '#2a1d14', shirt: '#7a2a2a', shorts: '#2b2b36', shoes: '#3a2a20' },
 };
 
+// Recrutas elementais (atualização 6): golpes com elemento e um ataque marcado no chão
+// (círculo de aviso de 0,9 s onde o jogador está; sair ou esquivar evita)
+const ELEMENTAL = { level: 4, hp: 140, xp: 80, coins: 25, damageMult: 0.9, aggro: 11, camp: 14, leash: 24 };
+export const RECRUTAS_ELEMENTAIS = {
+  fogo: {
+    ...RECRUTA, ...ELEMENTAL, nome: 'Recruta de Brasa', element: 'fogo', cor: '#ff6a1a', faixa: '#ff8a2a',
+    look: { skin: '#a8714c', hair: '#2a120c', shirt: '#a8321c', shorts: '#3a1a14', shoes: '#2a1a10' },
+    meleeEffects: { queimando: { duration: 3, stacks: 1 } },
+    special: { nome: 'Chão em Brasa', clip: 'brasa2', cooldown: 7, telegraph: 0.9, radius: 3, damage: 14, effects: { queimando: { duration: 4, stacks: 2 } } },
+  },
+  gelo: {
+    ...RECRUTA, ...ELEMENTAL, nome: 'Recruta de Geada', element: 'gelo', cor: '#7fd6ff', faixa: '#bfeeff',
+    look: { skin: '#c29a7c', hair: '#dfe8ef', shirt: '#2f6f9c', shorts: '#1f2f45', shoes: '#2a3a4a' },
+    meleeEffects: { lento: { duration: 2 } },
+    special: { nome: 'Prisão de Gelo', clip: 'geada2', cooldown: 8, telegraph: 0.9, radius: 2.8, damage: 10, effects: { congelado: { duration: 1.2 }, lento: { duration: 2.5 } } },
+  },
+  raio: {
+    ...RECRUTA, ...ELEMENTAL, nome: 'Recruta de Tormenta', element: 'raio', cor: '#ffe45a', faixa: '#fff2a0',
+    look: { skin: '#9a6a48', hair: '#1a1a22', shirt: '#b8902a', shorts: '#2a2a33', shoes: '#22222a' },
+    meleeEffects: { choque: { stacks: 1 } },
+    special: { nome: 'Raio Marcado', clip: 'tormenta0', cooldown: 6, telegraph: 0.9, radius: 2.6, damage: 12, effects: { choque: { stacks: 2 } } },
+  },
+};
+export const ELEMENT_CAMP = { x: 58, z: -30 };
+
 const PART = {
   cabeca: 'skin', tronco: 'shirt', ombro_E: 'shirt', ombro_D: 'shirt', braco_E: 'shirt', braco_D: 'shirt',
   antebraco_E: 'skin', antebraco_D: 'skin', mao_E: 'skin', mao_D: 'skin', cintura: 'shorts', coxa_E: 'shorts', coxa_D: 'shorts',
@@ -177,7 +202,16 @@ export class Recruta {
     const body = FRUTOModels.body(THREE, data, '#ffffff', 1, 1);
     for (const [part, mesh] of Object.entries(body.meshes)) mesh.material.color.set(def.look[PART[part] || 'skin']);
     // faixa na cabeça
-    const band = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.16, 1.08), new THREE.MeshStandardMaterial({ color: '#c0392b', roughness: 0.7 }));
+    const band = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.16, 1.08), new THREE.MeshStandardMaterial({ color: def.faixa || '#c0392b', roughness: 0.7 }));
+    if (def.element) {
+      // punhos que brilham na cor do elemento
+      const glow = new THREE.MeshStandardMaterial({ color: def.cor, emissive: def.cor, emissiveIntensity: 1.2 });
+      for (const side of ['E', 'D']) {
+        const g = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.3, 0.42), glow);
+        g.position.set(0, -0.28, 0.02);
+        body.joints['mao_' + side].add(g);
+      }
+    }
     band.position.set(0, 0.62, 0);
     body.joints.cabeca.add(band);
     this.face = new Face(body.joints.cabeca, { hair: def.look.hair, skin: def.look.skin });
@@ -220,6 +254,7 @@ export class Recruta {
     if (!effect?.pull) this.knock.set(Math.sin(away) * k, 0, Math.cos(away) * k);
     this.hurtAmount = 1;
     this.attack = null;
+    this.specialDone = false;
     if (this.health <= 0) {
       this.alive = false;
       this.guard.holding = false;
@@ -302,6 +337,15 @@ export class Recruta {
             this.chain = Math.random() < 0.35;
           }
         }
+        // ataque marcado (elementais): de média distância, também usa a vez de atacar
+        this.specialCd = (this.specialCd ?? 3) - dt;
+        if (this.def.special && this.state === 'chase' && this.specialCd <= 0 && dist < 13 && (!arena.token || arena.token === this) && player.alive) {
+          arena.token = this;
+          this.specialAt = player.pos.clone();
+          this.specialCd = this.def.special.cooldown;
+          this.set('special');
+          arena.onSpecial?.(this, this.specialAt, this.def.special);
+        }
         break;
       }
       case 'windup': {
@@ -327,7 +371,7 @@ export class Recruta {
           this.knock.set(Math.sin(this.yaw) * 4, 0, Math.cos(this.yaw) * 4);
           const me = { x: this.pos.x, y: this.pos.y, z: this.pos.z, yaw: this.yaw };
           if (player.alive && inReach(me, player.pos, atk, { radius: 0.9 })) {
-            const res = arena.hitPlayer(this, atk, computeDamage(atk.damage * this.def.damageMult));
+            const res = arena.hitPlayer(this, this.def.element ? { ...atk, element: this.def.element, effects: this.def.meleeEffects } : atk, computeDamage(atk.damage * this.def.damageMult));
             if (res?.result === 'perfect') {
               this.attack = null;
               this.set('stun');
@@ -348,6 +392,21 @@ export class Recruta {
             this.strafe = Math.random() < 0.5 ? 1 : -1;
             this.set('chase');
           }
+        }
+        break;
+      }
+      case 'special': {
+        face(yawTo, 8);
+        const sp = this.def.special;
+        if (this.t >= sp.telegraph && !this.specialDone) {
+          this.specialDone = true;
+          arena.resolveSpecial?.(this, this.specialAt, sp);
+        }
+        if (this.t >= sp.telegraph + 0.5) {
+          this.specialDone = false;
+          this.cooldown = Math.max(this.cooldown, 0.8);
+          if (arena.token === this) arena.token = null;
+          this.set('chase');
         }
         break;
       }
@@ -508,6 +567,10 @@ export class Recruta {
       const hold = a.tm.release * 0.55;
       FRUTOMotion.apply(THREE, body, data, { id: ATTACKS[a.id].clip, t: hold * clamp(this.t / 0.2) });
       body.joints.tronco.rotation.y += Math.sin(this.clock * 30) * 0.03;
+    } else if (this.state === 'special') {
+      // gesto do laboratório segurado durante o aviso
+      const c = FRUTOMotion.clips[this.def.special.clip];
+      FRUTOMotion.apply(THREE, body, data, { id: this.def.special.clip, t: Math.min(this.t, c ? c.release : 0.3) });
     } else if (this.state === 'attack' && this.attack) {
       FRUTOMotion.apply(THREE, body, data, { id: ATTACKS[this.attack.id].clip, t: this.attack.t });
     } else {
@@ -554,6 +617,11 @@ export function buildArena({ scene, physics, field, data, visual = true }) {
   const recrutas = [
     [A.x - 8, A.z - 5], [A.x - 11, A.z + 1], [A.x - 7, A.z + 6],
   ].map(([x, z], i) => new Recruta({ id: `recruta-${i + 1}`, x, z, field, scene, data, visual }));
+  // acampamento elemental (nordeste da ilha)
+  const E = ELEMENT_CAMP;
+  [['fogo', E.x - 4, E.z - 4], ['gelo', E.x + 4, E.z], ['raio', E.x - 1, E.z + 5]].forEach(([el, x, z]) => {
+    recrutas.push(new Recruta({ id: `elemental-${el}`, x, z, field, scene, data, def: RECRUTAS_ELEMENTAIS[el], visual }));
+  });
 
   const arena = {
     dummies,

@@ -186,3 +186,30 @@ frutas e das armas, Vontade e estilos de luta.
 
 Código: `src/combat/rules.js`, `src/combat/playerCombat.js`, `src/combat/enemies.js`,
 `src/combat/floatText.js`; testes em `tests/combat.test.js`.
+
+
+## 11. Situação: elementos e condições (atualização 6)
+
+| Condição | Origem | Efeito | Contrajogo |
+|---|---|---|---|
+| Queimando | Fogo | 2/3/4 de dano a cada 0,5 s (1 a 3 acúmulos) | Entrar na água apaga; rolar encurta 1,5 s; molhado não pega fogo |
+| Congelado | Prisão de Gelo | Não anda nem ataca por 1,2 s | Sair do círculo, esquivar ou defender |
+| Lento | Gelo | −40% de velocidade | Passa sozinho |
+| Choque | Raio | Cargas; com 3, atordoado 0,8 s (molhado ganha 1 carga extra) | Defender os golpes de raio; as cargas somem em 6 s |
+| Molhado | Água | Apaga o fogo, deixa vulnerável a choque | — |
+
+- Acampamento Elemental (nordeste da ilha, placa própria): Recrutas de Brasa, Geada e Tormenta
+  (Nv. 4, 140 de vida, 80 exp e 25 moedas), punhos que brilham, golpes com elemento e um ataque
+  marcado: círculo no chão onde o jogador está, resolve em 0,9 s; sair dele conta como esquiva
+  real (Reflexos).
+- Golpes elementais usam a Resistência Elemental no lugar da mitigação física; defender ou
+  esquivar evita a condição.
+- Resistência Elemental: sobe aguentando golpes elementais de inimigos (variar o elemento rende
+  mais, teto por oponente); −1,5% de dano elemental e −2% de duração das condições a cada 10
+  níveis (até −15% / −20%). Ghoul: −10% de duração.
+- Voo: sobe planando com a asa-delta (item de voo) com deslocamento real; +2% de velocidade e
+  −1,5% de queda planando a cada 10 níveis.
+- HUD: as condições aparecem acima do status com o tempo restante; o corpo fica azul
+  (congelado), laranja piscando (queimando) ou amarelo (choque).
+
+Código: `src/combat/conditions.js`, `src/combat/enemies.js`; testes em `tests/elemental.test.js`.

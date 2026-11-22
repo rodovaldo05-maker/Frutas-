@@ -56,16 +56,16 @@ export const ATTRS = {
     bonus: (L) => `+${Math.min(10, steps10(L))}% de bloqueio · −${Math.min(20, 2 * steps10(L))}% de postura gasta`,
   },
   elemental: {
-    nome: 'Resistência Elemental', icone: 'fruit', ativo: false,
-    treino: 'Enfrente fogo, gelo, raio e corrosão (chega com o combate).',
+    nome: 'Resistência Elemental', icone: 'fruit', ativo: true,
+    treino: 'Aguente golpes de fogo, gelo e raio de inimigos (variar os elementos rende mais).',
     marcos: { 25: 'Pele Curtida', 50: 'Afinidades', 100: 'Corpo Elemental' },
-    bonus: () => 'Bônus modestos por elemento, com limite',
+    bonus: (L) => `−${Math.min(15, 1.5 * steps10(L)).toLocaleString('pt-BR')}% de dano elemental · −${Math.min(20, 2 * steps10(L))}% de duração das condições`,
   },
   voo: {
-    nome: 'Voo', icone: 'glider', ativo: false,
-    treino: 'Só com voo de raça, fruta, forma ou item. Pairar parado não conta.',
+    nome: 'Voo', icone: 'glider', ativo: true,
+    treino: 'Plane com a asa-delta (item de voo) se deslocando de verdade. Pairar parado não conta.',
     marcos: { 25: 'Curvas Fechadas', 50: 'Pouso Preciso', 100: 'Senhor do Céu' },
-    bonus: () => 'Controle aéreo',
+    bonus: (L) => `+${Math.min(20, 2 * steps10(L))}% de velocidade planando · −${Math.min(15, 1.5 * steps10(L)).toLocaleString('pt-BR')}% de queda`,
   },
 };
 export const ATTR_KEYS = Object.keys(ATTRS);
@@ -112,6 +112,10 @@ export function bonuses(t, staminaBase = 100) {
     perfectWindow: 0.15 + Math.min(0.05, 0.005 * s('reflexos')),
     blockReduce: 0.7 + Math.min(0.1, 0.01 * s('defesa')),
     postureMult: 1 - Math.min(0.2, 0.02 * s('defesa')),
+    elementalMit: Math.min(0.15, 0.015 * s('elemental')),
+    condDuration: 1 - Math.min(0.2, 0.02 * s('elemental')),
+    glideSpeed: 1 + Math.min(0.2, 0.02 * s('voo')),
+    glideFall: 1 - Math.min(0.15, 0.015 * s('voo')),
   };
 }
 
@@ -237,9 +241,12 @@ export class TrainingTracker {
     } else if (s === 'climb' && dy > 0) {
       this.acc.forca += (dy / METER) * 0.15;
       this.acc.agilidade += (dy / METER) * 0.08;
+    } else if (s === 'glide' && m > 0) {
+      // Voo: só com deslocamento útil planando (asa-delta conta como item de voo)
+      this.acc.voo = (this.acc.voo || 0) + m * 0.05 * spread;
     }
-    for (const attr of ['folego', 'natacao', 'forca', 'agilidade']) {
-      if (this.acc[attr] >= 1) {
+    for (const attr of ['folego', 'natacao', 'forca', 'agilidade', 'voo']) {
+      if ((this.acc[attr] || 0) >= 1) {
         const chunk = Math.floor(this.acc[attr]);
         this.acc[attr] -= chunk;
         this.grant(attr, chunk, `${attr}:distancia`, pos, { repeat: false });
@@ -303,6 +310,14 @@ export class TrainingTracker {
       case 'esquiva':
         if (data.hostile) this.grant('reflexos', 3, `esquiva:${foe}`, pos);
         break;
+      case 'elemental': {
+        if (!data.hostile) break;
+        const variety = this.lastElement && this.lastElement !== data.element ? 1 : 0;
+        this.lastElement = data.element;
+        const xp = budget('elemental', 1 + (data.amount || 0) / 8 + variety, 10);
+        if (xp > 0) this.grant('elemental', xp, `elemento:${data.element}:${foe}`, pos, { repeat: false });
+        break;
+      }
       default:
     }
   }

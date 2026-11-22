@@ -36,6 +36,7 @@ import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roul
 import { RANK, fruitName, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
 import { maxStamina, maxHealth, maxEnergy, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
+import { computeDamage } from './combat/rules.js';
 import { FruitPowers } from './combat/powers.js';
 import { powersOf } from './fruits/powers.js';
 import { fruitStyle } from './combat/rules.js';
@@ -52,6 +53,7 @@ import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { buildArena } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
+import { Conditions, CONDITIONS } from './combat/conditions.js';
 import { TrainingTracker, bonuses, ATTRS } from './progression/training.js';
 import { addXp, xpProgress, xpToNext } from './progression/level.js';
 import { StatusScreen } from './ui/statusScreen.js';
@@ -154,23 +156,25 @@ async function boot() {
       case 'wallJump': audio.play('base', 'jump', 1); break;
       case 'dash': audio.play('base', 'dash', 0.8); break;
       case 'land': raceSys.onLand(); if (data.strength > 0.15) audio.play('base', 'land', Math.min(1, 0.3 + data.strength)); if (data.hard) hud.toast('Queda forte! Agache antes de tocar o chão para rolar.'); break;
-      case 'roll': audio.play('base', 'dash', 0.5); hud.toast('Rolamento: sem dano de queda', 'good'); break;
+      case 'roll': audio.play('base', 'dash', 0.5); hud.toast('Rolamento: sem dano de queda', 'good'); conditions?.onRoll(); break;
       case 'splash': audio.play('base', 'splash', data.strength); break;
       case 'grab': audio.play('base', 'step', 0.5); break;
       case 'mantle': audio.play('base', 'step', 0.6); break;
       case 'glideStart': audio.play('base', 'wing', 0.6); break;
       case 'damage':
         hud.damageFlash();
-        if (data.reason !== 'golpe') hud.toast(`−${Math.round(data.amount)} vida (${data.reason})`, 'bad');
+        if (data.reason !== 'golpe' && data.reason !== 'queimadura') hud.toast(`−${Math.round(data.amount)} vida (${data.reason})`, 'bad');
         break;
-      case 'faint': hud.toast('Você desmaiou…', 'bad'); audio.play('base', 'death', 0.8); break;
-      case 'respawn': cam.snap(ctl.pos, ctl.yaw); break;
+      case 'faint': hud.toast('Você desmaiou…', 'bad'); audio.play('base', 'death', 0.8); conditions?.reset(); break;
+      case 'respawn': cam.snap(ctl.pos, ctl.yaw); conditions?.reset(); break;
       default:
     }
   }
 
   // raça (tipo corporal): passivas, ativa e maestria (atualização 5)
   let raceDenyAt = -9;
+  let condTimer = 0;
+  let playerTint = '#000000';
   let wingBurst = 0;
   let raceParts = save.race ? addRaceParts(player.body, save.race) : null;
   const raceSys = new RaceSystem({ ctl, save, onEvent: (name, d) => onRaceEvent(name, d) });
@@ -184,7 +188,7 @@ async function boot() {
     ctl.stamina.regenMult = b.staminaRegen;
     baseRegen = b.staminaRegen;
     const rm = raceSys.mods;
-    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime };
+    ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed, breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed, glideFall: b.glideFall };
     ctl.race = { extraJumps: rm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = maxHealth(save.status);
@@ -203,7 +207,7 @@ async function boot() {
       const b = bonuses(save.training);
       const m = damageMultipliers(save.status);
       const rm = raceSys.mods;
-      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation, stunMult: rm.stunMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation + rm.physicalMitigation, elementalMit: b.elementalMit, stunMult: rm.stunMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -269,9 +273,51 @@ async function boot() {
       }
     },
   });
-  arena.hitPlayer = (enemy, attack, damage) => combat.receive({
-    attacker: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z, yaw: enemy.yaw }, attack, damage, source: enemy.id, life: enemy.life,
+  // ===== Condições (atualização 6): queimando, congelado, lento, choque, molhado =====
+  const COND_FLOAT = { queimando: 'forte', congelado: 'esquiva', lento: 'esquiva', choque: 'perfeita' };
+  const conditions = new Conditions({
+    resist: () => ({ duration: bonuses(save.training).condDuration * raceSys.mods.stunMult }),
+    onEvent: (name, d) => {
+      const head = { x: ctl.pos.x, y: ctl.pos.y + 2.4, z: ctl.pos.z };
+      if (name === 'burn') floats.add(head, `−${d.damage}`, 'jogador');
+      if (name === 'apply' && COND_FLOAT[d.name]) floats.add(head, `${CONDITIONS[d.name].nome}!`, COND_FLOAT[d.name]);
+      if (name === 'stun') hud.toast('Atordoado pelo choque! (3 cargas)', 'bad');
+    },
   });
+  // golpe de inimigo: dano, condições do elemento e treino de Resistência Elemental
+  function enemyHit(enemy, attack, damage, from = enemy.pos) {
+    const r = combat.receive({ attacker: { x: from.x, y: from.y, z: from.z, yaw: enemy.yaw }, attack, damage, source: enemy.id, life: enemy.life });
+    if (attack.element && (r.result === 'hit' || r.result === 'break')) {
+      for (const [name, opts] of Object.entries(attack.effects || {})) conditions.apply(name, opts);
+      if (r.damage > 0) tracker.combat('elemental', { source: enemy.id, life: enemy.life, hostile: true, element: attack.element, amount: r.damage }, ctl.pos);
+    }
+    return r;
+  }
+  arena.hitPlayer = (enemy, attack, damage) => enemyHit(enemy, attack, damage);
+  // ataque marcado dos Recrutas elementais: aviso no chão e resolução depois de 0,9 s
+  arena.onSpecial = (enemy, at, sp) => {
+    fx.mark(at, enemy.def.cor, sp.radius, sp.telegraph);
+    audio.play('base', 'wing', 0.4);
+  };
+  arena.resolveSpecial = (enemy, at, sp) => {
+    const color = enemy.def.cor;
+    if (enemy.def.element === 'raio') fx.bolt({ x: at.x, y: at.y + 14, z: at.z }, { x: at.x, y: at.y + 0.2, z: at.z }, color, 0.35);
+    else fx.pillar(at, color, sp.radius * 0.9, enemy.def.element === 'gelo' ? 4 : 7, 0.6);
+    fx.ring(at, color, sp.radius, 0.4);
+    fx.burst(at, color, { count: 22, speed: 5, up: 5 });
+    audio.play(enemy.def.element === 'fogo' ? 'brasa' : enemy.def.element === 'gelo' ? 'geada' : 'tormenta', 'acerto', 0.9);
+    const p = ctl.pos;
+    const inside = Math.hypot(p.x - at.x, p.z - at.z) <= sp.radius + 0.6 && Math.abs(p.y - at.y) < 3.5;
+    if (!playerProxy.alive) return;
+    if (!inside) {
+      // saiu do círculo que estava sob seus pés: esquiva real
+      floats.add({ x: p.x, y: p.y + 2.4, z: p.z }, 'Desviou!', 'esquiva');
+      tracker.combat('esquiva', { source: enemy.id, life: enemy.life, hostile: true }, p);
+      return;
+    }
+    const attack = { id: 'especial', posture: 14, knock: 1.6 * 2.2, reaction: 'media', element: enemy.def.element, effects: sp.effects };
+    enemyHit(enemy, attack, computeDamage(sp.damage * enemy.def.damageMult), { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z });
+  };
   for (const r of arena.recrutas) {
     r.onDefeated = (foe) => {
       save.coins += foe.def.coins;
@@ -889,6 +935,7 @@ async function boot() {
       powers.update(dt, arena.targets, combat.canFight());
       blade.update(dt, arena.targets, combat.canFight());
       ctl.step(dt, inp);
+      conditions.update(dt, ctl);
       playerProxy.alive = ctl.faint <= 0;
       arena.update(dt, playerProxy);
       tracker.step(dt, ctl);
@@ -935,6 +982,22 @@ async function boot() {
       fx.update(animDt);
       if (mode === 'game') skillBar.update(powers, save.equipped !== 'estilo', save.equipped === 'arma' ? blade : powers);
       if (player.weapon) player.weapon.visible = !player.heldFruit;
+      if (mode === 'game') {
+        condTimer -= animDt;
+        if (condTimer <= 0) {
+          condTimer = 0.15;
+          const v = conditions.view();
+          $('cond-list').innerHTML = v.map((c) => `<span class="cond" style="--cc:${c.cor}" title="${c.dica ?? ''}">${c.icone} ${c.nome}${c.stacks > 1 ? ` ×${c.stacks}` : ''} <i>${Math.ceil(c.t)}s</i></span>`).join('');
+          const tint = conditions.has('congelado') ? '#2f8fff' : conditions.has('queimando') ? (Math.sin(clock * 12) > 0 ? '#ff5a14' : '#7a2a08') : conditions.has('choque') ? (Math.sin(clock * 20) > 0.5 ? '#ffe45a' : '#000000') : '#000000';
+          if (tint !== playerTint) {
+            playerTint = tint;
+            for (const m of Object.values(player.body.meshes)) if (m.material.emissive) {
+              m.material.emissive.set(tint);
+              m.material.emissiveIntensity = tint === '#000000' ? 1 : 0.45;
+            }
+          }
+        }
+      }
       if (raceParts?.wings) {
         wingBurst = Math.max(0, wingBurst - animDt * 2.2);
         flapWings(raceParts, clock, wingBurst);
@@ -1141,7 +1204,7 @@ async function boot() {
     get time() { return time; },
     get mode() { return mode; },
     get started() { return mode === 'game'; },
-    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade,
+    ctl, cam, renderer, input, island, ocean, quality, loop, saves, save, mission, applyStatus, shop, market, startEating, applyFruit, tracker, combat, arena, powers, fx, raceSys, chooseRace, blade, conditions,
     start: startGame,
     saveNow,
     openModal,

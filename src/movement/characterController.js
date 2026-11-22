@@ -503,6 +503,7 @@ export class CharacterController {
     if (this.inWater) target *= clamp(1 - this.feetDepth * 0.12, 0.55, 1); // água rasa
     if (this.lockT > 0) target *= 0.25;
     if (this.guarding) target = Math.min(target, MOVE.walk * 0.45); // defendendo: passos curtos
+    target *= this.slowMult ?? 1; // condição Lento (gelo)
     // subida íngreme cansa um pouco (até 30% mais devagar)
     const gn = this.groundNormal;
     const uphill = Math.max(0, -(gn.x * w.x + gn.z * w.z));
@@ -1163,9 +1164,9 @@ export class CharacterController {
     if (w.mag > 0.2) this.yaw = lerpAngle(this.yaw, yawOf(w.x, w.z), damp(2.4, dt));
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const k = damp(2.2, dt);
-    this.vel.x = lerp(this.vel.x, fx * MOVE.glideForward, k);
-    this.vel.z = lerp(this.vel.z, fz * MOVE.glideForward, k);
-    this.vel.y = lerp(this.vel.y, -MOVE.glideFall, damp(3, dt));
+    this.vel.x = lerp(this.vel.x, fx * MOVE.glideForward * (this.mods.glideSpeed ?? 1), k);
+    this.vel.z = lerp(this.vel.z, fz * MOVE.glideForward * (this.mods.glideSpeed ?? 1), k);
+    this.vel.y = lerp(this.vel.y, -MOVE.glideFall * (this.mods.glideFall ?? 1), damp(3, dt));
     const want = { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt };
     const m = this.move(want.x, want.y, want.z);
     if (this.inWater && this.deepEnough() && this.feetDepth > 1.2) {

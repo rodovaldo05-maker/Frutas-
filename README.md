@@ -42,6 +42,11 @@ cada um com passivas reais (ex.: 3 saltos extras do Homem do Céu, respirar na �
 Aquático, +20% de dano de fruta do Ghoul, +15% de experiência física do Humano), habilidade
 ativa (F ou botão da raça), maestria racial com marcos e partes visuais próprias.
 
+Elementos (atualização 6): no Acampamento Elemental, Recrutas de fogo, gelo e raio deixam o
+jogador queimando, congelado, lento ou com choque (3 cargas atordoam) e marcam círculos no chão
+para esquivar; a água apaga o fogo. Resistência Elemental e Voo (planando com a asa-delta)
+agora treinam pela prática.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

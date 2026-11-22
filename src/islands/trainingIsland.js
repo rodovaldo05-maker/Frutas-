@@ -23,6 +23,7 @@ const KEEP_CLEAR = [
   [58, 28, 16], [-50, 16, 20], [-28, 44, 12], [0, -50, 12], [-46, -26, 6], [-4, -58, 6], [2, -46, 5],
   [-16, -10, 18], // arena de combate (combat/enemies.js)
   [-10.5, 46.5, 6], // barraca do Mestre de Armas (world/npcs.js)
+  [58, -30, 14], // acampamento elemental (combat/enemies.js)
 ];
 
 const noise = valueNoise2D(7);
@@ -159,6 +160,13 @@ export function buildTrainingIsland({ scene, physics }) {
     sb.block({ x, y: ground(x, z) - 0.2, z, w: 2.2, h: 0.7, d: 0.7, rotY: r, style: 'madeira' });
   }
   sb.block({ x: -31.5, y: ground(-31.5, -9.5) - 0.2, z: -9.5, w: 1.4, h: 1.3, d: 1.4, rotY: 0.3, style: 'madeira' });
+
+  // Acampamento elemental: Recrutas de Brasa, Geada e Tormenta (nível 4)
+  sb.sign({ x: 49, y: ground(49, -22), z: -22, rotY: Math.PI * 0.75, title: 'Acampamento Elemental', hint: 'Recrutas de fogo, gelo e raio. Saia do círculo marcado no chão ou esquive na hora. A água apaga o fogo.' });
+  for (const [x, z, r] of [[63, -34, 0.4], [55, -36, -0.6], [64, -25, 1.2]]) {
+    sb.block({ x, y: ground(x, z) - 0.2, z, w: 2.2, h: 0.7, d: 0.7, rotY: r, style: 'madeira' });
+  }
+  sb.block({ x: 58, y: ground(58, -30) - 0.3, z: -30, w: 1.2, h: 0.9, d: 1.2, rotY: 0.2, style: 'pedraLisa' });
 
   // ===== Natureza: árvores, coqueiros, pinheiros, arbustos, pedras, capim =====
   const nature = buildNature({ scene, physics, field, rand: mulberry32(42), keepClear: KEEP_CLEAR });

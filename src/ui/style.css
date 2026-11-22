@@ -1052,3 +1052,11 @@ body.lefty .act.race { left: auto; right: calc(207px * var(--btn) + var(--safe-r
   .race-card ul { gap: 1px; padding-left: 13px; }
   .race-intro { font-size: 11px; margin-bottom: 4px; }
 }
+
+/* condições no jogador (acima do status) */
+.dock .cond-list { position: absolute; left: 0; right: 0; bottom: calc(100% + 26px); display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; pointer-events: none; }
+.cond {
+  display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; font: 800 10.5px var(--body-font); color: #fff;
+  background: color-mix(in srgb, var(--cc) 35%, rgba(14, 11, 28, 0.85)); border: 1px solid var(--cc); text-shadow: 0 1px 2px #000;
+}
+.cond i { font-style: normal; color: rgba(255, 255, 255, 0.8); }

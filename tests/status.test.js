@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { maxStamina, maxHealth, allocate, resetStatus, newStatus, damageMultipliers } from '../src/progression/status.js';
 import { addXp as addAdventurerXp } from '../src/progression/level.js';
-import { newTraining, normalizeTraining, bonuses, addXp, xpToNext, progress, AntiFarm, TrainingTracker, MAX_LEVEL, METER } from '../src/progression/training.js';
+import { newTraining, normalizeTraining, bonuses, addXp, xpToNext, progress, AntiFarm, TrainingTracker, MAX_LEVEL, METER, ATTRS } from '../src/progression/training.js';
 import { Stamina } from '../src/movement/rules.js';
 import { migrate } from '../src/saves/saveSystem.js';
 
@@ -204,12 +204,8 @@ describe('antifarm', () => {
     expect(f.softCap('agilidade', 1, 5, 200)).toBe(1);
   });
 
-  it('atributos que ainda não têm como treinar (Elemental, Voo) não ganham XP', () => {
-    const t = newTraining();
-    const tr = new TrainingTracker(t);
-    expect(tr.grant('elemental', 10, 'x', { x: 0, z: 0 })).toBe(0);
-    expect(tr.grant('voo', 10, 'x', { x: 0, z: 0 })).toBe(0);
-    expect(t.attrs.elemental.xp).toBe(0);
+  it('todos os atributos já têm como treinar', () => {
+    for (const k of Object.keys(newTraining().attrs)) expect(ATTRS[k].ativo).toBe(true);
   });
 });
 

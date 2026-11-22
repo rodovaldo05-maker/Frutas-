@@ -136,7 +136,8 @@ export class PlayerCombat {
       return { result: 'block', damage: 0 };
     }
     const s = this.stats();
-    const dmg = computeDamage(damage, { defense: s.defense, mitigation: s.mitigation });
+    // golpe elemental: a Resistência Elemental mitiga no lugar da física
+    const dmg = computeDamage(damage, { defense: s.defense, mitigation: attack.element ? (s.elementalMit ?? 0) : s.mitigation });
     const r = this.guard.receive(dmg, attack.posture, {
       frontal: isFrontal(me, attacker), perfectWindow: s.perfectWindow, reduce: s.blockReduce, postureMult: s.postureMult,
     });

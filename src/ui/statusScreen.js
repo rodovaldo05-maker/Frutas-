@@ -12,16 +12,17 @@ import { ICONS } from './icons.js';
 import { fruitName } from '../fruits/catalog.js';
 import { domainProgress } from '../progression/domain.js';
 import { RACES, raceXpToNext } from '../races/races.js';
-import { ITEMS, SLOTS, SLOT_NAMES, QUALITY, gearTotals, equipItem, unequip, isBroken } from '../items/items.js';
+import { ITEMS, SLOTS, SLOT_NAMES, QUALITY, gearTotals, equipItem, unequip, isBroken, itemMult, itemLabel } from '../items/items.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString('pt-BR');
 const ICON = { forca: 'fist', defesa: 'shield', fruta: 'fruit', espada: 'sword', vitalidade: 'vital' };
 
 export class StatusScreen {
-  constructor({ save, onChange }) {
+  constructor({ save, onChange, profHtml = () => '' }) {
     this.save = save;
     this.onChange = onChange;
+    this.profHtml = profHtml; // aba Profissões (atualização 12)
     this.tab = 'status';
     $('train-tabs').addEventListener('click', (e) => {
       const b = e.target.closest('[data-ttab]');
@@ -83,9 +84,11 @@ export class StatusScreen {
     $('pane-train').classList.toggle('hidden', this.tab !== 'atributos' && this.tab !== 'historico');
     $('pane-race').classList.toggle('hidden', this.tab !== 'raca');
     $('pane-gear').classList.toggle('hidden', this.tab !== 'equip');
+    $('pane-prof').classList.toggle('hidden', this.tab !== 'prof');
     if (this.tab === 'status') this.renderStatus(status, points);
     else if (this.tab === 'raca') this.renderRace();
     else if (this.tab === 'equip') this.renderGear();
+    else if (this.tab === 'prof') $('pane-prof').innerHTML = this.profHtml();
     else this.renderTraining(t);
   }
 
@@ -171,17 +174,20 @@ export class StatusScreen {
       const max = ITEMS[it.id].dur;
       return max ? `<span class="dur${isBroken(it) ? ' broken' : ''}">${isBroken(it) ? 'Quebrado' : `${it.dur}/${max}`}</span>` : '';
     };
-    const attrs = (d) => Object.entries(d.attrs).map(([k, v]) => (k === 'elemental' ? `+${Math.round(v * 100)}% elemental` : `+${v} ${k === 'folego' ? 'fôlego' : k}`)).join(' · ');
+    const attrs = (d, it) => Object.entries(d.attrs).map(([k, v]) => {
+      const m = it ? itemMult(it) : 1;
+      return k === 'elemental' ? `+${Math.round(v * m * 1000) / 10}% elemental` : `+${Math.round(v * m * 10) / 10} ${k === 'folego' ? 'fôlego' : k}`;
+    }).join(' · ');
     const slots = SLOTS.map((slot) => {
       const it = s.items.find((x) => x.uid === s.gear[slot]);
       const d = it && ITEMS[it.id];
-      return `<div class="gear-slot" style="--qc:${d ? QUALITY[d.qualidade] : '#4a4458'}"><small>${SLOT_NAMES[slot]}</small>${d ? `<b>${d.nome}</b><span>${attrs(d)}</span>${dur(it)}<button class="btn" data-gear="off" data-slot="${slot}">Tirar</button>` : '<span class="muted">vazio</span>'}</div>`;
+      return `<div class="gear-slot" style="--qc:${d ? QUALITY[d.qualidade] : '#4a4458'}"><small>${SLOT_NAMES[slot]}</small>${d ? `<b>${itemLabel(it)}</b><span>${attrs(d, it)}</span>${dur(it)}<button class="btn" data-gear="off" data-slot="${slot}">Tirar</button>` : '<span class="muted">vazio</span>'}</div>`;
     }).join('');
     const free = s.items.filter((it) => !Object.values(s.gear).includes(it.uid));
     const bag = free.length
       ? free.map((it) => {
         const d = ITEMS[it.id];
-        return `<div class="gear-item" style="--qc:${QUALITY[d.qualidade]}"><b>${d.nome}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · peso ${d.peso}</small><span>${attrs(d)}${d.sinergia ? ` · <i>${d.sinergia.texto}</i>` : ''}</span>${dur(it)}<button class="btn gold" data-gear="equip" data-uid="${it.uid}">Equipar</button></div>`;
+        return `<div class="gear-item" style="--qc:${QUALITY[d.qualidade]}"><b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · peso ${d.peso}</small><span>${attrs(d, it)}${d.sinergia ? ` · <i>${d.sinergia.texto}</i>` : ''}</span>${dur(it)}<button class="btn gold" data-gear="equip" data-uid="${it.uid}">Equipar</button></div>`;
       }).join('')
       : '<p class="muted">Sem itens guardados. Compre com o Mestre de Armas ou derrote Recrutas.</p>';
     $('pane-gear').innerHTML = `

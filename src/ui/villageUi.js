@@ -64,7 +64,7 @@ export class VillageUi {
     const add = (label, run, icon = '') => actions.push({ label, run, icon });
     if (m.papel === 'missoes') add('Missões da vila', () => this.openQuests(), 'scroll');
     if (m.papel === 'mercado') add('Trocar fragmentos', () => this.swap('trader'), 'gem');
-    if (m.papel === 'ferreiro') add('Armaduras e espadas', () => this.swap('armory'), 'sword');
+    if (m.papel === 'ferreiro') add('Armaduras e espadas', () => this.swap('armory'), 'shield');
     if (m.papel === 'frutas') add('Frutas do dia', () => this.openStore(), 'fruit');
     if (m.papel === 'taverna') {
       add(`Refeição · ${MEAL} moedas`, () => {
@@ -75,6 +75,7 @@ export class VillageUi {
         this.closeModal('npc-dialog');
       }, 'heart');
     }
+    for (const a of this.serviceActions?.(m) ?? []) add(a.label, a.run, a.icon);
     add('Até logo', () => this.closeModal('npc-dialog'));
     this.openDialog(`${m.nome} · ${m.titulo}`, `${greet}! ${line}${notes.length ? `\n\n${notes.join('\n')}` : ''}`, actions);
   }
@@ -107,6 +108,14 @@ export class VillageUi {
     }
     if (r.progressed.length || r.completed.length) this.onQuestChange();
     return notes;
+  }
+
+  // Coleta (pesca e mineração) conta para as missões de coleta
+  gather(what, n = 1) {
+    const r = questEvent(this.save, { kind: 'gather', what, n });
+    for (const q of r.progressed) this.toast(`${q.titulo}: ${questStep(q, this.names)}`);
+    for (const q of r.completed) this.onQuestDone(q);
+    if (r.progressed.length || r.completed.length) this.onQuestChange();
   }
 
   defeat(foe) {

@@ -20,6 +20,10 @@ import { WorldField } from './terrain/offsetField.js';
 import { Boat } from './ships/boat.js';
 import { Villagers } from './world/villagers.js';
 import { VillageUi } from './ui/villageUi.js';
+import { buildGathering, Gathering } from './crafting/gathering.js';
+import { NODE_TYPES } from './crafting/professions.js';
+import { MATERIALS, TOOLS, addMaterial, materialDrop } from './crafting/materials.js';
+import { ForgeUi } from './ui/forgeUi.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
 import { createPlayer } from './characters/player.js';
@@ -108,6 +112,9 @@ async function boot() {
   const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: BOATMEN });
   // moradores do Porto das Origens (rotina pela hora do jogo)
   const villagers = new Villagers({ scene: renderer.scene, data: DATA, village: village.village, offset: VILLAGE.offset, physics, baseY: VILLAGE.plateau });
+  // veios de minério e pontos de pesca (atualização 12)
+  const gatherWorld = buildGathering({ scene: renderer.scene, physics, ground: (x, z) => world.sample(x, z) });
+  island.signs.push(...gatherWorld.signs);
   island.signs.push(...market.signs);
   const arena = buildArena({ scene: renderer.scene, physics, field: island.field, data: DATA });
   physics.world.updateSceneQueries?.();
@@ -409,6 +416,10 @@ async function boot() {
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
       villageUi.defeat(foe.def);
+      for (const [id, n] of materialDrop(foe.def)) {
+        addMaterial(save, id, n);
+        hud.toast(`+${n} ${MATERIALS[id].nome}`, 'good');
+      }
       audio.play('base', 'death', 0.6);
       grantXp(foe.def.xp);
       saveNow(true);
@@ -759,6 +770,7 @@ async function boot() {
   });
   const statusScreen = new StatusScreen({
     save,
+    profHtml: () => forgeUi.profHtml(),
     onChange: () => {
       applyGear();
       refreshProfile();
@@ -833,6 +845,64 @@ async function boot() {
     heal: () => {
       ctl.health = ctl.maxHealth;
       ctl.stamina.value = ctl.stamina.max;
+    },
+  });
+  const forgeUi = new ForgeUi({
+    save,
+    toast: (text, kind) => hud.toast(text, kind),
+    onChange: () => {
+      applyGear();
+      refreshEquip();
+      refreshProfile();
+      saveNow(true);
+    },
+  });
+  const buyTool = (id) => {
+    const t = TOOLS[id];
+    if (save.tools.includes(id)) return;
+    if (save.coins < t.preco) return hud.toast(`${t.nome} custa ${fmt(t.preco)} moedas.`, 'bad');
+    save.coins -= t.preco;
+    save.tools.push(id);
+    hud.toast(`${t.nome} comprada! ${t.desc}`, 'gold');
+    refreshProfile();
+    saveNow(true);
+    closeModal('npc-dialog');
+  };
+  villageUi.serviceActions = (m) => {
+    const out = [];
+    if (m.papel === 'ferreiro') {
+      out.push({ label: 'Forja', icon: 'sword', run: () => villageUi.swap('forge') });
+      if (!save.tools.includes('picareta')) out.push({ label: `Picareta · ${fmt(TOOLS.picareta.preco)}`, icon: 'coin', run: () => buyTool('picareta') });
+    }
+    if (m.papel === 'mercado') {
+      out.push({ label: 'Vender materiais', icon: 'coin', run: () => villageUi.swap('sellmats') });
+      if (!save.tools.includes('vara')) out.push({ label: `Vara de pesca · ${fmt(TOOLS.vara.preco)}`, icon: 'coin', run: () => buyTool('vara') });
+    }
+    return out;
+  };
+  const gathering = new Gathering({
+    save, ctl, player, world: gatherWorld, ocean, fx, scene: renderer.scene,
+    onEvent: (name, d) => {
+      if (name === 'denied' || name === 'info') hud.toast(d.message, name === 'denied' ? 'bad' : '');
+      if (name === 'bite') {
+        hud.notice('🎣 Fisgou! Puxe agora!', 'good', 'bite');
+        audio.play('base', 'splash', 0.5);
+      }
+      if (name === 'hitRock') audio.play('impacto', 'acerto', 0.35);
+      if (name === 'mined') {
+        const parts = Object.entries(d.got).map(([id, n]) => `+${n} ${MATERIALS[id].nome}`);
+        hud.toast(`${parts.join(' · ')} · Mineração +${d.xp}`, 'good');
+        if (d.levels) hud.toast(`Mineração Nv. ${d.level}!`, 'gold');
+        const ores = Object.entries(d.got).filter(([id]) => id !== 'pedra').reduce((sum, [, n]) => sum + n, 0) || 1;
+        villageUi.gather('minerio', ores);
+        saveNow(true);
+      }
+      if (name === 'caught') {
+        hud.toast(`Pescou: ${d.nome} · Pesca +${d.xp}`, 'good');
+        if (d.levels) hud.toast(`Pesca Nv. ${d.level}!`, 'gold');
+        if (d.peixe) villageUi.gather('peixe', 1);
+        saveNow(true);
+      }
     },
   });
   function startEating(item) {
@@ -982,6 +1052,8 @@ async function boot() {
     if (id === 'roulette') shop.renderRoulette();
     if (id === 'bag') shop.renderBag();
     if (id === 'trader') shop.renderTrader();
+    if (id === 'forge') forgeUi.render();
+    if (id === 'sellmats') forgeUi.renderSell();
     if (id === 'armory') armory.render();
     if (id === 'dojo') dojo.render();
     if (id === 'catalog') catalog.render();
@@ -1106,6 +1178,9 @@ async function boot() {
     if (nearAction.kind === 'board') return board();
     if (nearAction.kind === 'leave') return disembark();
     if (nearAction.kind === 'villager') return villageUi.talk(nearAction.m);
+    if (nearAction.kind === 'mine') return gathering.startMine(nearAction.node);
+    if (nearAction.kind === 'fish') return gathering.startFish(nearAction.spot);
+    if (nearAction.kind === 'pull') return gathering.pull();
     const npc = nearAction.npc;
     if (npc.role === 'barqueiro') {
       for (const n of villageUi.questTalk(npc.id, false)) hud.toast(n, 'good');
@@ -1193,7 +1268,7 @@ async function boot() {
   const AREA_XP = 25;
   function discoverAreas() {
     for (const sign of island.signs) {
-      if (save.visited.includes(sign.title)) continue;
+      if (sign.mine || sign.fish || save.visited.includes(sign.title)) continue;
       if (Math.abs(ctl.pos.y - sign.y) > 7 || Math.hypot(sign.x - ctl.pos.x, sign.z - ctl.pos.z) > 7.5) continue;
       save.visited.push(sign.title);
       raceSys.onDiscover();
@@ -1232,6 +1307,14 @@ async function boot() {
       if (mode !== 'game') return;
       prev.copy(ctl.pos);
       const inp = input.consume(cam.yaw);
+      if (gathering.busy) {
+        // minerando ou pescando: mexer o analógico, pular ou esquivar cancela; sem luta
+        gathering.update(dt, Math.hypot(inp.moveX, inp.moveY) > 0.3 || inp.jumpPressed || inp.dashPressed);
+        inp.attackPressed = false;
+        inp.skill = -1;
+        inp.jumpPressed = inp.dashPressed = false;
+      }
+      gatherWorld.update(dt, ocean);
       if (boat.aboard) {
         // no bote: sem luta, habilidades nem esquiva; Pular desce
         inp.attackPressed = false;
@@ -1431,7 +1514,10 @@ async function boot() {
       let act = null;
       if (!modals.length && !animator.eat) {
         if (boat.aboard) act = { kind: 'leave', key: 'leave', text: 'Desembarcar' };
-        else {
+        else if (gathering.busy) {
+          const j = gathering.job;
+          act = j.kind === 'fish' ? { kind: 'pull', key: `pull-${j.phase === 'bite'}`, text: j.phase === 'bite' ? 'Puxar!' : 'Recolher linha' } : null;
+        } else {
           // o mais perto entre NPC, morador e bote
           const opts = [];
           const p = ctl.pos;
@@ -1441,6 +1527,12 @@ async function boot() {
           if (vm) {
             const w = villagers.world(vm);
             opts.push({ d: Math.hypot(p.x - w.x, p.z - w.z), kind: 'villager', m: vm, key: vm.id, text: `Falar com ${vm.nome}` });
+          }
+          if (ctl.state === 'ground') {
+            const n = gatherWorld.nearestNode(p);
+            if (n) opts.push({ d: Math.hypot(p.x - n.x, p.z - n.z), kind: 'mine', node: n, key: `mine-${n.id}-${n.empty > 0}`, text: n.empty > 0 ? `Veio vazio (${Math.ceil(n.empty)} s)` : `Minerar · ${NODE_TYPES[n.type].nome}` });
+            const sp = gatherWorld.nearestSpot(p);
+            if (sp) opts.push({ d: Math.hypot(p.x - sp.x, p.z - sp.z) - 5, kind: 'fish', spot: sp, key: `fish-${sp.id}`, text: 'Pescar' });
           }
           if ((ctl.state === 'ground' || ctl.state === 'swim') && boat.near(p)) opts.push({ d: Math.hypot(p.x - boat.s.x, p.z - boat.s.z) - 1.5, kind: 'board', key: 'board', text: 'Embarcar no bote' });
           act = opts.sort((a, b) => a.d - b.d)[0] ?? null;
@@ -1626,6 +1718,9 @@ async function boot() {
     disembark,
     villagers,
     villageUi,
+    gathering,
+    gatherWorld,
+    forgeUi,
     setHour(h) {
       save.clock = Math.floor(save.clock / 1440) * 1440 + h * 60;
       dayTimer = 0;

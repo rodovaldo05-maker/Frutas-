@@ -1,7 +1,8 @@
 // Missões da vila (atualização 11): o Mestre de Missões da Prefeitura oferece 3 missões por
 // dia (sorteadas pela semente da vila e pelo dia), até 5 ativas ao mesmo tempo. Tipos: entrega
 // (pegar com um morador e levar a outro), caça (Recrutas na Ilha de Treino), conversa (conhecer
-// moradores) e recado (falar com o Barqueiro da Ilha de Treino). A recompensa sai ao concluir.
+// moradores), recado (falar com o Barqueiro da Ilha de Treino) e coleta (pescar ou minerar,
+// atualização 12). A recompensa sai ao concluir.
 // Também cobra a redistribuição dos pontos de status depois da primeira (grátis).
 
 import { mulberry32 } from '../core/math.js';
@@ -32,6 +33,8 @@ export function questOffers(day, villagers, seed = 2026) {
     () => ({ tipo: 'caca', titulo: 'Acampamento Elemental', alvo: 'elemental', total: 3, coins: 600, xp: 260, descricao: 'Derrote 3 Recrutas elementais (Brasa, Geada ou Tormenta) no Acampamento Elemental.' }),
     () => ({ tipo: 'conversa', titulo: 'Conhecer a vila', total: 4, coins: 150, xp: 80, descricao: 'Converse com 4 moradores diferentes do Porto das Origens.' }),
     () => ({ tipo: 'recado', titulo: 'Recado ao outro cais', alvo: 'barqueiro-treino', total: 1, coins: 200, xp: 100, descricao: 'Leve um recado ao Barqueiro do cais da Ilha de Treino (de bote ou com a viagem rápida).' }),
+    () => ({ tipo: 'coleta', titulo: 'Peixe para a taverna', alvo: 'peixe', total: 3, coins: 220, xp: 110, descricao: 'Pesque 3 peixes (Vara de Pesca com a Joana; cais, praia ou lagoa).' }),
+    () => ({ tipo: 'coleta', titulo: 'Minério para a forja', alvo: 'minerio', total: 5, coins: 260, xp: 120, descricao: 'Minere 5 minérios (Picareta com a Rosa; veios nas duas ilhas).' }),
   ];
   const order = templates.map((t, i) => ({ t, i, r: rand() })).sort((a, b) => a.r - b.r).slice(0, OFFERS_PER_DAY);
   return order.map(({ t, i }) => ({ key: `${day}:${i}`, ...t() }));
@@ -98,6 +101,8 @@ export function questStep(quest, names = {}) {
       return `Moradores: ${quest.progresso}/${quest.total}`;
     case 'recado':
       return 'Fale com o Barqueiro da Ilha de Treino';
+    case 'coleta':
+      return `${quest.alvo === 'peixe' ? 'Peixes' : 'Minérios'}: ${quest.progresso}/${quest.total}`;
     default:
       return '';
   }
@@ -121,6 +126,8 @@ export function questEvent(save, ev) {
         quest.falados.push(ev.npc);
         quest.progresso = quest.falados.length;
       } else if (quest.tipo === 'recado' && ev.npc === quest.alvo) quest.progresso = 1;
+    } else if (ev.kind === 'gather' && quest.tipo === 'coleta' && ev.what === quest.alvo) {
+      quest.progresso += ev.n ?? 1;
     } else if (ev.kind === 'defeat' && quest.tipo === 'caca') {
       const elemental = !!ev.element;
       if (quest.alvo === 'elemental' ? elemental : /Recruta/.test(ev.nome ?? '')) quest.progresso += 1;

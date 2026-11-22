@@ -64,7 +64,7 @@ objetivos também contam como desafios físicos (+15 no atributo ligado a cada u
 | Moedas | Inimigos, missões, baús, venda de materiais | Roleta, estilos, barcos, reparos, roupas |
 | Fragmentos | Trocando frutas no Trocador | Criar chaves |
 | Chaves | 10 fragmentos; recompensa rara de chefes | Pagar um giro da roleta |
-| Materiais | Inimigos, bestas marinhas, exploração | Melhorias de barco e de estilo |
+| Materiais | Mineração, pesca, inimigos (atualização 12); depois bestas marinhas e exploração | Forja (receitas e melhorias); vendidos à Mercadora pelo valor |
 | Mapas do tesouro | Baús, NPCs, pesca | Revelam baús escondidos |
 
 ## 3. Roleta de frutas (Mercador de Frutas)

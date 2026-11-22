@@ -10,6 +10,7 @@ import { normalizeBoat } from '../ships/boatRules.js';
 import { normalizeClock, START_CLOCK } from '../world/clock.js';
 import { normalizeStore } from '../economy/fruitStore.js';
 import { normalizeQuests } from '../quests/village.js';
+import { normalizeMaterials, normalizeTools } from '../crafting/materials.js';
 
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
@@ -66,6 +67,8 @@ export function newSave() {
     clock: START_CLOCK, // hora do jogo em minutos desde o começo (atualização 11)
     store: { day: -1, bought: [] }, // Loja de Frutas: vagas compradas no dia do estoque
     quests: null, // missões da vila (normalizadas no migrate)
+    materials: {}, // materiais { id: quantidade } (atualização 12)
+    tools: [], // ferramentas: picareta, vara
     domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
     keys: 0,
@@ -137,6 +140,8 @@ export function migrate(save) {
   out.clock = normalizeClock(out.clock);
   out.store = normalizeStore(out.store);
   out.quests = normalizeQuests(out.quests);
+  out.materials = normalizeMaterials(out.materials);
+  out.tools = normalizeTools(out.tools);
 
   return out;
 }

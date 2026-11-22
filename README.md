@@ -72,6 +72,11 @@ de casa ao trabalho, à taverna ou à praça e voltam pelas ruas; Loja de Frutas
 dia sorteadas pela tabela de raridade da loja; Mestre de Missões na Prefeitura com 3 missões por
 dia (entrega, caça, conversa, recado) e redistribuição de pontos paga.
 
+Forja e profissões (atualização 12): Picareta e Vara de Pesca; mineração em 11 veios e pesca em 4
+pontos (cais, praia e lagoa) com maestrias próprias; materiais dos inimigos; Forja da Rosa com 12
+receitas, peças com 0 a 3 estrelas e melhorias de +1 a +10 com custo crescente e prévia; venda de
+materiais na Mercadora; aba Profissões em Personagem.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

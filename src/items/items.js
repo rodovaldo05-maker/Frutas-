@@ -51,9 +51,18 @@ export const ARMOR_SLOTS = ['cabeca', 'torso', 'pernas', 'botas'];
 // Tetos dos bônus somados de equipamento
 export const GEAR_CAPS = { defesa: 30, vida: 60, folego: 40, energia: 25, elemental: 0.15 };
 
+// Melhoria (+1 a +10, forja) e estrelas (0 a 3, qualidade da peça forjada): +8% e +6% cada
+export const itemMult = (it) => 1 + 0.08 * (it?.up ?? 0) + 0.06 * (it?.estrelas ?? 0);
+export const itemLabel = (it) => `${ITEMS[it.id].nome}${it.up ? ` +${it.up}` : ''}${it.estrelas ? ` ${'★'.repeat(it.estrelas)}` : ''}`;
+const clampInt = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v)) || 0));
+
 export function normalizeGear(save) {
   save.items = Array.isArray(save.items) ? save.items.filter((it) => it && ITEMS[it.id] && Number.isFinite(it.uid)) : [];
-  for (const it of save.items) it.dur = Math.max(0, Math.min(ITEMS[it.id].dur, Number.isFinite(it.dur) ? it.dur : ITEMS[it.id].dur));
+  for (const it of save.items) {
+    it.dur = Math.max(0, Math.min(ITEMS[it.id].dur, Number.isFinite(it.dur) ? it.dur : ITEMS[it.id].dur));
+    it.up = clampInt(it.up, 10);
+    it.estrelas = clampInt(it.estrelas, 3);
+  }
   const gear = {};
   for (const s of SLOTS) {
     const uid = save.gear?.[s];
@@ -97,13 +106,16 @@ export function gearTotals(save) {
     const d = ITEMS[it.id];
     t.peso += d.peso;
     if (isBroken(it)) continue;
-    for (const [k, v] of Object.entries(d.attrs)) t[k] += v;
+    const m = itemMult(it);
+    for (const [k, v] of Object.entries(d.attrs)) t[k] += v * m;
     if (d.sinergia && d.sinergia.raca === save.race) {
       t[d.sinergia.efeito] += d.sinergia.valor;
       t.sinergias.push(d.sinergia.texto);
     }
   }
-  for (const [k, cap] of Object.entries(GEAR_CAPS)) t[k] = Math.min(cap, t[k]);
+  // vida, fôlego e energia inteiros; defesa com uma casa; elemental em fração
+  const round = { vida: 1, folego: 1, energia: 1, defesa: 10 };
+  for (const [k, cap] of Object.entries(GEAR_CAPS)) t[k] = Math.min(cap, round[k] ? Math.round(t[k] * round[k]) / round[k] : t[k]);
   t.pesoPenalty = Math.min(0.2, Math.max(0, t.peso - 6) * 0.02); // −2% de recuperação de fôlego por unidade acima de 6
   return t;
 }

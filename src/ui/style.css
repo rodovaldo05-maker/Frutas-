@@ -1156,3 +1156,29 @@ body.aboard .act.jump::after {
 .quest-offer .btn { grid-row: 1 / span 2; grid-column: 2; }
 .qm-respec { align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 8px; flex: 0 0 auto; }
 .mission.village .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ===== Forja e profissões (atualização 12) ===== */
+.forge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; overflow-y: auto; min-height: 0; padding-right: 4px; }
+.forge-card {
+  display: grid; gap: 4px; padding: 10px; border-radius: 12px; background: linear-gradient(180deg, rgba(46, 33, 76, 0.9), rgba(21, 17, 42, 0.95));
+  border: 2px solid var(--qc, var(--gold));
+}
+.forge-card header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.forge-card b { font: 700 14px var(--title-font); color: #ffe9b3; }
+.forge-card small { font-size: 11px; color: var(--qc, #cdbf9e); font-weight: 800; }
+.forge-card .attrs { font-size: 12px; color: #fff1cf; }
+.forge-card .attrs i { color: #8ff08a; font-style: normal; }
+.forge-card .mats { display: flex; flex-wrap: wrap; gap: 4px; }
+.forge-card .mats span { font-size: 11.5px; padding: 2px 7px; border-radius: 999px; background: rgba(14, 11, 28, 0.7); border: 1px solid #4a4458; color: #fff1cf; }
+.forge-card .mats span.ok { border-color: #6fd35e; }
+.forge-card .mats span.no { border-color: #d0503d; color: #ffd1c6; }
+.forge-card .why { font-size: 11px; color: #ffb3a6; }
+.mat-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; overflow-y: auto; min-height: 0; }
+.mat-row { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(21, 17, 42, 0.7); border: 1px solid rgba(217, 166, 74, 0.5); }
+.mat-row .ic { font-size: 22px; grid-row: 1 / span 2; }
+.mat-row b { font-size: 13px; color: #ffe9b3; }
+.mat-row small { font-size: 11.5px; color: #cdbf9e; }
+.mat-row .row-btns { grid-column: 1 / -1; }
+.prof-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+.prof-row b { color: #ffe9b3; font-size: 13px; }
+.prof-row .bar { height: 14px; }

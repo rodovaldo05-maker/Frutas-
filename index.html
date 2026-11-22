@@ -180,9 +180,10 @@
             <div class="status-summary" id="status-summary"></div>
           </div>
           <div class="status-list">
-            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button><button data-ttab="raca">Raça</button><button data-ttab="equip">Equipamento</button></div>
+            <div class="top-tabs" id="train-tabs"><button data-ttab="status" class="active">Status<span class="badge hidden" id="tab-points"></span></button><button data-ttab="atributos">Treinamento</button><button data-ttab="historico">Ganhos recentes</button><button data-ttab="raca">Raça</button><button data-ttab="equip">Equipamento</button><button data-ttab="prof">Profissões</button></div>
             <div id="pane-race" class="pane-race hidden"></div>
             <div id="pane-gear" class="pane-gear hidden"></div>
+            <div id="pane-prof" class="pane-gear hidden"></div>
             <div id="pane-status" class="pane-status">
               <p class="muted small train-intro">Pontos de nível: cada nível de aventureiro dá 3 pontos e <b>você escolhe</b> onde colocar. O treino é separado e soma por cima.</p>
               <div class="status-head"><span>Pontos disponíveis <b id="status-points">0</b></span><button id="btn-respec" class="btn" data-icon="home">Redistribuir</button></div>
@@ -372,6 +373,30 @@
         <button class="close" data-close="npc-dialog" data-icon="close" aria-label="Fechar"></button>
         <p id="dlg-text" class="dialog-text"></p>
         <div class="row-btns dialog-actions" id="dlg-actions"></div>
+      </div>
+    </div>
+
+    <!-- ===== Forja da Rosa (atualização 12) ===== -->
+    <div id="forge" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="sword">Forja</div>
+        <button class="close" data-close="forge" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top">
+          <div class="top-tabs" id="forge-tabs"><button data-ftab="forjar" class="active">Forjar</button><button data-ftab="melhorar">Melhorar</button></div>
+          <div class="wallet big"><span data-icon="coin"><b id="fg-coins">0</b></span></div>
+          <span id="fg-prof" class="store-restock"></span>
+        </div>
+        <div id="fg-list" class="forge-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== Vender materiais (Mercadora) ===== -->
+    <div id="sellmats" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="coin">Vender materiais</div>
+        <button class="close" data-close="sellmats" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top"><div class="wallet big"><span data-icon="coin"><b id="sm-coins">0</b></span></div><span class="store-restock">A Mercadora paga o valor de cada material.</span></div>
+        <div id="sm-list" class="mat-list"></div>
       </div>
     </div>
 

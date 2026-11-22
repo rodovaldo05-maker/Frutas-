@@ -7,6 +7,7 @@ import { buildTerrain, tropicalColor } from '../terrain/terrainMesh.js';
 import { StructureBuilder } from '../world/structures.js';
 import { buildNature } from '../world/nature.js';
 import { smooth, valueNoise2D, mulberry32 } from '../core/math.js';
+import { KEEP_NODES } from '../crafting/gathering.js';
 
 export const ISLAND = {
   id: 'ilha-de-treino',
@@ -26,6 +27,8 @@ const KEEP_CLEAR = [
   [58, -30, 14], // acampamento elemental (combat/enemies.js)
   [12, 56, 6], // barraca do Mestre de Luta (world/npcs.js)
   [86, 11, 9], // cais do Barqueiro (islands/villageIsland.js)
+  [-36, 16, 5], // margem de pesca da lagoa (crafting/gathering.js)
+  ...KEEP_NODES, // veios de minério (crafting/gathering.js)
 ];
 
 const noise = valueNoise2D(7);

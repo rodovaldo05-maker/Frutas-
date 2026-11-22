@@ -145,3 +145,28 @@ Código: `src/races/races.js`, `src/races/raceSystem.js`, `src/races/raceParts.j
   aparecem no corpo com a cor do item.
 
 Código: `src/items/items.js`, `src/items/gearParts.js`; testes em `tests/items.test.js`.
+
+
+## 10. Situação: forja e profissões (atualização 12)
+
+- **Materiais** (`src/crafting/materials.js`): minérios (Pedra, Cobre, Ferro, Cristal Marinho),
+  pesca (Sardinha, Robalo, Atum, Peixe-Dourado, Concha, Pérola) e restos dos inimigos (Retalho de
+  Tecido dos Recrutas, 45%; Núcleo de Brasa, Geada ou Tormenta dos elementais, 35%). Pilhas até
+  999 em `save.materials`. A Mercadora (Joana) compra pelo valor de cada um.
+- **Ferramentas:** Picareta (400, com a Rosa) e Vara de Pesca (300, com a Joana).
+- **Mineração:** 11 veios (6 na Ilha de Treino, 5 em volta do Porto, cristal no alto do morro).
+  Minerar leva 1,8 s (até −50% com a maestria), a picareta balança e solta faíscas; o veio dá o
+  minério dele, extras com a maestria, e volta em 90 s. Mexer, pular ou esquivar cancela.
+- **Pesca:** 4 pontos (pontas dos dois cais, praia sul do Porto e margem da lagoa). Lança a linha,
+  espera a mordida (2,5–6 s, menos com a maestria) e puxa na janela (0,9 s + maestria) pelo botão
+  "Puxar!". Tabelas do mar e da lagoa; os raros pesam mais com a maestria.
+- **Maestrias próprias:** Mineração, Pesca e Forja, de 1 a 100 (mesma curva das proficiências),
+  na aba Personagem › Profissões, com ferramentas e materiais guardados.
+- **Forja da Rosa** (`src/crafting/forge.js`): 12 receitas (10 equipamentos e 2 espadas) com
+  materiais, moedas e nível mínimo. A peça forjada sai com 0 a 3 estrelas (+6% cada) sorteadas
+  pela maestria de Forja. **Melhorar** de +1 a +10 (+8% cada) com custo crescente (moedas × 1,55 por
+  nível, ferro 2 + nível e cristal a partir do +5) e prévia antes/depois. Os tetos do equipamento
+  continuam valendo. Nada é cobrado se faltar algo.
+- **Missões de coleta** no Mestre de Missões: pescar 3 peixes ou minerar 5 minérios.
+
+Código: `src/crafting/`, `src/ui/forgeUi.js`; testes em `tests/crafting.test.js`.

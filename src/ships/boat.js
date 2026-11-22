@@ -11,15 +11,17 @@ const WOOD = '#8a5a32';
 const WOOD_DARK = '#5a3a22';
 const TRIM = '#efe4cc';
 
-function buildModel() {
+// look: cores do casco, da vela, da faixa e da bandeira (navios inimigos usam outras);
+// cannons: canhões nas bordas (o bote tem um na proa, giratório)
+export function buildModel({ name = 'Bote', wood: woodC = WOOD, dark: darkC = WOOD_DARK, trim: trimC = TRIM, sail: sailC = '#f4ead0', stripe: stripeC = '#b8321e', flag: flagC = '#c2492f', cannons = 0, bowCannon = true } = {}) {
   const g = new THREE.Group();
-  g.name = 'Bote';
+  g.name = name;
   const L = BOAT.length;
   const B = BOAT.beam;
   const mat = (c, extra = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.82, metalness: 0.02, ...extra });
-  const wood = mat(WOOD);
-  const dark = mat(WOOD_DARK);
-  const trim = mat(TRIM);
+  const wood = mat(woodC);
+  const dark = mat(darkC);
+  const trim = mat(trimC);
   const bowStart = L / 2 - 1.9;
   // contorno do casco visto de cima (popa reta, proa em bico)
   const outline = [[-B / 2, -L / 2], [B / 2, -L / 2], [B / 2, bowStart], [0, L / 2], [-B / 2, bowStart]];
@@ -51,7 +53,7 @@ function buildModel() {
     g.add(rail);
   }
   // faixa vermelha só por fora do casco (um lado de cada vez)
-  const red = mat('#b8321e');
+  const red = mat(stripeC);
   for (const side of [-1, 1]) {
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, L - 2.4), red);
     stripe.position.set(side * (B / 2 + 0.13), 0.62, -0.4);
@@ -80,11 +82,32 @@ function buildModel() {
   const sailGeo = new THREE.BufferGeometry();
   sailGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, mastH + 0.05, 1.15, 0, 2.15, 1.15, 0, 2.15, -2.3], 3));
   sailGeo.computeVertexNormals();
-  const sail = new THREE.Mesh(sailGeo, mat('#f4ead0', { side: THREE.DoubleSide }));
+  const sail = new THREE.Mesh(sailGeo, mat(sailC, { side: THREE.DoubleSide }));
   g.add(sail);
-  const flag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.8), mat('#c2492f'));
+  const flag = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.8), mat(flagC));
   flag.position.set(0, mastH + 0.1, 0.75);
   g.add(flag);
+  // canhões (atualização 16): bronze escuro sobre um carrinho de madeira
+  const iron = mat('#2b2f33', { metalness: 0.6, roughness: 0.45 });
+  const cannon = (x, z, yaw) => {
+    const c = new THREE.Group();
+    const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.8), dark);
+    carriage.position.y = 0.15;
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.3, 10), iron);
+    barrel.rotation.x = Math.PI / 2 - 0.12;
+    barrel.position.set(0, 0.42, 0.25);
+    c.add(carriage, barrel);
+    c.position.set(x, BOAT.deck, z);
+    c.rotation.y = yaw;
+    g.add(c);
+    return c;
+  };
+  if (bowCannon) cannon(0, L / 2 - 2.3, 0);
+  for (let k = 0; k < cannons; k++) {
+    const z = -1.4 + k * 1.6;
+    cannon(B / 2 - 0.45, z, Math.PI / 2);
+    cannon(-B / 2 + 0.45, z, -Math.PI / 2);
+  }
   g.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true;
@@ -96,11 +119,13 @@ function buildModel() {
 }
 
 export class Boat {
-  constructor({ scene, physics, ocean, ground }) {
+  constructor({ scene, physics, ocean, ground, look = {}, scale = 1 }) {
     this.physics = physics;
     this.ocean = ocean;
     this.ground = ground;
-    const m = buildModel();
+    const m = buildModel(look);
+    m.group.scale.setScalar(scale);
+    this.scale = scale;
     this.model = m;
     scene.add(m.group);
     this.s = { x: 0, z: 0, yaw: 0, speed: 0, turning: 0 };

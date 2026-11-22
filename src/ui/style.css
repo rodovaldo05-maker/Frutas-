@@ -1216,3 +1216,11 @@ body:has(.boss-bar:not(.hidden)) .toasts { top: calc(84px + var(--safe-t)); }
 body.cb-protan #game, body.cb-protan #hud { filter: url(#cb-protan); }
 body.cb-deutan #game, body.cb-deutan #hud { filter: url(#cb-deutan); }
 body.cb-tritan #game, body.cb-tritan #hud { filter: url(#cb-tritan); }
+
+/* ===== Combate naval (atualização 16) ===== */
+.hull-bar { position: absolute; left: 50%; top: calc(78px + var(--safe-t)); transform: translateX(-50%); width: min(300px, 36vw); z-index: 4; pointer-events: none; display: grid; gap: 2px; justify-items: center; }
+.hull-track { border-color: #c8a060; height: 14px; }
+.hull-track i { background: linear-gradient(90deg, #8a5a32, #c8a060); transition: transform 0.15s; }
+.hull-track i.low { background: linear-gradient(90deg, #a8321e, #ff8a3a); }
+.hull-bar small { font: 700 9px var(--body-font); color: #fff1cf; text-shadow: 0 1px 2px #000; opacity: 0.85; }
+body:has(.hull-bar:not(.hidden)) .toasts { top: calc(118px + var(--safe-t)); }

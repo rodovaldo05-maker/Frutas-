@@ -19,6 +19,9 @@ export const MATERIALS = {
   'nucleo-brasa': { nome: 'Núcleo de Brasa', icone: '🔥', tipo: 'inimigo', raridade: 'Rara', valor: 40 },
   'nucleo-geada': { nome: 'Núcleo de Geada', icone: '❄️', tipo: 'inimigo', raridade: 'Rara', valor: 40 },
   'nucleo-tormenta': { nome: 'Núcleo de Tormenta', icone: '⚡', tipo: 'inimigo', raridade: 'Rara', valor: 40 },
+  // navios inimigos (atualização 16)
+  tabua: { nome: 'Tábua de Navio', icone: '🪵', tipo: 'navio', raridade: 'Comum', valor: 10 },
+  polvora: { nome: 'Pólvora', icone: '💣', tipo: 'navio', raridade: 'Incomum', valor: 25 },
 };
 export const MATERIAL_IDS = Object.keys(MATERIALS);
 

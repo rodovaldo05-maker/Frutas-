@@ -140,6 +140,27 @@ Código: `src/ships/boatRules.js` (regras puras, testadas em `tests/boat.test.js
 | Combate no convés | Sistema normal de combate (doc 05) sobre a superfície que balança |
 | Naufrágio | Abaixo de 0% de vida o navio afunda em 20 s; tripulação vai para a água |
 
+### 4.1 No jogo (atualização 16)
+
+| Item | Como está |
+|---|---|
+| Canhão do bote | Um canhão giratório na proa. **Atacar** (tocar na tela, clique, J) atira para onde a câmera aponta; mira sozinho no navio inimigo mais perto do centro (cone de 25°, até 86) prevendo o movimento dele. Recarga 1,6 s. O arco previsto aparece tracejado sobre a água, com um anel onde a bala cai (vermelho com alvo, dourado sem alvo) |
+| Bala | Balística real: saída 46/s, gravidade 24; explode ao tocar navio, água ou chão (raio 3,4: dano cheio no centro, metade na borda) |
+| Casco do bote | 300 + 6 por nível de aventureiro; barra "Casco" no topo enquanto navega; aviso abaixo de 30% |
+| Conserto | Com qualquer Barqueiro: 0,6 moeda por ponto que falta |
+| Bote afundado | Casco a zero: o jogador cai na água e um Barqueiro leva outro bote, com metade do casco, ao cais da Ilha de Treino |
+| Navios corsários | 10 navios (escala 1,5, dois canhões de cada lado): a Chalupa Ferrugem (Nv. 12) entre a Ilha de Treino e o Porto, e um por ilha do Primeiro Mar no primeiro terço da faixa de nível; patrulham um anel de 6 pontos em mar aberto |
+| IA | Vê o bote a 75; vai para um ponto ao lado dele a ~36 (mostra o costado) e atira entre 18 e 64, com erro maior de longe e contra bote rápido (dá para desviar navegando); a mais de 150 da patrulha volta |
+| Casco e dano dos inimigos | Casco 300 + 9 por nível; canhão 18 + 0,55 por nível. Do mesmo nível, afundar um navio leva 8 a 15 tiros |
+| Abalroar | Encostar rápido (diferença de velocidade acima de 6) fere os dois cascos |
+| Afundar um navio | Afunda em 6 s e volta à patrulha depois de 150 s. Saque: moedas (30 + 3 por nível), experiência (1/6 do nível), 2–4 Tábuas de Navio, Pólvora (60%), Pérola (20%) e item de equipamento (25%) |
+| Fora do bote | Balas inimigas que caem perto ferem o jogador nadando ou na praia (metade do dano) |
+| Mapa | Navios inimigos aparecem como pontos vermelhos no minimapa (até 180) e o mais perto em combate usa a barra do topo |
+
+Código: `src/ships/naval.js` (regras puras, `tests/naval.test.js`) e `src/ships/fleet.js` (navios,
+balas, mira, naufrágio). Ainda não: velas com vento, seções de casco, incêndio, mastro que
+cai, abordagem com ganchos e combate no convés.
+
 ## 5. Bestas marinhas
 
 | Categoria | Exemplo | Nível | Comportamento |

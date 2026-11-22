@@ -188,11 +188,11 @@ export class Minimap {
       const y = r + (m.z - pos.z) * ppu;
       const d = Math.hypot(x - r, y - r);
       const k = d > r - 10 ? (r - 10) / d : 1; // longe: fica preso na borda, apontando a direção
-      ctx.fillStyle = '#8a5a32';
+      ctx.fillStyle = m.color ?? '#8a5a32';
       ctx.strokeStyle = '#fff1cf';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(r + (x - r) * k, r + (y - r) * k, 6, 0, Math.PI * 2);
+      ctx.arc(r + (x - r) * k, r + (y - r) * k, m.color ? 4.5 : 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }

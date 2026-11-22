@@ -93,6 +93,10 @@ Polimento e Android (atualização 15): personagens, placas e enfeites juntados 
 30/60 qps e resolução fixa; aba Acessibilidade com tamanho do texto, modo daltônico, atenuar
 clarões e números de dano; vibração ao levar golpes; AAB assinado para a loja.
 
+Combate naval (atualização 16): canhão giratório na proa do bote (Atacar atira, com mira
+automática e arco previsto), casco com vida e conserto nos Barqueiros, e 10 navios corsários
+patrulhando as ilhas do Primeiro Mar que atacam o bote, afundam e deixam saque.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

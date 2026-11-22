@@ -58,6 +58,8 @@ import { PowerFx } from './vfx/powerFx.js';
 import { SkillBar } from './ui/skillBar.js';
 import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
 import { makeSword } from './weapons/swordModel.js';
+import { Fleet } from './ships/fleet.js';
+import { shipLoot, repairCost, NAVAL } from './ships/naval.js';
 import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
 import { Armory } from './ui/armory.js';
 import { STYLES, styleCombo, stylePowers } from './styles/styles.js';
@@ -147,6 +149,7 @@ async function boot() {
   const ocean = new Ocean({ scene: renderer.scene, field: island.field, level: ISLAND.waterLevel, sun: sunDir, sky: { top: new THREE.Color('#5aa7d6'), horizon: new THREE.Color('#cfe7e4') } });
   ocean.setDetail(renderer.quality.oceanDetail);
   let boat = null; // bote do jogador (criado depois do personagem)
+  let fleet = null; // navios inimigos e canhões (atualização 16)
 
   await setLoading('Montando o personagem…', 74);
   const audio = createFruitAudio();
@@ -706,12 +709,13 @@ async function boot() {
     skillBar.setEquipped(save.equipped);
     skillBar.setEnergyVisible(!!f);
     const awk = f ? { state: awakenState(save, f.id, level), name: FRUIT[f.id]?.despertar?.nome ?? 'Despertar', hits: trialProgress(save, f.id), total: AWAKEN.trialHits } : null;
+    // lista de habilidades do slot equipado (fruta, arma ou estilo)
     if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level, awaken: awk });
+    else if (swordOn) skillBar.setSkills({ title: w.nome, color: w.cor, powers: blade.powers, domainLevel: prof, lockLabel: 'Prof.', awaken: false });
+    else skillBar.setSkills({ title: st.nome, color: st.cor, powers: art.powers, domainLevel: stLv, lockLabel: 'Maest.', awaken: false });
     // botão da forma híbrida: só com fruta de fera
     $('btn-form').classList.toggle('hidden', !hasForm(f?.id));
     if (f) $('btn-form').style.setProperty('--fc', f.color);
-    else if (swordOn) skillBar.setSkills({ title: w.nome, color: w.cor, powers: blade.powers, domainLevel: prof, lockLabel: 'Prof.', awaken: false });
-    else skillBar.setSkills({ title: st.nome, color: st.cor, powers: art.powers, domainLevel: stLv, lockLabel: 'Maest.', awaken: false });
   }
   const setupPowers = () => {
     const f = eatenFruit();
@@ -764,9 +768,11 @@ async function boot() {
   });
 
   // experiência: objetivos, recompensa de missão e áreas descobertas
+  let fleetLevelHook = () => {};
   function grantXp(amount) {
     const levels = addXp(save, amount);
     if (levels > 0) {
+      fleetLevelHook(save.level);
       hud.toast(`Nível de aventureiro ${save.level}! +${levels * POINTS_PER_LEVEL} pontos de status para distribuir`, 'gold');
       hud.levelUp();
       audio.play('base', 'wing', 1);
@@ -795,11 +801,91 @@ async function boot() {
     const m = save.boat ?? DOCKS.treino.mooring;
     boat.place(m.x, m.z, m.yaw);
   }
+
+  // ===== Combate naval (atualização 16): navios corsários, canhão da proa e casco =====
+  fleet = new Fleet({ scene: renderer.scene, physics, ocean, ground: (x, z) => world.sample(x, z), sea: SEA, fx, audio, onEvent: (n, d) => navalEvent(n, d) });
+  fleet.setLevel(save.level, Number.isFinite(save.boatHull) ? save.boatHull : null);
+  fleetLevelHook = (lv) => fleet.setLevel(lv);
+  if (fleet.hull <= 0) fleet.hull = Math.round(fleet.maxHull * NAVAL.boatRespawnHull); // salvo no meio de um naufrágio
+  function updateHullBar() {
+    const show = boat.aboard;
+    $('hull-bar').classList.toggle('hidden', !show);
+    if (!show) return;
+    const k = fleet.hull / fleet.maxHull;
+    $('hull-fill').style.transform = `scaleX(${k})`;
+    $('hull-fill').classList.toggle('low', k < 0.3);
+    $('hull-txt').textContent = `Casco ${fmt(Math.ceil(fleet.hull))} / ${fmt(fleet.maxHull)}`;
+  }
+  function navalEvent(name, d) {
+    switch (name) {
+      case 'shipHit':
+        floats.add({ x: d.at.x, y: d.at.y + 2, z: d.at.z }, String(d.damage), 'forte');
+        break;
+      case 'shipSunk': {
+        const s = d.ship;
+        const loot = shipLoot(s.level);
+        save.coins += loot.coins;
+        hud.toast(`${s.def.nome} afundou! +${fmt(loot.xp)} exp · +${fmt(loot.coins)} moedas`, 'gold');
+        for (const [id, n] of loot.mats) {
+          addMaterial(save, id, n);
+          hud.toast(`+${n} ${MATERIALS[id].nome}`, 'good');
+        }
+        if (loot.item) {
+          const drop = dropFor(s.level);
+          if (drop) {
+            addItem(save, drop);
+            hud.toast(`Item no naufrágio: ${ITEMS[drop].nome} (${ITEMS[drop].qualidade})`, 'gold');
+          }
+        }
+        save.ships = save.ships ?? {};
+        save.ships[s.id] = (save.ships[s.id] ?? 0) + 1;
+        audio.play('base', 'death', 0.8);
+        grantXp(loot.xp);
+        saveNow(true);
+        break;
+      }
+      case 'hullHit':
+        shake = Math.max(shake, 0.25);
+        vibrate(40);
+        floats.add({ x: d.at.x, y: (d.at.y ?? boat.y) + 2, z: d.at.z }, `−${d.damage}`, 'jogador');
+        if (d.hull > 0 && d.hull / d.max < 0.3 && !fleet.warned) {
+          fleet.warned = true;
+          hud.toast('Casco quase rompendo! Fuja para a costa e conserte com um Barqueiro.', 'bad');
+        }
+        break;
+      case 'ram':
+        hud.toast('Abalroou!', 'bad');
+        break;
+      case 'boatSunk':
+        if (boat.aboard) {
+          // o jogador cai na água ao lado do bote que afunda
+          boat.aboard = false;
+          boat.s.speed = 0;
+          ctl.leaveRide(boat.s.x + Math.cos(boat.s.yaw) * 3, boat.y + 0.2, boat.s.z - Math.sin(boat.s.yaw) * 3, boat.s.yaw);
+          prev.copy(ctl.pos);
+        }
+        fleet.warned = false;
+        hud.toast('O bote afundou! Um Barqueiro leva outro, meio consertado, até o cais da Ilha de Treino.', 'bad');
+        break;
+      case 'boatRestored': {
+        const m = DOCKS.treino.mooring;
+        boat.place(m.x, m.z, m.yaw);
+        fleet.hull = Math.round(fleet.maxHull * NAVAL.boatRespawnHull);
+        saveNow(true);
+        break;
+      }
+      case 'playerBlast':
+        enemyHit({ id: d.ship?.id ?? 'canhao', pos: d.at, yaw: 0, life: 1 }, { id: 'canhao', posture: 12, knock: 3, reaction: 'media' }, d.damage, d.at);
+        break;
+      default:
+    }
+  }
   const CROSS_XP = 60;
   let boardedFrom = null; // ilha onde embarcou (a primeira travessia até a outra dá experiência)
   const islandAt = (p) => (village.field.inside(p.x, p.z) ? 'porto' : island.field.inside(p.x, p.z) ? 'treino' : null);
   function board() {
     if (boat.aboard) return;
+    if (fleet.sunk > 0) return;
     boardedFrom = islandAt(ctl.pos) ?? boardedFrom;
     boat.aboard = true;
     const st = boat.seat();
@@ -810,6 +896,10 @@ async function boot() {
     if (!save.visited.includes('dica:bote')) {
       save.visited.push('dica:bote');
       hud.toast('No bote: o analógico aponta o rumo · Correr acelera · Pular ou Desembarcar desce');
+    }
+    if (!save.visited.includes('dica:canhao')) {
+      save.visited.push('dica:canhao');
+      hud.toast('Canhão da proa: Atacar atira para onde a câmera aponta (mira sozinho no navio mais perto do centro). Cuidado com os corsários!', 'gold');
     }
   }
   function disembark() {
@@ -1169,6 +1259,7 @@ async function boot() {
   async function saveNow(quiet = false) {
     save.player = ctl.snapshot();
     if (boat) save.boat = boat.snapshot();
+    if (fleet) save.boatHull = Math.round(fleet.hull);
     save.playTime = Math.round(playTime);
     const ok = await saves.saveGame(save);
     if (!quiet) hud.toast(ok ? 'Jogo salvo' : 'Não foi possível salvar', ok ? 'good' : 'bad');
@@ -1303,6 +1394,7 @@ async function boot() {
     $('boatman-title').lastChild.textContent = npc.name;
     $('boatman-text').textContent = `Levo você ${npc.to === 'porto' ? 'ao' : 'à'} ${DOCKS[npc.to].island} num instante, ou trago o seu bote até este cais para você navegar.`;
     $('btn-ferry').lastChild.textContent = `Viagem rápida: ${DOCKS[npc.to].island}`;
+    refreshRepair();
     $('btn-callboat').disabled = moored;
     $('btn-callboat').lastChild.textContent = moored ? 'Seu bote já está aqui' : 'Trazer meu bote';
     openModal('boatman');
@@ -1310,6 +1402,28 @@ async function boot() {
   $('btn-ferry').addEventListener('click', () => {
     closeModal('boatman');
     if (boatmanNpc) travel(boatmanNpc.to);
+  });
+  // conserto do casco (atualização 16): moedas por ponto que falta
+  function refreshRepair() {
+    const cost = repairCost(fleet.hull, fleet.maxHull);
+    const b = $('btn-repair');
+    b.disabled = cost <= 0 || fleet.sunk > 0;
+    b.lastChild.textContent = cost <= 0 ? `Casco inteiro (${fmt(fleet.maxHull)})` : `Consertar o bote: ${fmt(cost)} moedas (casco ${fmt(Math.ceil(fleet.hull))}/${fmt(fleet.maxHull)})`;
+  }
+  $('btn-repair').addEventListener('click', () => {
+    const cost = repairCost(fleet.hull, fleet.maxHull);
+    if (cost <= 0) return;
+    if (save.coins < cost) {
+      hud.toast(`Faltam ${fmt(cost - save.coins)} moedas para consertar o casco.`, 'bad');
+      return;
+    }
+    save.coins -= cost;
+    fleet.repair();
+    fleet.warned = false;
+    refreshProfile();
+    refreshRepair();
+    hud.toast('Casco consertado!', 'good');
+    saveNow(true);
   });
   $('btn-callboat').addEventListener('click', () => {
     if (!boatmanNpc) return;
@@ -1477,7 +1591,8 @@ async function boot() {
       }
       gatherWorld.update(dt, ocean);
       if (boat.aboard) {
-        // no bote: sem luta, habilidades nem esquiva; Pular desce
+        // no bote: sem luta, habilidades nem esquiva; Pular desce; Atacar atira com o canhão
+        if (inp.attackPressed) fleet.playerFire(boat, inp.camYaw);
         inp.attackPressed = false;
         inp.skill = -1;
         inp.racePressed = false;
@@ -1543,6 +1658,7 @@ async function boot() {
         boat.step(dt, null);
         ctl.step(dt, inp);
       }
+      fleet.step(dt, { boat, aboard: boat.aboard, player: ctl.pos });
       conditions.update(dt, ctl);
       // lava da Caldeira Rubra: queima quem pisa na cratera
       lavaT -= dt;
@@ -1589,6 +1705,13 @@ async function boot() {
       const animDt = mode === 'title' ? dt : loop.paused ? 0 : dt;
       if (mode === 'title') ctl.input = titleIdle;
       boat.render(alpha, animDt);
+      if (fleet.sunk > 0) {
+        // o bote afundando: desce e aderna
+        const k = 1 - fleet.sunk / 4;
+        boat.model.group.position.y -= k * 5;
+        boat.model.group.rotation.z += k * 0.7;
+      }
+      fleet.render(alpha, animDt, { aboard: boat.aboard, boat, camYaw: cam.yaw, playerPos: ctl.pos });
       villagers.render(animDt, view);
       // luz do dia (a cada meio segundo): céu, sol, neblina, mar e lampiões; relógio na tela
       dayTimer -= dt;
@@ -1747,19 +1870,30 @@ async function boot() {
       for (const r of arena.recrutas) {
         if (r.boss && r.alive && Math.hypot(r.pos.x - ctl.pos.x, r.pos.z - ctl.pos.z) < 40) boss = r;
       }
-      if (boss !== bossShown) {
-        bossShown = boss;
-        $('boss-bar').classList.toggle('hidden', !boss);
+      // no bote: o navio inimigo em combate mais perto usa a mesma barra
+      const ship = !boss && boat.aboard ? fleet.engaged(ctl.pos) : null;
+      const shown = boss ?? ship;
+      if (shown !== bossShown) {
+        bossShown = shown;
+        $('boss-bar').classList.toggle('hidden', !shown);
         if (boss) $('boss-name').textContent = `${boss.def.nome} · Nv. ${boss.def.level}`;
+        else if (ship) $('boss-name').textContent = `⚓ ${ship.def.nome} · Nv. ${ship.level}`;
       }
       if (boss) {
         $('boss-fill').style.transform = `scaleX(${boss.health / boss.maxHealth})`;
         $('boss-hp').textContent = `${fmt(Math.ceil(boss.health))} / ${fmt(boss.maxHealth)}`;
+      } else if (ship) {
+        $('boss-fill').style.transform = `scaleX(${ship.hull / ship.maxHull})`;
+        $('boss-hp').textContent = `${fmt(Math.ceil(ship.hull))} / ${fmt(ship.maxHull)}`;
       }
+      updateHullBar();
       minimapTimer -= dt;
       if (minimapTimer <= 0) {
         minimapTimer = 0.1;
-        minimap.markers = boat.aboard ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
+        minimap.markers = boat.aboard || fleet.sunk > 0 ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
+        for (const s of fleet.ships) {
+          if (s.alive && Math.hypot(s.s.x - ctl.pos.x, s.s.z - ctl.pos.z) < 180) minimap.markers.push({ x: s.s.x, z: s.s.z, label: s.def.nome, color: '#c0392b' });
+        }
         minimap.draw(view, ctl.yaw);
       }
     },
@@ -1944,6 +2078,7 @@ async function boot() {
     gathering,
     gatherWorld,
     sea,
+    fleet,
     forgeUi,
     toggleForm: () => toggleForm(),
     get form() {

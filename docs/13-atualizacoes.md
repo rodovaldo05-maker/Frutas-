@@ -24,6 +24,7 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | Vila viva | Relógio do jogo com dia e noite (lampiões acendem), móveis por dentro e portas que abrem, 10 moradores com nome e rotina casa → trabalho → lazer → casa pelas ruas, Loja de Frutas do dia pela tabela de raridade, conversas com serviços (refeição, troca, armaduras), Mestre de Missões com 3 missões por dia e redistribuição de pontos paga — Atualização 11 |
 | Bote | Bote do jogador amarrado no cais: embarcar, pilotar pelo analógico em relação à câmera, Correr acelera, para no raso e no cais, balança com as ondas, esteira, descer no cais/praia (ou água), salvo navegando; Barqueiros trazem o bote; avisos de local pequenos no topo (0,2 s) — Atualização 10 |
 | Porto das Origens | Segunda ilha, a leste, com a vila gerada pela semente 2026: praça com chafariz, 4 avenidas (uma até o cais), anel de ruas, 19 casas com porta (Prefeitura, Mercado, Taverna, Ferreiro, Loja de Frutas e residências), postes, cais nas duas ilhas e Barqueiros que levam de uma à outra; mapa e minimapa trocam de ilha e mostram ruas e casas — Atualização 9 |
+| Combate naval | Canhão giratório na proa do bote com mira automática e arco previsto, casco que cresce com o nível e conserto nos Barqueiros, 10 navios corsários (Nv. 12 a ~670) patrulhando as ilhas, que perseguem, atiram de lado e afundam com saque (moedas, experiência, Tábuas, Pólvora, itens); abalroar; bote afundado volta ao cais — Atualização 16 |
 | Polimento e Android | Corpo dos personagens numa malha só (animada pelas juntas), placas num atlas, peças paradas juntadas: chamadas de desenho 406 → 148 no início, 293 → 112 na vila e 215 → 115 no cais; limite de 30/60 qps, resolução fixa ou automática, tamanho do texto (90–140%), modo daltônico (3 filtros), atenuar clarões, números de dano e vibração liga/desliga; AAB assinado para a loja — Atualização 15 |
 | Primeiro Mar | Nove ilhas novas (Praia dos Saqueadores a Fenda Celeste) com bioma, relevo e construções próprios, 4 inimigos por nível e 1 chefe por ilha (Nv. 25 a 700), Capitão Ferrugem no Porto das Origens, barra de chefe, recompensas de chefe, lava que queima, praia de chegada com placa e Carta do mar no mapa — Atualização 14 |
 | Poderes das frutas | Energia, 3 habilidades por fruta com gesto do laboratório e efeito real (congelar, queimar, puxar, empurrar, lançar), combo próprio da fruta, domínio por fruta que libera as habilidades — Atualização 3 |
@@ -41,6 +42,13 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | Trocar de slot no meio de uma técnica de estilo | Só fruta e espada bloqueavam | Os três bloqueiam |
 | Muitas chamadas de desenho (celular) | 12 personagens de 37 peças desenhados mesmo longe | Personagens a mais de 80 não são desenhados; de longe o rosto fica só com o cabelo; só as peças grandes fazem sombra (616 → 401 na área inicial, 341 → 221 na vila) |
 | Partes lentas | Nado 2,45, escalada 2,2, agachado 1,7, escorregar 6, bote acelerando devagar | Nado 3,0 (Correr 5,4), escalada 3,0, agachado 2,0, escorregar 9, bote acelera mais rápido |
+
+## Correções (junto da atualização 16)
+
+| Problema | Causa | Correção |
+|---|---|---|
+| Com fruta comida, trocar para o Estilo (ou Arma) deixava a lista de habilidades da fruta na tela | Na atualização 13 o botão da Forma híbrida entrou no meio do `if / else` que escolhe a lista; o `else` passou a depender de "tem fruta" | A lista volta a seguir o slot equipado (fruta, arma ou estilo); o botão da forma é tratado depois |
+| (teste) Cada tiro de canhão do jogador feria todos os navios do mar | A explosão tratava "fora do alcance" como "na borda" | Só navios dentro do raio da explosão |
 
 ## Roteiro
 
@@ -61,8 +69,8 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | 13 | **Especializações e despertares** (doc 12, fase 4) | Especialização racial, missões de despertar, transformações das frutas | Despertar muda visual e habilidades sem deformar o corpo | **Feita** (formas completas depois) |
 | 14 | **Primeiro Mar** (doc 02) | Ilhas restantes do Primeiro Mar, inimigos por nível, chefes | Navegar por todas as ilhas e derrotar os chefes | **Feita** (grutas, missões e atividades de cada ilha depois) |
 | 15 | **Polimento e Android** | Otimização, acessibilidade, AAB para loja | Metas de desempenho nos três perfis de aparelho | **Feita** (meta de 150 chamadas no perfil Médio atingida nas áreas medidas; teste em aparelho real fica com o jogador) |
-| 16 | **Combate naval** (doc 03) | Canhões no bote, navios inimigos patrulhando entre as ilhas, casco com vida e conserto | Afundar e ser afundado sem travar o jogo; recompensas no mar | Próxima |
-| 17 | **Segundo Mar** (doc 02) | Travessia com tempestade depois da Guardiã da Fenda Celeste, primeiras ilhas do Segundo Mar | Chegar ao Segundo Mar pela travessia e voltar pelo porto | — |
+| 16 | **Combate naval** (doc 03) | Canhões no bote, navios inimigos patrulhando entre as ilhas, casco com vida e conserto | Afundar e ser afundado sem travar o jogo; recompensas no mar | **Feita** (abordagem, velas com vento e incêndio depois) |
+| 17 | **Segundo Mar** (doc 02) | Travessia com tempestade depois da Guardiã da Fenda Celeste, primeiras ilhas do Segundo Mar | Chegar ao Segundo Mar pela travessia e voltar pelo porto | Próxima |
 | 18 | **Bestas marinhas e eventos** | Bestas que aparecem no mar aberto, eventos de clima | Eventos com aviso e recompensa | — |
 | 19 | **Terceiro Mar** (doc 02) | Ilhas finais e chefes de alto nível | Navegar e derrotar os chefes | — |
 

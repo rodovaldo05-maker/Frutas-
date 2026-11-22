@@ -173,6 +173,11 @@ export function migrate(save) {
   if (!Number.isFinite(out.nextUid)) out.nextUid = 1 + out.bag.reduce((m, it) => Math.max(m, it.uid || 0), 0);
   if (out.held !== null && !out.bag.some((it) => it.uid === out.held)) out.held = null;
   out.boat = normalizeBoat(out.boat); // bote do jogador (null = amarrado no cais da Ilha de Treino)
+  // combate naval (atualização 16): casco do bote (null = inteiro) e navios afundados por id
+  out.boatHull = Number.isFinite(out.boatHull) && out.boatHull >= 0 ? Math.round(out.boatHull) : null;
+  out.ships = out.ships && typeof out.ships === 'object' && !Array.isArray(out.ships)
+    ? Object.fromEntries(Object.entries(out.ships).filter(([, v]) => Number.isFinite(v) && v > 0).map(([k, v]) => [k, Math.floor(v)]))
+    : {};
   out.clock = normalizeClock(out.clock);
   out.store = normalizeStore(out.store);
   out.quests = normalizeQuests(out.quests);

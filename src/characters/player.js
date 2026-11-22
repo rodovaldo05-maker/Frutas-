@@ -61,6 +61,7 @@ export function createPlayer(scene, data, { profile = 0, look = BASE_LOOK } = {}
 
   scene.add(body.root);
   let held = null;
+  let weapon = null;
   return {
     // fruta viva na mão (modelo do laboratório, com rosto)
     setHeldFruit(index) {
@@ -75,6 +76,19 @@ export function createPlayer(scene, data, { profile = 0, look = BASE_LOOK } = {}
     },
     get heldFruit() {
       return held;
+    },
+    // espada na mão direita (atualização 4); null guarda a arma
+    setWeapon(sword) {
+      if (weapon) weapon.removeFromParent();
+      weapon = sword || null;
+      if (!weapon) return;
+      weapon.position.set(0, -0.3, 0.05);
+      weapon.rotation.set(0, 0, 0);
+      weapon.scale.setScalar(1.25);
+      body.joints.mao_D.add(weapon);
+    },
+    get weapon() {
+      return weapon;
     },
     body,
     face,

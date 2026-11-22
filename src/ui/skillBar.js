@@ -25,7 +25,7 @@ export class SkillBar {
   }
 
   // Ícones e nomes dos slots de equipar
-  setSlots({ fruit, fruitThumb, fruitColor, styleName }) {
+  setSlots({ fruit, fruitThumb, fruitColor, styleName, weapon = null }) {
     const fill = (el, { img, icon, label, empty, color }) => {
       el.classList.toggle('empty', !!empty);
       el.style.borderColor = color || '';
@@ -33,7 +33,7 @@ export class SkillBar {
       el.innerHTML = `${n}${img ? `<img src="${img}" alt="" />` : icon ? ICONS[icon] : ''}<span class="lbl">${label}</span>`;
     };
     fill(this.slots[0], fruit ? { img: fruitThumb, label: fruit.name, color: fruitColor } : { label: 'Fruta', empty: true });
-    fill(this.slots[1], { label: 'Arma', empty: true });
+    fill(this.slots[1], weapon ? { icon: 'sword', label: weapon.nome.split(' ').slice(-1)[0], color: weapon.corRaridade } : { label: 'Arma', empty: true });
     fill(this.slots[2], { icon: 'fist', label: styleName });
     fill(this.slots[3], { label: '', empty: true });
     this.highlight();
@@ -49,7 +49,7 @@ export class SkillBar {
   }
 
   // Lista de habilidades do item equipado
-  setSkills({ title, color, powers = [], domainLevel = 1, note = '' }) {
+  setSkills({ title, color, powers = [], domainLevel = 1, note = '', lockLabel = 'Dom.', awaken = true }) {
     this.powers = powers;
     this.domainLevel = domainLevel;
     this.title.textContent = title;
@@ -58,10 +58,10 @@ export class SkillBar {
       const locked = domainLevel < p.unlock;
       return `<button data-btn class="skill-row${locked ? ' locked' : ''}" data-skill="${i}" title="${p.nome}: ${p.detalhe}">
         <span class="use">Usar</span><kbd>${SKILL_KEYS[i]}</kbd>
-        <span class="name">${locked ? `<span class="req">[Dom. ${p.unlock}]</span>` : `${p.curto.length > 18 ? p.nome.split(' ')[0] : p.nome}<small>${p.custo}</small><span class="cd"></span><span class="sec"></span>`}</span>
+        <span class="name">${locked ? `<span class="req">[${lockLabel} ${p.unlock}]</span>` : `${p.curto.length > 18 ? p.nome.split(' ')[0] : p.nome}${p.custo ? `<small>${p.custo}</small>` : ''}<span class="cd"></span><span class="sec"></span>`}</span>
       </button>`;
     });
-    if (powers.length) {
+    if (powers.length && awaken) {
       rows.push(`<button data-btn class="skill-row locked" data-skill="3" title="Despertar: domínio ${AWAKEN_LEVEL}"><span class="use">Usar</span><kbd>V</kbd><span class="name"><span class="req">[Dom. ${AWAKEN_LEVEL}]</span></span></button>`);
     }
     if (note) rows.push(`<div class="skill-note">${note}</div>`);
@@ -74,11 +74,12 @@ export class SkillBar {
     document.body.classList.toggle('has-energy', on);
   }
 
-  update(powers, active) {
+  // energy: sistema dos poderes (barra de Energia); powers: sistema do item equipado
+  update(energy, active, powers = energy) {
     if (!this.energyBox.classList.contains('hidden')) {
-      const e = powers.energy;
-      this.energyBar.style.transform = `scaleX(${Math.max(0, e / powers.energyMax)})`;
-      const text = `Energia ${Math.floor(e)} / ${powers.energyMax}`;
+      const e = energy.energy;
+      this.energyBar.style.transform = `scaleX(${Math.max(0, e / energy.energyMax)})`;
+      const text = `Energia ${Math.floor(e)} / ${energy.energyMax}`;
       if (this.energyText.textContent !== text) this.energyText.textContent = text;
     }
     if (!active || !this.rowEls) return;

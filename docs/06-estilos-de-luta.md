@@ -159,3 +159,24 @@ Estilo de maestria final. **Obtenção:** Templo da Aurora, nível 2000, requer 
 - Nenhum estilo pode ficar mais de 15% acima da média em nenhum cenário.
 - Estilos de níveis mais altos podem ser mais fortes, mas os de nível baixo continuam
   úteis por terem recargas menores.
+
+
+## 4. Situação no jogo: espadas (atualização 4)
+
+| Espada | Raridade | Preço | Combo | Habilidades (proficiência) |
+|---|---|---|---|---|
+| Lâmina de Treino | Comum | 500 | 13 · 15 · 21 | Corte Cruzado (1) · Giro da Lâmina (5) · Lua Cortante (12) |
+| Sabre Rubro | Rara | 4.000 | 16 · 19 · 25 | Rasgo Rubro (1) · Lua Rubra (5) · Tempestade de Cortes (12) |
+| Lâmina das Marés | Épica | 15.000 | 19 · 22 · 29 | Corte da Corrente (1) · Redemoinho de Aço (8) · Maré Cortante (16) |
+
+- Vendidas pelo Mestre de Armas (barraca ao lado do Trocador, na Ilha de Treino).
+- Slot 2 equipa a espada: o Atacar vira o combo de três cortes (mais alcance e arco que o
+  soco), com rastro na cor da lâmina; as habilidades ficam nas teclas Z X C (sem energia,
+  só recarga).
+- Dano = dano × (1 + 3% por ponto de Espada) × proficiência (+0,3% por nível, até +30%).
+- Proficiência com espadas (1 a 100): sobe acertando inimigos com a espada (golpe +1,5,
+  habilidade +3/+4, teto por oponente; bonecos rendem pouco). É do tipo de arma: trocar de
+  espada não muda a proficiência. Golpes de espada não treinam a Força (soco sim).
+
+Código: `src/weapons/weapons.js`, `src/weapons/swordModel.js`, `src/progression/proficiency.js`,
+`src/ui/armory.js`; testes em `tests/weapons.test.js`.

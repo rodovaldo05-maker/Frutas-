@@ -42,6 +42,10 @@ import { fruitStyle } from './combat/rules.js';
 import { domainOf, addDomainXp, domainBonus } from './progression/domain.js';
 import { PowerFx } from './vfx/powerFx.js';
 import { SkillBar } from './ui/skillBar.js';
+import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
+import { makeSword } from './weapons/swordModel.js';
+import { profOf, addProfXp, profBonus } from './progression/proficiency.js';
+import { Armory } from './ui/armory.js';
 import { buildArena } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
@@ -181,13 +185,25 @@ async function boot() {
     stats: () => {
       const b = bonuses(save.training);
       const m = damageMultipliers(save.status);
-      return { melee: m.melee, defense: m.defense, mitigation: b.mitigation, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      return { melee: m.melee, weapon: m.weapon, prof: profBonus(profOf(save, 'espada').level), defense: m.defense, mitigation: b.mitigation, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
       const head = { x: p.x, y: p.y + 2.4, z: p.z };
       switch (name) {
         case 'swing': audio.play('base', 'swing', 0.55 + d.step * 0.2); break;
+        case 'slash': {
+          // rastro do corte de espada: arco de cubos na cor da lâmina
+          const w = WEAPONS[d.attack.weapon];
+          if (!w) break;
+          const flip = d.attack.id.endsWith('2') ? -1 : 1;
+          for (let k = 0; k <= 12; k++) {
+            const a = ctl.yaw + flip * (-1.1 + (k / 12) * 2.2);
+            const r = d.attack.range * 0.8;
+            fx.burst({ x: p.x + Math.sin(a) * r, y: p.y + 2.1 + (k / 12 - 0.5) * flip * 1.2, z: p.z + Math.cos(a) * r }, w.cores.fio, { count: 1, speed: 0.3, up: 0.2, size: 0.22, life: 0.22, gravity: 0, spread: 0.1 });
+          }
+          break;
+        }
         case 'hit': {
           const t = d.target;
           const at = { x: t.pos.x, y: t.pos.y + 3.2, z: t.pos.z };
@@ -199,7 +215,8 @@ async function boot() {
           floats.add(at, String(d.damage), d.attack.heavy ? 'forte' : 'dano');
           audio.play('impacto', 'acerto', d.attack.heavy ? 1 : 0.7);
           shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
-          tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
+          if (d.attack.weapon) grantProf(t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
+          else tracker.combat('acerto', { target: t.id, life: t.life, hostile: t.hostile, attack: d.attack.id, heavy: d.attack.heavy }, p);
           if (d.attack.fruit) grantDomain(d.attack.fruit, t.hostile ? 1 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           if (d.result === 'break') floats.add({ ...at, y: at.y + 0.8 }, 'Guarda quebrada!', 'perfeita');
           break;
@@ -281,8 +298,8 @@ async function boot() {
     onEvent: (name, d) => {
       const p = ctl.pos;
       switch (name) {
-        case 'cast': audio.play(d.power.fruit, 'preparar', 0.7); break;
-        case 'release': audio.play(d.power.fruit, 'liberar', d.power.slot === 2 ? 1.1 : 0.9); break;
+        case 'cast': audio.play(d.power.weapon ? 'base' : d.power.fruit, d.power.weapon ? 'swing' : 'preparar', 0.7); break;
+        case 'release': audio.play(d.power.weapon ? 'base' : d.power.fruit, d.power.weapon ? 'dash' : 'liberar', d.power.slot === 2 ? 1.1 : 0.9); break;
         case 'impact': shake = Math.max(shake, 0.12); break;
         case 'denied':
           if (time - deniedAt > 1.5) {
@@ -302,14 +319,52 @@ async function boot() {
           if (d.damage > 0) floats.add(at, String(d.damage), d.power.slot === 2 ? 'forte' : 'dano');
           audio.play(d.power.fruit, 'acerto', 0.8);
           shake = Math.max(shake, d.power.slot === 2 ? 0.2 : 0.1);
-          grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
+          if (d.power.weapon) grantProf(t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:h${d.power.slot}`, t.hostile, t);
+          else grantDomain(d.power.fruit, t.hostile ? (d.power.slot === 2 ? 4 : 3) : 1, `${t.id}:${d.power.slot}`, t.hostile, t);
           break;
         }
         default:
       }
     },
   });
-  combat.powers = powers;
+  // habilidades da espada: mesmo sistema dos poderes, sem energia, liberadas pela proficiência
+  const blade = new FruitPowers({
+    ctl,
+    fx,
+    stats: () => ({ fruit: damageMultipliers(save.status).weapon, domain: profBonus(profOf(save, 'espada').level) }),
+    onEvent: (name, d) => powers.onEvent(name, d),
+  });
+  combat.powers = {
+    get busy() {
+      return powers.busy || blade.busy;
+    },
+    wallBlocks: (a) => powers.wallBlocks(a),
+  };
+  const profBudget = new Map();
+  function grantProf(xp, key, hostile, foe) {
+    let amount = xp;
+    if (hostile) {
+      const k = `${foe.id}:${foe.life}`;
+      const used = profBudget.get(k) || 0;
+      amount = Math.max(0, Math.min(xp, 20 - used));
+      profBudget.set(k, used + amount);
+    } else amount *= tracker.farm.repetition(`prof:${key}`, ctl.pos, tracker.now);
+    if (amount <= 0) return;
+    const before = profOf(save, 'espada').level;
+    if (!addProfXp(save, 'espada', amount)) return;
+    const lv = profOf(save, 'espada').level;
+    const w = WEAPONS[save.weapon];
+    const opened = w ? w.habilidades.filter((h) => h.unlock > before && h.unlock <= lv).map((h) => h.nome) : [];
+    hud.toast(`Proficiência com espadas nível ${lv}${opened.length ? ` · ${opened.join(', ')} liberada!` : ''}`, opened.length ? 'gold' : 'good');
+    audio.play('base', 'wing', 0.9);
+    refreshEquip();
+    saveNow(true);
+  }
+  const swords = new Map();
+  const swordOf = (id) => {
+    if (!swords.has(id)) swords.set(id, makeSword(WEAPONS[id]));
+    return swords.get(id);
+  };
   applyStatus();
   for (const r of arena.recrutas) r.onBurn = (foe, n) => floats.add({ x: foe.pos.x, y: foe.pos.y + 3, z: foe.pos.z }, String(n), 'forte');
   // fruta comida: habilidades, combo próprio e domínio
@@ -323,11 +378,19 @@ async function boot() {
     if (!f && save.equipped === 'fruta') save.equipped = 'estilo';
     const level = f ? domainOf(save, f.id).level : 1;
     powers.domainLevel = level;
+    const w = WEAPONS[save.weapon] ?? null;
+    if (!w && save.equipped === 'arma') save.equipped = 'estilo';
     const fruitOn = save.equipped === 'fruta' && !!f;
-    combat.runner.setStyle(fruitStyle(fruitOn ? f : null));
+    const swordOn = save.equipped === 'arma' && !!w;
+    const prof = profOf(save, 'espada').level;
+    blade.setFruit(w, w ? weaponPowers(w) : [], prof);
+    combat.runner.setStyle(swordOn ? weaponStyle(w) : fruitStyle(fruitOn ? f : null));
+    player.setWeapon(swordOn ? swordOf(w.id) : null);
+    skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: 'Combate', weapon: w });
     skillBar.setEquipped(save.equipped);
     skillBar.setEnergyVisible(!!f);
     if (fruitOn) skillBar.setSkills({ title: f.name, color: f.color, powers: powers.powers, domainLevel: level });
+    else if (swordOn) skillBar.setSkills({ title: w.nome, color: w.cor, powers: blade.powers, domainLevel: prof, lockLabel: 'Prof.', awaken: false });
     else skillBar.setSkills({ title: 'Combate Básico', note: 'Combo: Jab · Direto · Gancho<br>Técnicas do estilo na atualização 7' });
   }
   const setupPowers = () => {
@@ -338,14 +401,13 @@ async function boot() {
       lastEaten = f?.id ?? null;
       if (f) save.equipped = 'fruta';
     }
-    skillBar.setSlots({ fruit: f, fruitThumb: f ? thumbs()[fruitIndex(f.id)] : '', fruitColor: f ? RANK[rarityOf(save.eaten)].cor : '', styleName: 'Combate' });
     refreshEquip();
   };
   function equip(index) {
-    const order = EQUIP_SLOTS.filter((k) => k !== 'livre' && (k !== 'fruta' || eatenFruit()) && k !== 'arma');
+    const order = EQUIP_SLOTS.filter((k) => k !== 'livre' && (k !== 'fruta' || eatenFruit()) && (k !== 'arma' || WEAPONS[save.weapon]));
     let name = index === 9 ? order[(order.indexOf(save.equipped) + 1) % order.length] : EQUIP_SLOTS[index];
     if (name === 'fruta' && !eatenFruit()) return hud.toast('Coma uma fruta para equipar os poderes (fale com o Mercador).');
-    if (name === 'arma') return hud.toast('Ainda sem arma: a espada chega na atualização 4.');
+    if (name === 'arma' && !WEAPONS[save.weapon]) return hud.toast('Sem arma: compre uma espada com o Mestre de Armas (barraca ao lado do Trocador).');
     if (name === 'livre') return;
     if (name === save.equipped) return;
     if (powers.busy || combat.runner.busy) return;
@@ -404,6 +466,24 @@ async function boot() {
   const mapScreen = new MapScreen({ canvas: $('map-canvas'), field: island.field, signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out') });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
+  const armory = new Armory({
+    save,
+    toast: (text, kind) => hud.toast(text, kind),
+    onBuy: (id) => {
+      save.weapon = id;
+      save.equipped = 'arma';
+      refreshEquip();
+      refreshProfile();
+      audio.play('base', 'wing', 1);
+      saveNow(true);
+    },
+    onEquip: (id) => {
+      save.weapon = id;
+      save.equipped = 'arma';
+      refreshEquip();
+      saveNow(true);
+    },
+  });
   const statusScreen = new StatusScreen({
     save,
     onChange: () => {
@@ -584,6 +664,7 @@ async function boot() {
     if (id === 'roulette') shop.renderRoulette();
     if (id === 'bag') shop.renderBag();
     if (id === 'trader') shop.renderTrader();
+    if (id === 'armory') armory.render();
     if (id === 'catalog') catalog.render();
     if (id === 'pause' && mode === 'game') saveNow(true);
     setGameActive();
@@ -640,7 +721,7 @@ async function boot() {
   let nearNpc = null;
   const talk = () => {
     if (!nearNpc || modals.length || mode !== 'game') return;
-    openModal(nearNpc.id === 'mercador' ? 'roulette' : 'trader');
+    openModal({ mercador: 'roulette', trocador: 'trader', armeiro: 'armory' }[nearNpc.id] || 'trader');
   };
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
@@ -759,12 +840,15 @@ async function boot() {
         if (save.equipped === 'fruta') {
           if (inp.skill === 3) hud.toast(`Despertar: domínio ${59} da fruta (próximas atualizações).`);
           else powers.cast(inp.skill, arena.targets, canCast);
+        } else if (save.equipped === 'arma') {
+          if (inp.skill < 3) blade.cast(inp.skill, arena.targets, canCast);
         } else if (time - deniedAt > 1.5) {
           deniedAt = time;
           hud.toast(eatenFruit() ? 'Equipe a fruta (slot 1) para usar os poderes.' : 'O Combate Básico ainda não tem técnicas: coma uma fruta para ter poderes.');
         }
       }
       powers.update(dt, arena.targets, combat.canFight());
+      blade.update(dt, arena.targets, combat.canFight());
       ctl.step(dt, inp);
       playerProxy.alive = ctl.faint <= 0;
       arena.update(dt, playerProxy);
@@ -810,7 +894,8 @@ async function boot() {
       }
       floats.update(animDt, renderer.camera, window.innerWidth, window.innerHeight);
       fx.update(animDt);
-      if (mode === 'game') skillBar.update(powers, save.equipped === 'fruta');
+      if (mode === 'game') skillBar.update(powers, save.equipped !== 'estilo', save.equipped === 'arma' ? blade : powers);
+      if (player.weapon) player.weapon.visible = !player.heldFruit;
       const dv = window.__game?.debugView; // vista livre para testes e capturas
       if (dv) {
         renderer.camera.position.fromArray(dv.pos);

@@ -32,6 +32,11 @@ projéteis, investidas, áreas, pontos marcados, faixas, cones, muralha, telepor
 cadeia, que congelam, queimam, puxam, empurram ou lançam. A fruta troca o combo pelos golpes
 dela e tem domínio próprio (1 a 100) que libera a segunda e a terceira habilidade.
 
+Armas (atualização 4): o Mestre de Armas, ao lado do Trocador, vende três espadas (Lâmina de
+Treino 500, Sabre Rubro 4.000, Lâmina das Marés 15.000). A espada vai para o slot 2: combo
+de três cortes com rastro e três habilidades (Z X C) que abrem com a proficiência com espadas,
+que é do tipo de arma e não se perde ao trocar de espada. Pontos de Espada aumentam o dano.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com
@@ -106,7 +111,8 @@ src/animation   animação do laboratório + poses novas (escalar, pendurar, pla
 src/movement    controlador do personagem, regras e números
 src/controls    toque, teclado, mouse e controle
 src/ui          menu inicial, HUD, minimapa, janelas, ícones, estilos
-src/combat      regras do combate, combate do jogador, bonecos e Recrutas
+src/combat      regras do combate, combate do jogador, poderes, bonecos e Recrutas
+src/weapons     espadas (dados, combo, habilidades) e modelo voxel
 src/quests      missão de treino
 src/fruits      roleta, mochila, trocador e modelos das frutas
 src/progression nível, pontos de status e treino pela prática

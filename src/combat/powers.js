@@ -57,7 +57,7 @@ export class FruitPowers {
   blocked(slot, canAct) {
     const p = this.powers[slot];
     if (!this.fruit || !p) return 'Coma uma fruta para liberar os poderes.';
-    if (!this.unlocked(slot)) return `${p.nome}: libera no domínio ${p.unlock} da fruta.`;
+    if (!this.unlocked(slot)) return p.weapon ? `${p.nome}: libera na proficiência ${p.unlock} com espadas.` : `${p.nome}: libera no domínio ${p.unlock} da fruta.`;
     if (!canAct) return 'agora não';
     if (this.casting) return 'agora não';
     if (this.cooldown[slot] > 0) return 'recarga';

@@ -978,3 +978,28 @@ body.lefty .act.sprint { left: auto; right: calc(204px * var(--btn) + var(--safe
 body.touch #hud #tracker { width: 190px; padding: 14px 10px 8px; }
 body.touch #hud #tracker .tracker-body { font-size: 11px; gap: 2px; }
 body.touch #hud #tracker .tracker-body b { font-size: 12px; }
+
+/* ===== Mestre de Armas ===== */
+.armory-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 2px 40px 8px 0; position: relative; z-index: 1; }
+.armory-prof { flex: 1 1 260px; display: grid; gap: 4px; font-size: 13px; }
+.armory-prof b { color: var(--gold-hi); }
+.armory-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; overflow: auto; min-height: 0; position: relative; z-index: 1; }
+.weapon-card {
+  display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--rc, #b8862f);
+  background: linear-gradient(180deg, rgba(64, 46, 26, 0.55), rgba(20, 14, 32, 0.8)); box-shadow: inset 0 0 14px color-mix(in srgb, var(--rc, #b8862f) 25%, transparent);
+}
+.weapon-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.weapon-card header b { font: 700 15px var(--title-font); color: #fff1cf; }
+.weapon-card header span { font: 800 11px var(--body-font); color: var(--rc); }
+.weapon-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.35; }
+.weapon-card .dmg { font-size: 12px; color: #ffe9b3; }
+.weapon-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 11.5px; }
+.weapon-card li { display: flex; justify-content: space-between; gap: 6px; }
+.weapon-card li i { font-style: normal; color: var(--gold-hi); font-weight: 800; white-space: nowrap; }
+.weapon-card li.off { opacity: 0.55; }
+.weapon-card .btn { min-height: 34px; font-size: 13px; }
+@media (max-height: 450px) {
+  .armory-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .weapon-card { padding: 8px; gap: 4px; }
+  .weapon-card p { display: none; }
+}

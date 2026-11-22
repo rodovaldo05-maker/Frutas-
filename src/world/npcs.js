@@ -8,6 +8,8 @@ import { FRUTOMotion } from '../animation/fruto-motion.js';
 import { Face } from '../characters/face.js';
 import { StructureBuilder } from './structures.js';
 import { makeFruit } from '../fruits/fruitArt.js';
+import { makeSword } from '../weapons/swordModel.js';
+import { WEAPONS } from '../weapons/weapons.js';
 import { clamp, damp, lerp, wrapAngle } from '../core/math.js';
 
 const NPCS = [
@@ -22,6 +24,12 @@ const NPCS = [
     look: { skin: '#e8c0a0', hair: '#9a9a9a', shirt: '#2f5f8a', shorts: '#2a2f45', shoes: '#3b3f4a' },
     hint: 'Troque frutas por fragmentos (Comum 1, Épico 3, Lendário 5). 10 fragmentos viram 1 chave.',
     awning: ['lonaOuro', 'lonaRoxa'],
+  },
+  {
+    id: 'armeiro', name: 'Mestre de Armas', x: -10.5, z: 46.5, yaw: Math.PI / 2,
+    look: { skin: '#a8714c', hair: '#3a2a20', shirt: '#4a5560', shorts: '#2a2a30', shoes: '#3a2a1c' },
+    hint: 'Espadas para comprar e equipar no slot 2. A proficiência com espadas libera as habilidades.',
+    awning: ['lonaRoxa', 'lonaOuro'],
   },
 ];
 
@@ -98,7 +106,16 @@ export function buildMarket({ scene, physics, field, data }) {
     const props = new THREE.Group();
     props.position.set(cx, ground + 1.5, cz);
     props.rotation.y = rot;
-    if (def.id === 'mercador') {
+    if (def.id === 'armeiro') {
+      // espadas expostas no balcão
+      ['lamina-treino', 'sabre-rubro', 'lamina-mares'].forEach((id, k) => {
+        const sw = makeSword(WEAPONS[id]);
+        sw.rotation.set(0, Math.PI / 2, -0.25);
+        sw.position.set(-1.4 + k * 1.4, 0.15, -0.1);
+        sw.scale.setScalar(0.8);
+        props.add(sw);
+      });
+    } else if (def.id === 'mercador') {
       [3, 1, 6].forEach((fruitIndex, k) => {
         const f = makeFruit(fruitIndex, 1);
         f.scale.setScalar(0.55);

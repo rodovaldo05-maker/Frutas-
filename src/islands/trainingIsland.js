@@ -22,6 +22,7 @@ const KEEP_CLEAR = [
   [0, 66, 14], [10, 20, 16], [30, -12, 9], [46, -6, 9], [14, -20, 10], [25, 37, 18], [-10, 36, 9],
   [58, 28, 16], [-50, 16, 20], [-28, 44, 12], [0, -50, 12], [-46, -26, 6], [-4, -58, 6], [2, -46, 5],
   [-16, -10, 18], // arena de combate (combat/enemies.js)
+  [-10.5, 46.5, 6], // barraca do Mestre de Armas (world/npcs.js)
 ];
 
 const noise = valueNoise2D(7);

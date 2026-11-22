@@ -1198,3 +1198,13 @@ body.lefty .act.form { left: auto; right: calc(207px * var(--btn) + var(--safe-r
 .spec-card b { color: #ffe9b3; }
 .spec-card small { color: #cdbf9e; font-size: 11.5px; }
 .spec-card .up { color: #9cf07f; }
+
+/* ===== Barra de chefe (atualização 14) ===== */
+.boss-bar { position: absolute; left: 50%; top: calc(34px + var(--safe-t)); transform: translateX(-50%); width: min(420px, 46vw); z-index: 4; pointer-events: none; display: grid; gap: 2px; justify-items: center; }
+.boss-bar b { font: 800 12px var(--title-font); color: #ffd36b; text-shadow: 0 1px 3px #000; }
+.boss-track { position: relative; width: 100%; height: 12px; border-radius: 999px; background: rgba(21, 17, 42, 0.85); border: 1.5px solid #ffb040; overflow: hidden; }
+.boss-track i { position: absolute; inset: 0; transform-origin: left; background: linear-gradient(90deg, #c8321e, #ff6a3a); }
+.boss-track span { position: absolute; inset: 0; display: grid; place-items: center; font: 800 9px var(--body-font); color: #fff; text-shadow: 0 1px 2px #000; }
+body:has(.boss-bar:not(.hidden)) .toasts { top: calc(84px + var(--safe-t)); }
+
+.map-mode { position: absolute; left: 10px; top: 10px; z-index: 2; padding: 4px 12px; font-size: 12px; }

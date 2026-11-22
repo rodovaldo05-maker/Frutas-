@@ -26,6 +26,12 @@ export const STYLES = {
   lanterna: { color: '#ffd45e', top: '#fff2a0', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.02 },
   cobertor: { color: '#b8443a', top: '#c8564a', climbable: false, material: 'tecido', tile: [9, 9], offset: false, jitter: 0.03 },
   moveis: { color: '#7a4e2c', top: '#8a5c36', climbable: false, material: 'madeira', tile: [0.5, 2.4], offset: true, jitter: 0.06 },
+  // Primeiro Mar (atualização 14)
+  arenito: { color: '#c48a52', top: '#d8a46a', climbable: true, material: 'pedra', tile: [1.2, 0.6], offset: true, jitter: 0.08 },
+  gelo: { color: '#9fd8f0', top: '#d8f4ff', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.04 },
+  rochaEscura: { color: '#3e3634', top: '#544a46', climbable: true, material: 'pedra', tile: [1.4, 1.0], offset: true, jitter: 0.1 },
+  lava: { color: '#ff6a1a', top: '#ffb040', climbable: false, material: 'pedra', tile: [9, 9], offset: false, jitter: 0.05 },
+  cacto: { color: '#3f8a4a', top: '#5aa860', climbable: false, material: 'madeira', tile: [0.3, 9], offset: false, jitter: 0.05 },
 };
 
 const FACES = [

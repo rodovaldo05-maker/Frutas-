@@ -33,6 +33,44 @@ depois de liberado, um teleporte por porto.
 | 9 | Arena do Coliseu Partido | 575–650 | Arena | Torneio por ondas, desafios de combo | Campeão Imbatível |
 | 10 | Fenda Celeste | 650–700 | Ilhas flutuantes | Plataformas no céu, correntes de vento | Guardiã da Fenda Celeste (acesso ao 2º Mar) |
 
+#### Situação no jogo (atualização 14)
+
+As ilhas 2 a 10 já existem no jogo em volta da Ilha de Treino (que fica como ilha de tutorial,
+Nv. 1–10) e do **Porto das Origens**, que faz o papel da Ilha da Âncora (Nv. 1–25). Por enquanto
+o mar é compacto (cerca de 2 × 1,6 km) para caber no orçamento do celular; o tamanho da tabela
+acima é o alvo final.
+
+| Ilha | Centro (x, z) | Raio | O que tem hoje |
+|---|---|---|---|
+| Praia dos Saqueadores | (700, −280) | 60 | Coqueiros na orla, tendas do acampamento, casco de navio encalhado |
+| Bosque Sussurrante | (1000, 120) | 64 | Relevo ondulado, 46 árvores grandes, arbustos e anel de ruínas de pedra |
+| Duna Partida | (760, 540) | 66 | Dunas em ondas, cactos e ruínas de arenito |
+| Forte Maré-Alta | (320, 800) | 58 | Muralha quadrada com torres e portão voltado para a praia de chegada |
+| Pico Gélido | (−180, 760) | 64 | Montanha de ~34 com neve no alto e pinheiros claros |
+| Porto das Lanternas | (−600, 440) | 62 | Mini cidade gerada pela semente (casas e ruas) com cais |
+| Caldeira Rubra | (−780, −60) | 64 | Vulcão com cratera, **lago de lava** (queima ao pisar), rochas escuras e forjas |
+| Arena do Coliseu Partido | (−520, −560) | 56 | Anel de arquibancadas em ruínas com o chefe no centro |
+| Fenda Celeste | (−40, −780) | 50 | Plataformas flutuantes sobre a ilha |
+
+- **Relevo:** procedural por semente; costa irregular; a borda submersa é íngreme (perto da
+  praia o fundo cai para −13), assim o bote encosta perto da areia.
+- **Chegada:** cada ilha tem uma praia voltada para a Ilha de Treino com uma placa
+  (`Nv. a–b · Chefe: nome`); ao entrar aparece o aviso pequeno no topo com nome e faixa.
+- **Inimigos por nível:** 4 por ilha no acampamento, com níveis espalhados pela faixa; vida,
+  dano, defesa, experiência e moedas crescem com o nível (`scaledDef`). Os de gelo, fogo e
+  raio aplicam a condição do elemento.
+- **Chefes:** um por ilha no nível do topo da faixa (`bossDef`): corpo 1,55×, 10× a vida,
+  +40% de dano, 10× experiência e moedas, golpe marcado no chão 40% maior, renasce em 5 min.
+  Barra de chefe no topo da tela a até 40 de distância. Recompensa: material raro (2–4), um
+  item de equipamento, chave da roleta (sempre na primeira vez, depois 25%) e 15% de chance
+  de uma fruta.
+- **Porto das Origens:** acampamento de Saqueadores do Porto (Nv. 8, 12 e 16) e o chefe
+  **Capitão Ferrugem** (Nv. 25).
+- **Mapa:** o botão **Carta do mar** mostra todas as ilhas com nome e faixa, o bote e o
+  jogador; no mar aberto o mapa já abre na carta.
+- **Ainda não:** grutas, pontes suspensas, teleférico, tempestades de areia, interiores,
+  missões e atividades próprias de cada ilha (checklist da seção 8).
+
 ### Segundo Mar
 
 | # | Ilha | Níveis | Bioma | Destaques | Chefe |

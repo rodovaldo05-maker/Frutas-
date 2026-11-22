@@ -5,13 +5,23 @@
 import { renderIslandImage } from './islandMap.js';
 
 export class MapScreen {
-  constructor({ canvas, field, islands, signs, zoomIn, zoomOut, title }) {
+  constructor({ canvas, field, islands, signs, zoomIn, zoomOut, title, seaButton }) {
     this.canvas = canvas;
     this.islands = islands ?? [{ name: 'Ilha de Treino', field, origin: { x: 0, z: 0 } }];
     this.island = this.islands[0];
     this.signs = signs;
     this.title = title;
     this.images = new Map();
+    this.mode = 'ilha'; // 'ilha' (a ilha onde o jogador está) ou 'mar' (carta do Primeiro Mar)
+    this.seaImages = new Map();
+    this.seaButton = seaButton;
+    seaButton?.addEventListener('click', () => {
+      this.mode = this.mode === 'mar' ? 'ilha' : 'mar';
+      this.zoom = 1;
+      this.center = this.mode === 'mar' ? this.seaCenter() : { x: this.island.origin.x, z: this.island.origin.z };
+      this.updateTitle();
+      this.draw();
+    });
     this.zoom = 1;
     this.center = { x: 0, z: 0 };
     this.player = { x: 0, z: 0, yaw: 0 };
@@ -49,7 +59,41 @@ export class MapScreen {
     return this.island.field;
   }
 
+  // limites da carta do mar (todas as ilhas)
+  seaBounds() {
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let z0 = Infinity;
+    let z1 = -Infinity;
+    for (const i of this.islands) {
+      x0 = Math.min(x0, i.origin.x - i.field.half * 0.7);
+      x1 = Math.max(x1, i.origin.x + i.field.half * 0.7);
+      z0 = Math.min(z0, i.origin.z - i.field.half * 0.7);
+      z1 = Math.max(z1, i.origin.z + i.field.half * 0.7);
+    }
+    return { x0, x1, z0, z1 };
+  }
+
+  seaCenter() {
+    const b = this.seaBounds();
+    return { x: (b.x0 + b.x1) / 2, z: (b.z0 + b.z1) / 2 };
+  }
+
+  updateTitle() {
+    if (this.title) this.title.lastChild.textContent = this.mode === 'mar' ? 'Carta do Primeiro Mar' : `Mapa · ${this.island.name}`;
+    if (this.seaButton) this.seaButton.textContent = this.mode === 'mar' ? 'Mapa da ilha' : 'Carta do mar';
+  }
+
   clampCenter() {
+    if (this.mode === 'mar') {
+      const b = this.seaBounds();
+      const c = this.seaCenter();
+      const lx = ((b.x1 - b.x0) / 2) * (1 - 1 / this.zoom);
+      const lz = ((b.z1 - b.z0) / 2) * (1 - 1 / this.zoom);
+      this.center.x = Math.max(c.x - lx, Math.min(c.x + lx, this.center.x));
+      this.center.z = Math.max(c.z - lz, Math.min(c.z + lz, this.center.z));
+      return;
+    }
     const lim = this.field.half * (1 - 1 / this.zoom);
     const o = this.island.origin;
     this.center.x = Math.max(o.x - lim, Math.min(o.x + lim, this.center.x));
@@ -59,6 +103,11 @@ export class MapScreen {
   // pixels por unidade do mundo
   scale() {
     const c = this.canvas;
+    if (this.mode === 'mar') {
+      // a carta ocupa a janela toda (largura e altura), com folga para os nomes
+      const b = this.seaBounds();
+      return Math.min(c.width / (b.x1 - b.x0 + 60), c.height / (b.z1 - b.z0 + 110)) * this.zoom;
+    }
     return (Math.min(c.width, c.height) / (2 * this.field.half)) * this.zoom * 1.1;
   }
 
@@ -78,11 +127,16 @@ export class MapScreen {
 
   open(player) {
     this.island = this.islandAt(player.x, player.z);
+    // no mar (fora de todas as ilhas) abre direto a carta do mar
+    const i = this.island;
+    const atSea = Math.max(Math.abs(player.x - i.origin.x), Math.abs(player.z - i.origin.z)) > i.field.half;
+    this.mode = atSea ? 'mar' : 'ilha';
+    this.zoom = 1;
     if (!this.images.has(this.island)) this.images.set(this.island, renderIslandImage(this.field, this.island.plan ? 1024 : 768, 'parchment', this.island.plan));
     this.image = this.images.get(this.island);
-    if (this.title) this.title.lastChild.textContent = `Mapa · ${this.island.name}`;
     this.player = player;
-    this.center = { x: player.x, z: player.z };
+    this.updateTitle();
+    this.center = this.mode === 'mar' ? this.seaCenter() : { x: player.x, z: player.z };
     this.clampCenter();
     requestAnimationFrame(() => this.draw());
   }
@@ -100,6 +154,7 @@ export class MapScreen {
     const ctx = c.getContext('2d');
     const s = this.scale();
     const toScreen = (x, z) => [w / 2 + (x - this.center.x) * s, h / 2 + (z - this.center.z) * s];
+    if (this.mode === 'mar') return this.drawSea(ctx, w, h, s, toScreen, dpr);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#9ccbcb';
     ctx.fillRect(0, 0, w, h);
@@ -161,7 +216,96 @@ export class MapScreen {
       ctx.fillStyle = '#4a2a10';
       ctx.fillText(sign.title, x, y - 6 * dpr);
     }
-    // jogador
+    this.drawPlayer(ctx, toScreen, dpr);
+  }
+
+  // Carta do Primeiro Mar: todas as ilhas com nome e faixa de nível, o bote e o jogador
+  drawSea(ctx, w, h, s, toScreen, dpr) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#8fc2c8';
+    ctx.fillRect(0, 0, w, h);
+    // linhas da grade náutica
+    ctx.strokeStyle = 'rgba(74, 42, 16, 0.18)';
+    ctx.lineWidth = 1 * dpr;
+    for (let g = -2000; g <= 2000; g += 200) {
+      const [gx] = toScreen(g, 0);
+      const [, gy] = toScreen(0, g);
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, h);
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+      ctx.stroke();
+    }
+    ctx.imageSmoothingEnabled = true;
+    const font = Math.round(10.5 * dpr * Math.min(1.5, 0.85 + this.zoom * 0.2));
+    ctx.textAlign = 'center';
+    for (const i of this.islands) {
+      if (!this.seaImages.has(i)) this.seaImages.set(i, renderIslandImage(i.field, 192, 'carta', i.plan));
+      const [ox, oy] = toScreen(i.origin.x - i.field.half, i.origin.z - i.field.half);
+      const size = 2 * i.field.half * s;
+      ctx.drawImage(this.seaImages.get(i), ox, oy, size, size);
+    }
+    // nomes: tenta embaixo, em cima, à direita e à esquerda da ilha, sem cobrir outro nome
+    // nem o jogador; se nada couber, fica o lugar com menos sobreposição
+    // (a seta do jogador é desenhada por cima e não empurra os nomes para longe da ilha)
+    const placed = [];
+    const small = Math.round(font * 0.8);
+    const hits = (b) => placed.reduce((n, p) => n + Math.max(0, Math.min(b[2], p[2]) - Math.max(b[0], p[0])) * Math.max(0, Math.min(b[3], p[3]) - Math.max(b[1], p[1])), 0);
+    ctx.textBaseline = 'top';
+    for (const i of this.islands) {
+      ctx.font = `700 ${font}px Cinzel, Georgia, serif`;
+      const tw = Math.max(ctx.measureText(i.name).width, i.faixa ? (ctx.font = `800 ${small}px Inter, sans-serif`, ctx.measureText(i.faixa).width) : 0) + 6 * dpr;
+      const th = font * 1.1 + (i.faixa ? small * 1.1 : 0);
+      const land = i.field.half * 0.62 * s; // raio aproximado da terra na tela
+      const [cx, cy] = toScreen(i.origin.x, i.origin.z);
+      const options = [
+        [cx, cy + land + 2 * dpr],
+        [cx, cy - land - th - 2 * dpr],
+        [cx + land + tw / 2 + 4 * dpr, cy - th / 2],
+        [cx - land - tw / 2 - 4 * dpr, cy - th / 2],
+        [cx + tw * 0.4, cy + land + 2 * dpr],
+        [cx - tw * 0.4, cy + land + 2 * dpr],
+        [cx + tw * 0.4, cy - land - th - 2 * dpr],
+        [cx - tw * 0.4, cy - land - th - 2 * dpr],
+      ];
+      let best = null;
+      for (const [x, y] of options) {
+        const b = [x - tw / 2, y, x + tw / 2, y + th];
+        const out = (b[0] < 0 || b[2] > w || b[1] < 0 || b[3] > h) ? 1e9 : 0;
+        const cost = hits(b) + out;
+        if (!best || cost < best.cost) best = { x, y, b, cost };
+        if (cost === 0) break;
+      }
+      placed.push(best.b);
+      const { x, y } = best;
+      ctx.font = `700 ${font}px Cinzel, Georgia, serif`;
+      ctx.lineWidth = 4 * dpr;
+      ctx.strokeStyle = 'rgba(255, 243, 208, 0.92)';
+      ctx.strokeText(i.name, x, y);
+      ctx.fillStyle = '#4a2a10';
+      ctx.fillText(i.name, x, y);
+      if (i.faixa) {
+        ctx.font = `800 ${small}px Inter, sans-serif`;
+        ctx.strokeText(i.faixa, x, y + font * 1.1);
+        ctx.fillStyle = '#7a2a20';
+        ctx.fillText(i.faixa, x, y + font * 1.1);
+      }
+    }
+    for (const m of this.markers ?? []) {
+      const [x, y] = toScreen(m.x, m.z);
+      ctx.fillStyle = '#8a5a32';
+      ctx.strokeStyle = '#fff3d0';
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+      ctx.arc(x, y, 5 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    this.drawPlayer(ctx, toScreen, dpr);
+  }
+
+  drawPlayer(ctx, toScreen, dpr) {
     const [px, py] = toScreen(this.player.x, this.player.z);
     ctx.save();
     ctx.translate(px, py);

@@ -100,7 +100,8 @@ export function renderIslandImage(field, size, style = 'mini', plan = null) {
       img.data[k] = c[0];
       img.data[k + 1] = c[1];
       img.data[k + 2] = c[2];
-      img.data[k + 3] = 255;
+      // estilo 'carta' (carta do mar): a água funda some e só a ilha e o raso aparecem
+      img.data[k + 3] = style === 'carta' && h < 0 ? Math.round(255 * smooth(-7, -0.5, h)) : 255;
     }
   }
   ctx.putImageData(img, 0, 0);

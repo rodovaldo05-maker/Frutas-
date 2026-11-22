@@ -24,6 +24,7 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | Vila viva | Relógio do jogo com dia e noite (lampiões acendem), móveis por dentro e portas que abrem, 10 moradores com nome e rotina casa → trabalho → lazer → casa pelas ruas, Loja de Frutas do dia pela tabela de raridade, conversas com serviços (refeição, troca, armaduras), Mestre de Missões com 3 missões por dia e redistribuição de pontos paga — Atualização 11 |
 | Bote | Bote do jogador amarrado no cais: embarcar, pilotar pelo analógico em relação à câmera, Correr acelera, para no raso e no cais, balança com as ondas, esteira, descer no cais/praia (ou água), salvo navegando; Barqueiros trazem o bote; avisos de local pequenos no topo (0,2 s) — Atualização 10 |
 | Porto das Origens | Segunda ilha, a leste, com a vila gerada pela semente 2026: praça com chafariz, 4 avenidas (uma até o cais), anel de ruas, 19 casas com porta (Prefeitura, Mercado, Taverna, Ferreiro, Loja de Frutas e residências), postes, cais nas duas ilhas e Barqueiros que levam de uma à outra; mapa e minimapa trocam de ilha e mostram ruas e casas — Atualização 9 |
+| Primeiro Mar | Nove ilhas novas (Praia dos Saqueadores a Fenda Celeste) com bioma, relevo e construções próprios, 4 inimigos por nível e 1 chefe por ilha (Nv. 25 a 700), Capitão Ferrugem no Porto das Origens, barra de chefe, recompensas de chefe, lava que queima, praia de chegada com placa e Carta do mar no mapa — Atualização 14 |
 | Poderes das frutas | Energia, 3 habilidades por fruta com gesto do laboratório e efeito real (congelar, queimar, puxar, empurrar, lançar), combo próprio da fruta, domínio por fruta que libera as habilidades — Atualização 3 |
 
 ## Revisão geral (antes da atualização 12)
@@ -57,8 +58,8 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | 11 | **Vila viva e missões** (doc 11, B3–B5) | Interiores e portas, NPCs com rotina, lojas de frutas pelas tabelas de raridade, Mestre de Missões (redistribuir pontos pago) | NPCs vão ao trabalho e voltam para casa; lojas usam as tabelas | **Feita** (eventos e baús da vila depois) |
 | 12 | **Forja e profissões** (doc 12, seções 30–31) | Materiais, forja com receitas e qualidade, pesca e mineração | Forjar e melhorar itens com custo crescente | **Feita** |
 | 13 | **Especializações e despertares** (doc 12, fase 4) | Especialização racial, missões de despertar, transformações das frutas | Despertar muda visual e habilidades sem deformar o corpo | **Feita** (formas completas depois) |
-| 14 | **Primeiro Mar** (doc 02) | Ilhas restantes do Primeiro Mar, inimigos por nível, chefes | Navegar por todas as ilhas e derrotar os chefes | Próxima |
-| 15 | **Polimento e Android** | Otimização, acessibilidade, AAB para loja | Metas de desempenho nos três perfis de aparelho | — |
+| 14 | **Primeiro Mar** (doc 02) | Ilhas restantes do Primeiro Mar, inimigos por nível, chefes | Navegar por todas as ilhas e derrotar os chefes | **Feita** (grutas, missões e atividades de cada ilha depois) |
+| 15 | **Polimento e Android** | Otimização, acessibilidade, AAB para loja | Metas de desempenho nos três perfis de aparelho | Próxima |
 
 Depois disso: Segundo e Terceiro Mar, combate naval, bestas marinhas e, por último,
 multijogador opcional (doc 00, fases F6 e F8).

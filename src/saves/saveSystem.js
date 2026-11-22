@@ -73,6 +73,7 @@ export function newSave() {
     raceAwakened: false, // despertar racial (prova na maestria 100)
     awakened: {}, // frutas com o despertar liberado { id: true }
     awakenTrial: null, // Prova do Despertar em andamento { fruit, hits }
+    bosses: {}, // chefes derrotados { id: vezes } (atualização 14)
     tools: [], // ferramentas: picareta, vara
     domain: {}, // domínio de cada fruta já usada { id: { level, xp } } (doc 12, seção 14)
     bag: [], // mochila de frutas (doc 09, seção 4)
@@ -148,6 +149,7 @@ export function migrate(save) {
   out.materials = normalizeMaterials(out.materials);
   out.tools = normalizeTools(out.tools);
   normalizeAwaken(out);
+  out.bosses = out.bosses && typeof out.bosses === 'object' ? Object.fromEntries(Object.entries(out.bosses).filter(([, n]) => Number.isInteger(n) && n > 0)) : {};
 
   return out;
 }

@@ -46,7 +46,7 @@ import { buildMarket } from './world/npcs.js';
 import { fruitThumbs } from './fruits/fruitArt.js';
 import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
-import { RANK, FRUIT, fruitName, validate as validateFruits } from './fruits/catalog.js';
+import { RANK, FRUIT, fruitName, draw as drawFruit, validate as validateFruits } from './fruits/catalog.js';
 import { CatalogScreen } from './ui/catalogScreen.js';
 import { maxStamina, maxHealth, maxEnergy, POINTS_PER_LEVEL, damageMultipliers } from './progression/status.js';
 import { computeDamage } from './combat/rules.js';
@@ -68,7 +68,8 @@ import { applyGearVisual } from './items/gearParts.js';
 import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
-import { buildArena } from './combat/enemies.js';
+import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor } from './islands/firstSea.js';
+import { buildArena, Recruta, scaledDef, bossDef } from './combat/enemies.js';
 import { PlayerCombat } from './combat/playerCombat.js';
 import { FloatText } from './combat/floatText.js';
 import { Conditions, CONDITIONS } from './combat/conditions.js';
@@ -110,8 +111,12 @@ async function boot() {
   await setLoading('Erguendo o Porto das Origens…', 48);
   const village = buildVillageIsland({ scene: renderer.scene, physics });
   island.signs.push(...village.signs);
+  // Primeiro Mar (atualização 14): as ilhas 2 a 10
+  await setLoading('Erguendo o Primeiro Mar…', 52);
+  const sea = SEA.map((def) => buildSeaIsland({ scene: renderer.scene, physics, def }));
+  for (const s of sea) island.signs.push(...s.signs);
   // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
-  const world = new WorldField([island.field, village.field]);
+  const world = new WorldField([island.field, village.field, ...sea.map((s) => s.field)]);
   const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: BOATMEN });
   // moradores do Porto das Origens (rotina pela hora do jogo)
   const villagers = new Villagers({ scene: renderer.scene, data: DATA, village: village.village, offset: VILLAGE.offset, physics, baseY: VILLAGE.plateau });
@@ -120,6 +125,20 @@ async function boot() {
   island.signs.push(...gatherWorld.signs);
   island.signs.push(...market.signs);
   const arena = buildArena({ scene: renderer.scene, physics, field: island.field, data: DATA });
+  // inimigos por nível e chefes de cada ilha, e o acampamento do Capitão Ferrugem no Porto
+  {
+    const add = (id, x, z, def) => arena.add(new Recruta({ id, x, z, field: world, scene: renderer.scene, data: DATA, def }));
+    for (const s of sea) {
+      const lv = levelsFor(s.def);
+      s.enemies.forEach((p, k) => add(`${s.def.id}-${k + 1}`, p.x, p.z, scaledDef(s.def.enemy, lv[k])));
+      add(`${s.def.id}-chefe`, s.boss.x, s.boss.z, bossDef(s.def.boss, s.def.faixa[1]));
+    }
+    const o = VILLAGE.offset;
+    const [cx, cz] = PORTO_CAMP.local.camp;
+    PORTO_CAMP.niveis.forEach((lv, k) => add(`porto-saqueador-${k + 1}`, o.x + cx + Math.cos(k * 2.1) * 4, o.z + cz + Math.sin(k * 2.1) * 4, scaledDef(PORTO_CAMP.enemy, lv)));
+    const [bx, bz] = PORTO_CAMP.local.boss;
+    add('porto-chefe', o.x + bx, o.z + bz, bossDef(PORTO_CAMP.boss, PORTO_CAMP.boss.nivel));
+  }
   physics.world.updateSceneQueries?.();
   physics.step();
 
@@ -412,9 +431,9 @@ async function boot() {
     const attack = { id: 'especial', posture: 14, knock: 1.6 * 2.2, reaction: 'media', element: enemy.def.element, effects: sp.effects };
     enemyHit(enemy, attack, computeDamage(sp.damage * enemy.def.damageMult), { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z });
   };
-  for (const r of arena.recrutas) {
-    r.onDefeated = (foe) => {
+  const onEnemyDefeated = (foe) => {
       save.coins += foe.def.coins;
+      if (foe.boss) bossReward(foe);
       const drop = dropFor(foe.def.level);
       if (drop) {
         const it = addItem(save, drop);
@@ -436,7 +455,30 @@ async function boot() {
       audio.play('base', 'death', 0.6);
       grantXp(foe.def.xp);
       saveNow(true);
-    };
+  };
+  for (const r of arena.recrutas) r.onDefeated = onEnemyDefeated;
+  // Chefe derrotado: registro, chave (25%), material raro, item garantido e chance de fruta
+  function bossReward(foe) {
+    save.bosses ??= {};
+    const first = !save.bosses[foe.id];
+    save.bosses[foe.id] = (save.bosses[foe.id] ?? 0) + 1;
+    hud.toast(`Chefe derrotado: ${foe.def.nome}!${first ? ' (primeira vez)' : ''}`, 'gold');
+    if (Math.random() < 0.25 || first) {
+      save.keys = (save.keys ?? 0) + 1;
+      hud.toast('+1 chave da roleta', 'gold');
+    }
+    const rare = ['cristal', 'ferro', 'perola', 'nucleo-brasa', 'nucleo-geada', 'nucleo-tormenta'][Math.floor(Math.random() * 6)];
+    addMaterial(save, rare, 2 + Math.floor(Math.random() * 3));
+    const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].nivel >= 5);
+    const it = addItem(save, pool[Math.floor(Math.random() * pool.length)]);
+    hud.toast(`Item do chefe: ${ITEMS[it.id].nome} (${ITEMS[it.id].qualidade}) · +${MATERIALS[rare].nome}`, 'gold');
+    if (Math.random() < 0.15 && save.bag.length < 60) {
+      const r = drawFruit('npc');
+      if (r) {
+        save.bag.push({ uid: save.nextUid++, fruit: r.fruit, fav: false, at: Date.now(), origem: 'chefe' });
+        hud.toast(`O chefe deixou uma fruta: ${fruitName(r.fruit)}!`, 'gold');
+      }
+    }
   }
   const playerProxy = { pos: ctl.pos, get yaw() { return ctl.yaw; }, alive: true };
 
@@ -793,9 +835,14 @@ async function boot() {
   await setLoading('Pintando o mapa…', 86);
   const minimap = new Minimap($('minimap-canvas'), island.field, island.signs);
   minimap.addIsland(village.localField, VILLAGE.offset, village.village);
+  for (const s of sea) minimap.addIsland(s.localField, { x: s.def.x, z: s.def.z });
   const mapScreen = new MapScreen({
-    canvas: $('map-canvas'), signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out'), title: $('worldmap').querySelector('.frame-title'),
-    islands: [{ name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 } }, { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village }],
+    canvas: $('map-canvas'), signs: island.signs, zoomIn: $('map-in'), zoomOut: $('map-out'), title: $('worldmap').querySelector('.frame-title'), seaButton: $('map-sea'),
+    islands: [
+      { name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 }, faixa: 'Nv. 1–10' },
+      { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village, faixa: 'Nv. 1–25' },
+      ...sea.map((s) => ({ name: s.def.nome, field: s.localField, origin: { x: s.def.x, z: s.def.z }, faixa: `Nv. ${s.def.faixa[0]}–${s.def.faixa[1]}` })),
+    ],
   });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
   hud.setPortrait(renderPortrait(renderer.renderer, DATA));
@@ -1224,7 +1271,8 @@ async function boot() {
   // nome da ilha ao chegar (aviso pequeno no topo quando o jogador passa para outra ilha)
   let zoneName = null;
   function updateZone() {
-    const name = village.field.inside(ctl.pos.x, ctl.pos.z) ? VILLAGE.name : island.field.inside(ctl.pos.x, ctl.pos.z) ? ISLAND.name : null;
+    const seaIsland = sea.find((s) => s.field.inside(ctl.pos.x, ctl.pos.z));
+    const name = seaIsland ? `${seaIsland.def.nome} (Nv. ${seaIsland.def.faixa[0]}–${seaIsland.def.faixa[1]})` : village.field.inside(ctl.pos.x, ctl.pos.z) ? VILLAGE.name : island.field.inside(ctl.pos.x, ctl.pos.z) ? ISLAND.name : null;
     if (name && name !== zoneName) {
       const first = zoneName === null;
       zoneName = name;
@@ -1375,6 +1423,8 @@ async function boot() {
   let minimapTimer = 0;
   const fogDay = { color: renderer.scene.fog.color.clone() };
   let dayTimer = 0;
+  let lavaT = 0;
+  let bossShown = null;
   let auraT = 0;
   const fogWater = new THREE.Color('#1d5866');
   const titleIdle = { moveX: 0, moveY: 0, camYaw: 0, jump: false, crouch: false, jumpPressed: false, crouchPressed: false, dashPressed: false, sprint: false };
@@ -1472,6 +1522,15 @@ async function boot() {
         ctl.step(dt, inp);
       }
       conditions.update(dt, ctl);
+      // lava da Caldeira Rubra: queima quem pisa na cratera
+      lavaT -= dt;
+      if (lavaT <= 0) {
+        lavaT = 0.5;
+        for (const s of sea) {
+          const lv = s.lava;
+          if (lv && Math.hypot(ctl.pos.x - lv.x, ctl.pos.z - lv.z) < lv.r && ctl.pos.y < lv.y + 1.2) conditions.apply('queimando', { duration: 3, stacks: 2 });
+        }
+      }
       // hora do jogo, rotina dos moradores e portas da vila
       save.clock += dt * GAME_MINUTES_PER_SECOND;
       villagers.update(dt, hourOf(save.clock), ctl.pos);
@@ -1661,6 +1720,20 @@ async function boot() {
       nearAction = act;
       document.body.classList.toggle('aboard', boat.aboard);
       updateZone();
+      // barra do chefe: aparece com um chefe vivo perto (até 40)
+      let boss = null;
+      for (const r of arena.recrutas) {
+        if (r.boss && r.alive && Math.hypot(r.pos.x - ctl.pos.x, r.pos.z - ctl.pos.z) < 40) boss = r;
+      }
+      if (boss !== bossShown) {
+        bossShown = boss;
+        $('boss-bar').classList.toggle('hidden', !boss);
+        if (boss) $('boss-name').textContent = `${boss.def.nome} · Nv. ${boss.def.level}`;
+      }
+      if (boss) {
+        $('boss-fill').style.transform = `scaleX(${boss.health / boss.maxHealth})`;
+        $('boss-hp').textContent = `${fmt(Math.ceil(boss.health))} / ${fmt(boss.maxHealth)}`;
+      }
       minimapTimer -= dt;
       if (minimapTimer <= 0) {
         minimapTimer = 0.1;
@@ -1845,6 +1918,7 @@ async function boot() {
     villageUi,
     gathering,
     gatherWorld,
+    sea,
     forgeUi,
     toggleForm: () => toggleForm(),
     get form() {

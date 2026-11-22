@@ -82,6 +82,12 @@ na 80) e despertar racial por prova na 100; despertar das frutas no slot 4 depoi
 Despertar (domínio 59), com +30% de dano, recargas mais rápidas e aura; formas híbridas de Lobo,
 Besta, Falcão, Fênix e dos dois Dragões (tecla H ou botão Forma) com partes no corpo e bônus.
 
+Primeiro Mar (atualização 14): nove ilhas novas para navegar de bote — Praia dos Saqueadores,
+Bosque Sussurrante, Duna Partida, Forte Maré-Alta, Pico Gélido, Porto das Lanternas, Caldeira
+Rubra (com lava), Arena do Coliseu Partido e Fenda Celeste — cada uma com bioma próprio,
+inimigos por nível (Nv. 25 a 700) e um chefe com barra no topo e recompensas; Capitão
+Ferrugem (Nv. 25) no Porto das Origens; Carta do mar no mapa com nomes e faixas de nível.
+
 HUD de jogo: status embaixo no centro (moedas, nível, fragmentos, vida, fôlego, energia e
 experiência, com botões de voltar ao início e de missões), barra de equipar (1 Fruta, 2
 Arma, 3 Estilo, 4 livre e Mochila) e, à direita, a lista de habilidades do item equipado com

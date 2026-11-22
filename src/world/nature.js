@@ -321,3 +321,37 @@ export function buildNature({ scene, physics, field, rand, keepClear = [] }) {
   scene.add(group);
   return { group, trees, kinds: Object.fromEntries(Object.entries(kinds).map(([k, v]) => [k, v.items.length])) };
 }
+
+// ===== Para as outras ilhas (atualização 14) =====
+// Modelos prontos (montados uma vez) e um posicionador de instâncias com a mesma aparência
+let kit = null;
+export function natureKit() {
+  kit ??= { broad: [broadleaf(0), broadleaf(1), broadleaf(2)], pine: pine(), palm: palm(), bush: [bush(0), bush(1)] };
+  return kit;
+}
+
+const kitMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0.02, flatShading: true });
+
+// items: [{ x, y, z, rotY, scale, tint }] → uma malha instanciada (uma chamada de desenho)
+export function placeInstances(scene, name, geo, items, { shadow = true, tint = null } = {}) {
+  if (!items.length) return null;
+  const mesh = new THREE.InstancedMesh(geo, kitMaterial, items.length);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const c = new THREE.Color();
+  items.forEach((it, i) => {
+    q.setFromAxisAngle(UP, it.rotY ?? 0);
+    m.compose(V(it.x, it.y, it.z), q, V(it.scale ?? 1, it.scale ?? 1, it.scale ?? 1));
+    mesh.setMatrixAt(i, m);
+    if (tint) c.set(tint).multiplyScalar(it.tint ?? 1);
+    else c.setScalar(it.tint ?? 1);
+    mesh.setColorAt(i, c);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.castShadow = shadow;
+  mesh.receiveShadow = true;
+  mesh.computeBoundingSphere();
+  mesh.name = name;
+  scene.add(mesh);
+  return mesh;
+}

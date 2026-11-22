@@ -45,6 +45,33 @@ export const RECRUTAS_ELEMENTAIS = {
 };
 export const ELEMENT_CAMP = { x: 58, z: -30 };
 
+// Inimigos por nível (atualização 14): vida, dano, experiência e moedas crescem com o nível.
+// A experiência dá ~1/10 do nível por inimigo; chefes valem 10 inimigos, com 10× a vida,
+// 40% a mais de dano, corpo maior e ataque marcado no chão.
+const xpToNextLevel = (L) => Math.round(100 + 30 * Math.pow(L, 1.4));
+export function scaledDef(base, level, extra = {}) {
+  const L = Math.max(1, Math.round(level));
+  const def = {
+    ...RECRUTA, ...base, level: L,
+    hp: Math.round(80 + 16 * L), damageMult: 0.8 * (1 + L / 50), defense: Math.min(40, Math.floor(L / 15)),
+    xp: Math.round(xpToNextLevel(L) / 10), coins: Math.round(10 + L * 1.5),
+    speed: 3.6, aggro: 12, camp: 16, leash: 28, respawn: 25, ...extra,
+  };
+  return def; // o golpe marcado é multiplicado por damageMult na hora (main.js, resolveSpecial)
+}
+
+export function bossDef(base, level, extra = {}) {
+  const d = scaledDef(base, level, { scale: 1.55, boss: true, respawn: 300, aggro: 14, camp: 18, leash: 34, speed: 3.9, windup: 0.6, cooldown: [1.0, 1.8], ...extra });
+  d.hp *= 10;
+  d.damageMult *= 1.4;
+  d.xp *= 10;
+  d.coins *= 10;
+  if (!d.special) d.special = { nome: 'Golpe do Chefe', clip: 'impacto2', cooldown: 6, telegraph: 1.0, radius: 4, damage: 18 };
+  else d.special = { ...d.special, radius: d.special.radius * 1.4 };
+  d.cor ??= '#ffd36b';
+  return d;
+}
+
 const PART = {
   cabeca: 'skin', tronco: 'shirt', ombro_E: 'shirt', ombro_D: 'shirt', braco_E: 'shirt', braco_D: 'shirt',
   antebraco_E: 'skin', antebraco_D: 'skin', mao_E: 'skin', mao_D: 'skin', cintura: 'shorts', coxa_E: 'shorts', coxa_D: 'shorts',
@@ -173,7 +200,9 @@ export class Recruta {
     this.pos = this.home.clone();
     this.vel = new THREE.Vector3();
     this.yaw = Math.PI;
-    this.radius = 0.9;
+    this.scale = def.scale ?? 1; // chefes são maiores (atualização 14)
+    this.radius = 0.9 * this.scale;
+    this.boss = !!def.boss;
     this.defense = def.defense;
     this.maxHealth = def.hp;
     this.health = def.hp;
@@ -218,6 +247,7 @@ export class Recruta {
     body.joints.cabeca.add(band);
     this.face = new Face(body.joints.cabeca, { hair: def.look.hair, skin: def.look.skin });
     trimShadows(body);
+    if (this.scale !== 1) body.root.scale.setScalar(this.scale);
     this.body = body;
     scene.add(body.root);
     this.tag = makeTag();
@@ -325,7 +355,7 @@ export class Recruta {
           this.guardDecide = 1.8;
         }
         this.guard.set(this.guardT > 0, dt);
-        if (dist > 2.9) {
+        if (dist > 2.9 * this.scale) {
           want = toP.clone().normalize();
           speed = this.def.speed * (this.guard.holding ? 0.4 : 1);
         } else {
@@ -373,7 +403,7 @@ export class Recruta {
           // investida curta
           this.knock.set(Math.sin(this.yaw) * 4, 0, Math.cos(this.yaw) * 4);
           const me = { x: this.pos.x, y: this.pos.y, z: this.pos.z, yaw: this.yaw };
-          if (player.alive && inReach(me, player.pos, atk, { radius: 0.9 })) {
+          if (player.alive && inReach(me, player.pos, atk, { radius: 0.9 + (this.scale - 1) * 1.6 })) {
             const res = arena.hitPlayer(this, this.def.element ? { ...atk, element: this.def.element, effects: this.def.meleeEffects } : atk, computeDamage(atk.damage * this.def.damageMult));
             if (res?.result === 'perfect') {
               this.attack = null;
@@ -449,9 +479,10 @@ export class Recruta {
       const dx = this.pos.x - player.pos.x;
       const dz = this.pos.z - player.pos.z;
       const d = Math.hypot(dx, dz);
-      if (d < 1.9 && d > 1e-3) {
-        this.pos.x += (dx / d) * (1.9 - d);
-        this.pos.z += (dz / d) * (1.9 - d);
+      const sep = 1.9 * this.scale;
+      if (d < sep && d > 1e-3) {
+        this.pos.x += (dx / d) * (sep - d);
+        this.pos.z += (dz / d) * (sep - d);
       }
       for (const o of arena.recrutas) {
         if (o === this || !o.alive) continue;
@@ -562,7 +593,7 @@ export class Recruta {
     const sink = this.state === 'down' ? Math.max(0, this.t - 3) * 1.4 : 0;
     body.root.position.set(this.pos.x, this.pos.y - sink, this.pos.z);
     body.root.rotation.set(0, this.yaw, 0);
-    this.tag.sprite.position.set(this.pos.x, this.pos.y + 5.4, this.pos.z);
+    this.tag.sprite.position.set(this.pos.x, this.pos.y + 5.4 * this.scale, this.pos.z);
     const speed = Number.isFinite(this.speed) ? this.speed : 0;
     this.stride = lerp(Number.isFinite(this.stride) ? this.stride : 0, clamp(speed / MOVE.run, 0, 1.15), damp(12, dt));
     this.phase = (Number.isFinite(this.phase) ? this.phase : 0) + dt * speed * 2.9;
@@ -642,6 +673,11 @@ export function buildArena({ scene, physics, field, data, visual = true }) {
     update(dt, player) {
       for (const d of dummies) d.update(dt, player.pos);
       for (const r of recrutas) r.update(dt, player, arena);
+    },
+    // inimigos das outras ilhas (atualização 14)
+    add(r) {
+      recrutas.push(r);
+      return r;
     },
     render(dt, playerPos) {
       for (const r of recrutas) r.render(dt, playerPos);

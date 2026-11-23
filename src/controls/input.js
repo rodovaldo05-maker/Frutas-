@@ -97,6 +97,7 @@ export class Input {
   // ===== Toque e arrasto =====
   bindPointer(root) {
     const pointers = new Map();
+    this.pointers = pointers; // (inspeção em testes)
     const stick = this.stick;
     const radius = 62;
     const showStick = (x, y) => {
@@ -133,7 +134,7 @@ export class Input {
         this.touchMove.active = true;
         this.usingTouch = true;
       } else {
-        pointers.set(e.pointerId, { kind: 'look', x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, at: performance.now(), mouse: e.pointerType === 'mouse' });
+        pointers.set(e.pointerId, { kind: 'look', x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, at: performance.now(), ts: e.timeStamp, mouse: e.pointerType === 'mouse' });
       }
     });
     root.addEventListener('pointermove', (e) => {
@@ -181,8 +182,10 @@ export class Input {
       if (!p) return;
       pointers.delete(e.pointerId);
       if (p.kind === 'block') this.setBlock('mouse', false);
-      // toque rápido na tela (ou clique sem arrastar) = Atacar; arrastar só gira a câmera
-      if (p.kind === 'look' && !p.pinch && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < (p.mouse ? 6 : 12) && performance.now() - p.at < (p.mouse ? 350 : 280)) {
+      // toque rápido na tela (ou clique sem arrastar) = Atacar; arrastar só gira a câmera.
+      // A duração usa o horário real do toque (timeStamp), não a hora em que o evento foi
+      // processado: com o aparelho ocupado o toque continua valendo (atualização 26).
+      if (p.kind === 'look' && !p.pinch && e.type === 'pointerup' && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < (p.mouse ? 6 : 12) && (e.timeStamp - (p.ts ?? e.timeStamp)) < (p.mouse ? 350 : 280)) {
         this.pressed.attack = true;
       }
       if (p.kind === 'stick') {

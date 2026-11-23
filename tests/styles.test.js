@@ -38,7 +38,7 @@ describe('estilos de luta (atualização 7)', () => {
     const s = migrate({ version: 5, styles: ['voltaico', 'xyz'], style: 'xyz' });
     expect(s.styles).toEqual(['basico', 'voltaico']);
     expect(s.style).toBe('basico');
-    expect(s.vontade).toEqual({ armadura: false, percepcao: false });
+    expect(s.vontade).toEqual({ armadura: false, percepcao: false, soberana: false });
   });
 });
 

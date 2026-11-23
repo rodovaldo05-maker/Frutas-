@@ -17,7 +17,7 @@ describe('salvamento', () => {
 
   it('migra salvo da versão 1 com moedas iniciais e missões vazias', () => {
     const s = migrate({ version: 1, player: { x: 5, y: 1, z: 2 }, unlocks: {} });
-    expect(s.version).toBe(5);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(s.coins).toBe(200);
     expect(s.missions).toEqual({});
     expect(s.player.x).toBe(5);

@@ -128,6 +128,11 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Prompt Mestre concluído (atualização 26): salvo versão 6 com cópia de segurança antes de
+migrar e recuperação de salvo corrompido, interface que só atualiza o que muda, toques
+robustos com o aparelho ocupado, perda de contexto gráfico tratada e regressão completa. O
+relatório dos 17 testes de aceitação está em [docs/15-prompt-mestre-relatorio.md](docs/15-prompt-mestre-relatorio.md).
+
 Meditação e Haki (atualização 25): no Treinamento, Meditação (respirar no ritmo; treina
 Concentração e Resistência Mental) e os três Haki — Observação (presença no minimapa,
 previsão breve, treino com projéteis "sem visão"), Armamento (revestimento mais barato e

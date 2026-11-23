@@ -173,9 +173,13 @@ export class Hud {
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.1;
-    el.healthText.textContent = `Vida ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
-    el.staminaText.textContent = `${Math.round(ctl.stamina.value)}/${Math.round(ctl.stamina.max)}`; // ícone de raio = Fôlego
-    el.state.textContent = stateLabel(ctl);
+    // só escreve quando muda (atualização 26: UI parcial, sem regravar o HTML todo quadro)
+    const put = (node, v) => {
+      if (node.textContent !== v) node.textContent = v;
+    };
+    put(el.healthText, `Vida ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`);
+    put(el.staminaText, `${Math.round(ctl.stamina.value)}/${Math.round(ctl.stamina.max)}`); // ícone de raio = Fôlego
+    put(el.state, stateLabel(ctl));
 
     // placa mais próxima: avisa o nome do lugar uma vez ao chegar perto
     let near = null;

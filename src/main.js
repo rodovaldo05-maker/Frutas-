@@ -276,6 +276,19 @@ async function boot() {
   // vida, fôlego e bônus de movimento: pontos distribuídos + treino pela prática
   // (cada ponto de Força e cada nível de treino de Força: +1 de fôlego)
   // + equipamento (atualização 8): defesa, vida, fôlego, energia, elemental, peso e sinergias
+  // UI parcial (atualização 26): só escreve no HTML quando o valor muda
+  const setText = (el, v) => {
+    if (el && el.textContent !== v) el.textContent = v;
+  };
+  const setVar = (el, name, v) => {
+    if (!el) return;
+    el.cssVars ??= {};
+    if (el.cssVars[name] !== v) {
+      el.cssVars[name] = v;
+      el.style.setProperty(name, v);
+    }
+  };
+  let contextLost = false; // contexto WebGL perdido: não desenha até voltar
   let vontadeRef = null; // a Vontade é criada depois (evita acesso antes da criação)
   const applyStatus = () => {
     const b = bonuses(save.training);
@@ -1092,7 +1105,7 @@ async function boot() {
         const u = Math.min(1, p.t / p.tel);
         p.orb.position.set(p.from.x + (p.target.x - p.from.x) * u, p.from.y + (p.target.y + 1.5 - p.from.y) * u + p.arc * Math.sin(Math.PI * u), p.from.z + (p.target.z - p.from.z) * u);
         if (u < 1) continue;
-        p.orb.removeFromParent();
+        killOrb(p.orb);
         h.list.splice(i, 1);
         fx.burst({ x: p.target.x, y: p.target.y + 1, z: p.target.z }, '#c084fc', { count: 10, speed: 3, up: 2 });
         const near = Math.hypot(ctl.pos.x - p.target.x, ctl.pos.z - p.target.z) < OBS_TRAINING.radius;
@@ -1120,9 +1133,15 @@ async function boot() {
       if (h.t <= 0) endHaki(`Treino de Armamento: ${h.hits} golpes revestidos, ${h.blocks} defesas.`, 'good');
     }
   }
+  // encerra a esfera do treino na lista de efeitos (sem esperar a vida longa acabar)
+  function killOrb(orb) {
+    const it = fx.items.find((x) => x.obj === orb);
+    if (it) it.dead = true;
+    orb.removeFromParent();
+  }
   function endHaki(msg, kind = 'good') {
     if (!haki) return;
-    for (const p of haki.list ?? []) p.orb.removeFromParent();
+    for (const p of haki.list ?? []) killOrb(p.orb);
     document.body.classList.remove('blind');
     haki = null;
     animator.meditate = null;
@@ -2838,7 +2857,7 @@ async function boot() {
           renderer.sun.intensity += storm.flashLight * 1.5;
         }
         const ws = save.weather?.state ?? 'sol';
-        $('clock').textContent = `${ws !== 'sol' ? WEATHER[ws].icone : dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`;
+        setText($('clock'), `${ws !== 'sol' ? WEATHER[ws].icone : dl.k > 0.4 ? '☀' : '☾'} ${fmtClock(save.clock)}`);
       }
       animator.update(animDt, ctl, view);
       dust.update(animDt);
@@ -2862,11 +2881,11 @@ async function boot() {
         $('box-will').classList.toggle('hidden', !learned);
         if (learned) {
           $('bar-will').style.transform = `scaleX(${vontade.value / 100})`;
-          $('txt-will').textContent = `${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`; // ícone de escudo = Vontade
+          setText($('txt-will'), `${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`); // ícone de escudo = Vontade
         }
         $('btn-armor').classList.toggle('hidden', !save.vontade.armadura);
         $('btn-king').classList.toggle('hidden', !save.vontade.soberana);
-        $('btn-king').style.setProperty('--cd', vontade.pulseCd / REI.cooldown);
+        setVar($('btn-king'), '--cd', (Math.ceil((vontade.pulseCd / REI.cooldown) * 50) / 50).toFixed(2));
         $('btn-sense').classList.toggle('hidden', !save.vontade.percepcao);
         $('btn-armor').classList.toggle('on', vontade.armor);
         $('btn-sense').classList.toggle('on', vontade.sense);
@@ -2930,7 +2949,7 @@ async function boot() {
       }
       renderer.scene.background = fog.color;
 
-      renderer.render();
+      if (!contextLost) renderer.render(); // sem contexto WebGL não há o que desenhar
       quality.sample(dt);
       if (ocean.detail !== renderer.quality.oceanDetail) {
         ocean.setDetail(renderer.quality.oceanDetail);
@@ -3164,6 +3183,24 @@ async function boot() {
       audio.enable(false);
     } else if (mode === 'game') audio.enable(true);
   });
+  // Perda do contexto gráfico (Android sem memória, troca de app): salva, pausa e retoma quando
+  // o navegador devolver o contexto (atualização 26; Prompt Mestre, seção 15)
+  {
+    const canvas = renderer.renderer.domElement;
+    canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault(); // permite restaurar
+      contextLost = true;
+      if (mode === 'game') {
+        saveNow(true);
+        if (!modals.length) openModal('pause');
+      }
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      contextLost = false;
+      renderer.resize?.();
+      hud.toast('Gráficos restaurados.', 'good');
+    });
+  }
   if (native()) {
     try {
       const { App } = await import('@capacitor/app');

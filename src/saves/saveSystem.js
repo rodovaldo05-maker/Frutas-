@@ -19,7 +19,7 @@ import { normalizeAwaken } from '../fruits/awakening.js';
 // Salvamento local (offline): IndexedDB com versão e migração; sem IndexedDB, usa localStorage.
 // Salva sozinho a cada 2 minutos, ao pausar e quando o app vai para segundo plano.
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6; // 6: Prompt Mestre (maestria 1–1000, treino, Haki) — atualização 26
 const DB = 'fruto-legacy';
 const STORE = 'saves';
 const FALLBACK = 'fruto-legacy:';
@@ -94,7 +94,7 @@ export function newSave() {
     equipped: 'estilo', // item equipado na barra de baixo: fruta, arma ou estilo
     styles: ['basico'], // estilos de luta aprendidos
     style: 'basico', // estilo do slot 3
-    vontade: { armadura: false, percepcao: false }, // Vontade aprendida
+    vontade: { armadura: false, percepcao: false, soberana: false }, // Vontade aprendida (soberana = Haki do Rei)
     items: [], // armaduras e acessórios { uid, id, dur }
     gear: { cabeca: null, torso: null, pernas: null, botas: null, anel: null, amuleto: null }, // encaixes
     nextItemUid: 1,
@@ -144,6 +144,9 @@ const MIGRATIONS = {
   4: (s) => (s.status && typeof s.status === 'object'
     ? { ...s, version: 5 }
     : { ...s, version: 5, status: newStatus(), statusPoints: pointsForLevel(s.level || 1), freeRespec: true }),
+  // Prompt Mestre: domínio 1–100 vira maestria 1–1000 (×10, sem perder progresso; feito pelo
+  // normalizador), treino com pesos, atributos novos e o Haki do Rei ainda bloqueado
+  5: (s) => ({ ...s, version: 6, vontade: { armadura: false, percepcao: false, soberana: false, ...(s.vontade || {}) } }),
 };
 
 export function migrate(save) {
@@ -167,7 +170,7 @@ export function migrate(save) {
   normalizeGear(out);
   out.styles = ['basico', ...(Array.isArray(out.styles) ? out.styles : [])].filter((id, i, a) => STYLE_IDS.includes(id) && a.indexOf(id) === i);
   if (!out.styles.includes(out.style)) out.style = 'basico';
-  out.vontade = { armadura: !!out.vontade?.armadura, percepcao: !!out.vontade?.percepcao };
+  out.vontade = { armadura: !!out.vontade?.armadura, percepcao: !!out.vontade?.percepcao, soberana: !!out.vontade?.soberana }; // soberana = Haki do Rei (atualização 25)
   out.weapons = Array.isArray(out.weapons) ? out.weapons.filter((id, i, a) => WEAPON_IDS.includes(id) && a.indexOf(id) === i) : [];
   if (!out.weapons.includes(out.weapon)) out.weapon = out.weapons[0] ?? null;
   for (const k of ['coins', 'fragments', 'level', 'statusPoints', 'xp']) if (!Number.isFinite(out[k])) out[k] = base[k];
@@ -262,8 +265,27 @@ export class SaveSystem {
     }
   }
 
+  // Carrega o salvo. Antes de migrar uma versão antiga guarda uma cópia intacta
+  // (slot1-backup-vN, migração reversível); a cada carga boa guarda slot1-anterior, usado se o
+  // principal estiver corrompido.
   async loadGame() {
-    return migrate(await this.read('slot1'));
+    let raw = await this.read('slot1');
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      const prev = await this.read('slot1-anterior');
+      if (prev && typeof prev === 'object') raw = prev;
+    }
+    if (raw && Number.isInteger(raw.version) && raw.version < SAVE_VERSION) await this.write(`slot1-backup-v${raw.version}`, raw);
+    const save = migrate(raw);
+    if (raw) await this.write('slot1-anterior', save);
+    return save;
+  }
+
+  // Volta para a cópia guardada antes da migração (se existir)
+  async restoreBackup(version) {
+    const b = await this.read(`slot1-backup-v${version}`);
+    if (!b) return null;
+    await this.write('slot1', b);
+    return b;
   }
 
   async saveGame(save) {

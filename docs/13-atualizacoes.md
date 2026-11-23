@@ -59,6 +59,8 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 |---|---|---|
 | Com fruta comida, trocar para o Estilo (ou Arma) deixava a lista de habilidades da fruta na tela | Na atualização 13 o botão da Forma híbrida entrou no meio do `if / else` que escolhe a lista; o `else` passou a depender de "tem fruta" | A lista volta a seguir o slot equipado (fruta, arma ou estilo); o botão da forma é tratado depois |
 | Botões Forma, Armadura, Percepção e Raça sobrepostos (e por cima das moedas) em telas estreitas | Cada um tinha posição fixa própria, calculada para telas largas | Os quatro numa fileira só embaixo dos ícones do topo; avisos no espaço livre entre a fileira e o minimapa; textos de Fôlego/Energia/Vontade curtos (o ícone diz qual é) |
+| Haki do Rei desperto sumia ao recarregar | O normalizador do salvo recriava a Vontade só com Armadura e Percepção | O salvo guarda `soberana`; teste de persistência cobre |
+| Toque de ataque com o joystick segurado às vezes não contava | A duração do toque usava a hora de processamento do evento; com o aparelho ocupado passava de 280 ms | Usa o horário real do toque (`timeStamp`) |
 | `__game.toggleForm` duplicado sempre alternava a forma (mesmo pedindo "desligar") | Duas chaves com o mesmo nome no objeto de teste; a segunda vencia | Uma chave só, que respeita o "desligar" |
 | Segurar J repetia golpes | A repetição automática do teclado gerava novos cliques | O J só conta no aperto; segurar não repete |
 | (teste) Cada tiro de canhão do jogador feria todos os navios do mar | A explosão tratava "fora do alcance" como "na borda" | Só navios dentro do raio da explosão |
@@ -92,8 +94,8 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | 23 | **Maestria 1–1000** (Prompt Mestre, fase E) | Maestria das frutas de 1 a 1000 (migração ×10), 6 estágios, trilhas de afinidade, técnica e sincronia, multiplicadores de ambiente (teto 4x), Batismo do Trovão, 10 marcos de transformação, despertar da maestria, imunidade limitada | Testes 10 a 13 | **Feita** |
 | 24 | **Treino com pesos e atributos por ação** (Prompt Mestre, fase F) | Slot 4 TREINAMENTO, pesos 3D de 5 a 2.560 kg, flexões e agachamentos em séries de 10, descanso, fadiga, 5 atributos novos, correr como padrão, botões reorganizados | Testes 8 e 9 | **Feita** |
 | 25 | **Meditação e Haki** (Prompt Mestre, fase G) | Meditação com respiração no ritmo; Haki da Observação, do Armamento e do Rei com 7 estágios cada, treinos próprios, Desafio da Vontade e Pulso de Vontade | Testes 10 e 13 | **Feita** |
-| 26 | **Interface, persistência e otimização** (Prompt Mestre, fase H) | Interface mobile, pools de efeitos, migração de saves e regressão completa | Testes 14 a 17 | Próxima |
-| 27 | **Segundo Mar completo** (doc 02) | Ilhas 14 a 18 do Segundo Mar (Geleira Silente a Masmorra do Abismo) e o acesso ao Terceiro Mar | Navegar e derrotar os chefes do Segundo Mar | — |
+| 26 | **Interface, persistência e otimização** (Prompt Mestre, fase H) | Salvo v6 com cópia de segurança e recuperação, UI parcial, toques robustos, perda de contexto gráfico, regressão completa; relatório em `15-prompt-mestre-relatorio.md` | Testes 14 a 17 | **Feita** (falta teste em aparelho real) |
+| 27 | **Segundo Mar completo** (doc 02) | Ilhas 14 a 18 do Segundo Mar (Geleira Silente a Masmorra do Abismo) e o acesso ao Terceiro Mar | Navegar e derrotar os chefes do Segundo Mar | Próxima |
 | 28 | **Terceiro Mar** (doc 02) | Ilhas finais e chefes de alto nível | Navegar e derrotar os chefes | — |
 
 Por último: multijogador opcional (doc 00, fase F8).

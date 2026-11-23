@@ -83,7 +83,9 @@ import { RACES } from './races/races.js';
 import { RaceSystem } from './races/raceSystem.js';
 import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
-import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked } from './islands/secondSea.js';
+import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } from './islands/secondSea.js';
+import { IslandEvents } from './world/islandEvents.js';
+import { normalizeIslands } from './islands/islandRules.js';
 import { Storm } from './world/storm.js';
 import { WEATHER, STRIKE, stepWeather, weatherDamage } from './world/weather.js';
 import { BeastManager } from './ships/beasts.js';
@@ -165,8 +167,8 @@ async function boot() {
     const add = (id, x, z, def) => arena.add(new Recruta({ id, x, z, field: world, scene: renderer.scene, data: DATA, def }));
     for (const s of sea) {
       const lv = levelsFor(s.def);
-      s.enemies.forEach((p, k) => add(`${s.def.id}-${k + 1}`, p.x, p.z, scaledDef(s.def.enemy, lv[k])));
-      add(`${s.def.id}-chefe`, s.boss.x, s.boss.z, bossDef(s.def.boss, s.def.faixa[1]));
+      s.enemies.forEach((p, k) => add(`${s.def.id}-${k + 1}`, p.x, p.z, scaledDef(s.def.enemy, lv[k], s.def.enemyExtra)));
+      add(`${s.def.id}-chefe`, s.boss.x, s.boss.z, bossDef(s.def.boss, s.def.faixa[1], s.def.bossExtra));
     }
     const o = VILLAGE.offset;
     const [cx, cz] = PORTO_CAMP.local.camp;
@@ -418,6 +420,7 @@ async function boot() {
           const f = eatenFruit();
           const dir = { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) };
           const at = m1Point(a, d.target);
+          islandEvents.strike(at, vontade.sense); // ecos ilusórios do Bosque Noturno
           if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir, form?.shape);
           audio.play(d.landed ? 'impacto' : 'base', d.landed ? 'acerto' : 'swing', a.heavy ? 1 : 0.55 + a.m1 * 0.08);
           if (d.landed) shake = Math.max(shake, [0.08, 0.1, 0.14, 0.22][a.m1 - 1]);
@@ -1518,7 +1521,7 @@ async function boot() {
   let crossing = null; // { gate, t, dur, strikeT, marks: [] }
   let gateBlockT = 0;
   function startCrossing(gate) {
-    const back = gate.id === 'sul';
+    const back = !!gate.back;
     crossing = { gate, t: 0, dur: back ? CROSSING.back : CROSSING.time, strikeT: 2, marks: [] };
     storm.set(true);
     hud.notice(`${gate.nome}: tempestade! Desvie dos raios marcados na água`, 'bad', 'zone');
@@ -1550,16 +1553,19 @@ async function boot() {
       cam.snap(ctl.pos, ctl.yaw);
       prev.copy(ctl.pos);
       gateBlockT = 3;
-      if (a.mar === 2) {
-        save.seas ??= {};
-        if (!save.seas.segundo) {
-          save.seas.segundo = true;
-          hud.toast(`Você atravessou a tempestade! Bem-vindo ao Segundo Mar (Nv. 700+) · +${CROSSING.xp} exp`, 'gold');
-          hud.toast('A Barqueira do Porto das Origens agora leva você até o Cais das Correntes.', 'good');
-          grantXp(CROSSING.xp);
-        }
-        hud.notice('Segundo Mar', 'zone', 'zone');
-      } else hud.notice('Primeiro Mar', 'zone', 'zone');
+      save.seas ??= {};
+      if (a.mar === 2 && !save.seas.segundo) {
+        save.seas.segundo = true;
+        hud.toast(`Você atravessou a tempestade! Bem-vindo ao Segundo Mar (Nv. 700+) · +${CROSSING.xp} exp`, 'gold');
+        hud.toast('A Barqueira do Porto das Origens agora leva você até o Cais das Correntes.', 'good');
+        grantXp(CROSSING.xp);
+      }
+      if (a.mar === 3 && !save.seas.terceiro) {
+        save.seas.terceiro = true;
+        hud.toast(`Você atravessou o Portão do Abismo! Bem-vindo ao Terceiro Mar (Nv. 1500+) · +${CROSSING.xp * 3} exp`, 'gold');
+        grantXp(CROSSING.xp * 3);
+      }
+      hud.notice(SEA_NAMES[a.mar], 'zone', 'zone');
       saveNow(true);
       setTimeout(() => closeModal('travel'), 600);
     }, 700);
@@ -1570,8 +1576,8 @@ async function boot() {
       if (!boat.aboard || gateBlockT > 0 || fleet.sunk > 0) return;
       for (const g of Object.values(GATES)) {
         if (Math.hypot(boat.s.x - g.x, boat.s.z - g.z) > g.r) continue;
-        if (g.id === 'norte' && !crossingUnlocked(save)) {
-          hud.notice('Uma corrente furiosa empurra o bote de volta. Derrote a Guardiã da Fenda Celeste para atravessar.', 'bad', 'gate');
+        if (!crossingUnlocked(save, g)) {
+          hud.notice(`Uma corrente furiosa empurra o bote de volta. ${g.lock ?? 'Derrote a Guardiã da Fenda Celeste para atravessar.'}`, 'bad', 'gate');
           boat.s.yaw += Math.PI;
           boat.s.speed = 4;
           gateBlockT = 2;
@@ -1618,6 +1624,39 @@ async function boot() {
     }
     if (crossing.t >= crossing.dur) endCrossing();
   }
+
+  // ===== Ilhas 14 a 18 do Segundo Mar (atualização 27): nevasca, espelhos, ecos, erupções e masmorra =====
+  const islandFog = { mix: 0, last: null, color: new THREE.Color() };
+  const islandEvents = new IslandEvents({
+    scene: renderer.scene, physics, islands: sea,
+    hooks: {
+      fx,
+      save: () => (save.islands ??= normalizeIslands(null)),
+      persist: () => saveNow(true),
+      ground: (x, z) => world.sample(x, z),
+      hit: (frac, attack, at) => enemyHit({ id: `perigo-${attack.id}`, pos: at, yaw: 0, life: 1 }, attack, Math.max(1, Math.round(ctl.maxHealth * frac)), at),
+      condition: (name, opts) => conditions.apply(name, opts),
+      notice: (text, kind, key) => hud.notice(text, kind, key),
+      toast: (text, kind) => hud.toast(text, kind),
+      shake: (a) => {
+        if (!settings.reduceMotion) shake = Math.max(shake, a);
+      },
+      sound: (k) => audio.play('base', k, 0.6),
+      obsXp: (n) => grantMastery('vontade:percepcao', 'Haki da Observação', n, `eco:${Math.floor(tracker.now / 4)}`, false, { id: 'eco', life: 0 }),
+      reward: (kind) => {
+        if (kind !== 'camara') return;
+        // baú da câmara secreta das Ruínas do Sol Poente (uma vez por salvo)
+        save.coins += 8000;
+        save.keys = (save.keys ?? 0) + 2;
+        addMaterial(save, 'cristal', 6);
+        addMaterial(save, 'perola', 4);
+        const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].nivel >= 5);
+        const it = addItem(save, pool[Math.floor(Math.random() * pool.length)]);
+        hud.toast(`Tesouro do Sol Poente: 8.000 moedas, 2 chaves da roleta, ${MATERIALS.cristal.nome} e ${MATERIALS.perola.nome}, ${ITEMS[it.id].nome}`, 'gold');
+        grantXp(3000);
+      },
+    },
+  });
 
   // ===== Clima (atualização 19): sol, chuva e tempestade por mar; raios na tempestade =====
   powers.weatherMult = (fruitId) => weatherDamage(save.weather?.state ?? 'sol', fruitId);
@@ -2519,6 +2558,7 @@ async function boot() {
   const talk = () => {
     if (!nearAction || modals.length || mode !== 'game') return;
     if (nearAction.kind === 'board') return board();
+    if (nearAction.kind === 'island') return nearAction.run();
     if (nearAction.kind === 'leave') return disembark();
     if (nearAction.kind === 'villager') return villageUi.talk(nearAction.m);
     if (nearAction.kind === 'mine') return gathering.startMine(nearAction.node);
@@ -2777,14 +2817,23 @@ async function boot() {
       beastStep(dt);
       wreckStep(dt);
       crossingStep(dt);
+      islandEvents.step(dt, {
+        pos: ctl.pos, alive: ctl.faint <= 0 && mode === 'game', sense: vontade.sense,
+        island: sea.find((s) => s.extra && s.field.inside(ctl.pos.x, ctl.pos.z))?.def.id ?? null,
+        immune: (source) => {
+          const ef = eatenFruit();
+          return !!ef && envImmune(ef.id, domainOf(save, ef.id).level, source);
+        },
+      });
       conditions.update(dt, ctl);
       // lava da Caldeira Rubra: queima quem pisa na cratera
       lavaT -= dt;
       if (lavaT <= 0) {
         lavaT = 0.5;
-        for (const s of sea) {
-          const lv = s.lava;
-          if (lv && Math.hypot(ctl.pos.x - lv.x, ctl.pos.z - lv.z) < lv.r && ctl.pos.y < lv.y + 1.2) conditions.apply('queimando', { duration: 3, stacks: 2 });
+        const ef = eatenFruit();
+        const lavaProof = ef && envImmune(ef.id, domainOf(save, ef.id).level, 'lava');
+        for (const s of sea) for (const lv of s.lavas) {
+          if (!lavaProof && Math.hypot(ctl.pos.x - lv.x, ctl.pos.z - lv.z) < lv.r && ctl.pos.y < lv.y + 1.2) conditions.apply('queimando', { duration: 3, stacks: 2 });
         }
       }
       // hora do jogo, rotina dos moradores e portas da vila
@@ -2947,6 +2996,16 @@ async function boot() {
         fog.near = renderer.quality.viewDistance * 0.35;
         fog.far = renderer.quality.viewDistance;
       }
+      // neblina das ilhas (nevasca da Geleira, névoa do Bosque Noturno), com transição
+      const fo = mode === 'game' && !cam.underwater ? islandEvents.fog : null;
+      if (fo) islandFog.last = fo;
+      islandFog.mix += ((fo ? 1 : 0) - islandFog.mix) * Math.min(1, dt * 1.5);
+      if (islandFog.mix > 0.01 && islandFog.last) {
+        const k = islandFog.mix;
+        fog.near += (islandFog.last.near - fog.near) * k;
+        fog.far += (islandFog.last.far - fog.far) * k;
+        fog.color.lerp(islandFog.color.set(islandFog.last.color), k);
+      }
       renderer.scene.background = fog.color;
 
       if (!contextLost) renderer.render(); // sem contexto WebGL não há o que desenhar
@@ -2985,6 +3044,8 @@ async function boot() {
             const sp = gatherWorld.nearestSpot(p);
             if (sp) opts.push({ d: Math.hypot(p.x - sp.x, p.z - sp.z) - 5, kind: 'fish', spot: sp, key: `fish-${sp.id}`, text: 'Pescar' });
           }
+          const io = ctl.state === 'ground' ? islandEvents.nearest(p) : null;
+          if (io) opts.push({ ...io, kind: 'island' });
           if ((ctl.state === 'ground' || ctl.state === 'swim') && boat.near(p)) opts.push({ d: Math.hypot(p.x - boat.s.x, p.z - boat.s.z) - 1.5, kind: 'board', key: 'board', text: 'Embarcar no bote' });
           act = opts.sort((a, b) => a.d - b.d)[0] ?? null;
         }
@@ -3247,6 +3308,8 @@ async function boot() {
     animator,
     toggleForm: (off) => toggleForm(off),
     spawnWreck: () => spawnWreck(),
+    islandEvents,
+    seaOfPlayer: () => seaOf(ctl.pos.z),
     forgeUi,
     get form() {
       return form;

@@ -190,5 +190,7 @@ export function naturalLightning(m, day) {
 export function envImmune(fruitId, level, source) {
   if (level < THRESHOLDS.immunity) return false;
   if (fruitId === 'tormenta' && source === 'raio-natural') return true;
+  if (fruitId === 'geada' && source === 'frio') return true; // nevasca da Geleira Silente
+  if (fruitId === 'brasa' && source === 'lava') return true; // lava e erupções (só a queimadura)
   return false;
 }

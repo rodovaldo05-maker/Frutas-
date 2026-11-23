@@ -49,5 +49,5 @@ export function stepWeather(w, clock, sea, rand = Math.random) {
 
 export function normalizeWeather(w) {
   const ok = w && typeof w === 'object' && WEATHER[w.state] && Number.isFinite(w.until);
-  return ok ? { state: w.state, until: w.until, sea: w.sea === 2 ? 2 : 1 } : { state: 'sol', until: 0, sea: 1 };
+  return ok ? { state: w.state, until: w.until, sea: [1, 2, 3].includes(w.sea) ? w.sea : 1 } : { state: 'sol', until: 0, sea: 1 };
 }

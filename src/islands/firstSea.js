@@ -12,6 +12,7 @@ import { StructureBuilder } from '../world/structures.js';
 import { natureKit, placeInstances } from '../world/nature.js';
 import { generateVillage } from '../world/village.js';
 import { smooth, valueNoise2D, mulberry32 } from '../core/math.js';
+import { DUNGEON } from './islandRules.js';
 
 // ===== Ilhas =====
 // enemy/boss: aparência e golpe marcado (os números vêm de scaledDef/bossDef pelo nível)
@@ -85,8 +86,14 @@ const PALETTES = {
   // Segundo Mar (atualização 17)
   selva: { low: '#2f7a3a', high: '#4a9a42', sand: '#e0d29a', rock: '#5a6a5a' },
   granito: { low: '#6a8a5a', high: '#7a9068', sand: '#d8cca0', rock: '#8a8a90' },
+  // atualização 27
+  geleira: { low: '#dce8f0', high: '#f2f8fc', sand: '#c8d8e2', rock: '#8aa8bc' },
+  ruinas: { low: '#a8945a', high: '#bca86a', sand: '#e8d4a0', rock: '#c89a5a' },
+  noturno: { low: '#1f3a34', high: '#29473c', sand: '#4a5a52', rock: '#343c44' },
+  bastiao: { low: '#3a3236', high: '#2e282c', sand: '#4a3e3c', rock: '#241e22' },
+  masmorra: { low: '#4e4e54', high: '#58585e', sand: '#7a7468', rock: '#3a3a40' },
 };
-const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3, selva: 3.4, granito: 4 };
+const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3, selva: 3.4, granito: 4, geleira: 2.4, ruinas: 3.2, noturno: 3, bastiao: 3, masmorra: 4 };
 
 // ===== Relevo =====
 export function seaHeight(def) {
@@ -105,6 +112,15 @@ export function seaHeight(def) {
       // selva: morro no meio com penhasco da cachoeira
       case 'selva': return 9 * Math.pow(Math.max(0, 1 - r / (R * 0.55)), 1.4) + 2.5 * n1(x / 18, z / 18) + n2(x / 9, z / 9);
       case 'granito': return 0.4 * n2(x / 16, z / 16);
+      case 'masmorra': return 0.15 * n2(x / 16, z / 16);
+      // geleira: placa de gelo com cristas baixas
+      case 'geleira': return 1.4 * Math.abs(n1(x / 22, z / 22)) + 0.4 * n2(x / 8, z / 8);
+      case 'ruinas': return 0.9 * n2(x / 14, z / 14) + 0.6 * n1(x / 30, z / 30);
+      case 'noturno': return 3 * n1(x / 24 + 5, z / 24) + n2(x / 10, z / 10);
+      case 'bastiao': {
+        const cone = 30 * Math.pow(Math.max(0, 1 - r / (R * 0.75)), 1.3);
+        return cone - 14 * (1 - smooth(5, 9, r)) + n2(x / 9, z / 9) * 0.8;
+      }
       case 'deserto': return 2.2 * Math.abs(Math.sin(x / 8 + n1(x / 30, z / 30) * 3)) + 1.2 * n2(x / 20, z / 20);
       case 'neve': return 34 * Math.pow(Math.max(0, 1 - r / (R * 0.68)), 1.6) + 1.5 * n1(x / 12, z / 12);
       case 'vulcao': {
@@ -130,7 +146,7 @@ export function seaSpots(def) {
   const central = def.biome === 'arena' || def.biome === 'forte';
   const boss = central ? { x: 0, z: 0 } : { x: Math.cos(a + Math.PI * 0.8) * R * 0.4, z: Math.sin(a + Math.PI * 0.8) * R * 0.4 };
   if (def.biome === 'neve') boss.x *= 1.2, boss.z *= 1.2;
-  const enemies = [0, 1, 2, 3].map((k) => ({ x: camp.x + Math.cos(k * 1.6) * 5, z: camp.z + Math.sin(k * 1.6) * 5 }));
+  let enemies = [0, 1, 2, 3].map((k) => ({ x: camp.x + Math.cos(k * 1.6) * 5, z: camp.z + Math.sin(k * 1.6) * 5 }));
   // praia de chegada: lado da ilha voltado para a Ilha de Treino
   // (vem do mar aberto até a areia e entra 4 unidades: a costa varia com o ângulo, e
   // andar de dentro para fora pararia em lagos e baixios do interior)
@@ -140,13 +156,60 @@ export function seaSpots(def) {
   while (r > 4 && h(Math.cos(toHome) * r, Math.sin(toHome) * r) < 0.8) r -= 0.5;
   r -= 4;
   const landing = { x: Math.cos(toHome) * r, z: Math.sin(toHome) * r, yaw: toHome + Math.PI };
+  if (def.biome === 'masmorra') {
+    // inimigos nos andares (longe das portas) e o chefe na cela do meio
+    const dungeon = dungeonLayout(landing);
+    enemies = dungeon.guards;
+    return { camp: enemies[0], boss: { x: 0, z: 0 }, enemies, landing, dungeon };
+  }
   return { camp, boss, enemies, landing };
+}
+
+// ===== Masmorra do Abismo: quatro muralhas quadradas, portas alternadas, altares e espinhos =====
+const SIDES = ['x+', 'z+', 'x-', 'z-'];
+const sidePoint = (side, d, t) => (side === 'x+' ? { x: d, z: t } : side === 'x-' ? { x: -d, z: t } : side === 'z+' ? { x: t, z: d } : { x: t, z: -d });
+const sideOf = (p) => (Math.abs(p.x) > Math.abs(p.z) ? (p.x > 0 ? 'x+' : 'x-') : p.z > 0 ? 'z+' : 'z-');
+export function dungeonLayout(landing) {
+  const rings = DUNGEON.rings;
+  const i0 = SIDES.indexOf(sideOf(landing));
+  const side = (k) => SIDES[(((i0 + k) % 4) + 4) % 4];
+  // a porta da muralha k fica num lado; a do andar seguinte, no lado oposto (anda em volta)
+  const doors = rings.map((S, k) => {
+    const sd = side(2 * k);
+    return { ...sidePoint(sd, S, 0), side: sd, rotY: sd[0] === 'x' ? Math.PI / 2 : 0 };
+  });
+  const mids = rings.slice(0, -1).map((S, k) => (S + rings[k + 1]) / 2);
+  const altars = mids.map((d, k) => sidePoint(side(2 * k + 1), d, 0));
+  const spikes = [];
+  mids.forEach((d, k) => {
+    for (const sd of [side(2 * k + 1), side(2 * k + 3)]) for (const t of [-0.55 * d, 0.55 * d]) for (const o of [-1.4, 1.4]) {
+      spikes.push({ ...sidePoint(sd, d + o, t), offset: spikes.length * 0.37 });
+    }
+  });
+  const guards = [sidePoint(side(3), mids[0], 0), sidePoint(side(2), mids[0], mids[0] * 0.4), sidePoint(side(5), mids[1], 0), sidePoint(side(7), mids[2], 0)];
+  return { rings, doors, altars, spikes, guards };
 }
 
 export const levelsFor = (def) => {
   const [a, b] = def.faixa;
   return [0, 1, 2, 3].map((k) => Math.round(a + ((b - a) * 0.8 * (k + 0.5)) / 4));
 };
+
+// junta duas geometrias simples (cogumelo: pé e chapéu) numa só
+function mergeTwo(a, b) {
+  const out = new THREE.BufferGeometry();
+  const na = a.toNonIndexed();
+  const nb = b.toNonIndexed();
+  for (const k of ['position', 'normal']) {
+    const x = na.getAttribute(k).array;
+    const y = nb.getAttribute(k).array;
+    const arr = new Float32Array(x.length + y.length);
+    arr.set(x);
+    arr.set(y, x.length);
+    out.setAttribute(k, new THREE.BufferAttribute(arr, 3));
+  }
+  return out;
+}
 
 // ===== Construção =====
 function colorFn(def, origin) {
@@ -200,7 +263,207 @@ export function buildSeaIsland({ scene, physics, def }) {
   };
   const R = def.R;
   let lava = null;
+  const lavas = [];
+  let extra = null; // dados dos acontecimentos da ilha (src/world/islandEvents.js)
+  const lavaDisc = (lx, lz, r, y) => {
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 24), new THREE.MeshStandardMaterial({ color: '#ff6a1a', emissive: '#ff4a10', emissiveIntensity: 1.4, roughness: 0.6 }));
+    disc.rotation.x = -Math.PI / 2;
+    const p = W(lx, lz);
+    disc.position.set(p.x, y, p.z);
+    disc.name = 'lava';
+    scene.add(disc);
+    lavas.push({ x: p.x, z: p.z, r, y });
+  };
   switch (def.biome) {
+    case 'geleira': {
+      // placa de gelo: navios presos no gelo, espinhos de gelo, poucos pinheiros e fogueiras
+      scatter(trees.pine, 12, 12, R - 10, 1.5, 8);
+      const fires = [];
+      for (let k = 0; k < 3; k++) {
+        const a = def.campAngle + 1.3 + k * 1.5;
+        const lx = Math.cos(a) * R * 0.55;
+        const lz = Math.sin(a) * R * 0.55;
+        if (!clear(lx, lz, 8)) continue;
+        const p = W(lx, lz);
+        const y = ground(lx, lz);
+        // casco inclinado meio afundado no gelo, mastro quebrado e vela rasgada
+        sb.block({ x: p.x, y: y - 1.2, z: p.z, w: 4.2, h: 3, d: 13, rotY: a, style: 'madeira' });
+        sb.block({ x: p.x, y: y + 1.6, z: p.z, w: 0.5, h: 5 + k, d: 0.5, rotY: a, style: 'madeira' });
+        sb.block({ x: p.x + Math.sin(a) * 0.4, y: y + 3.4, z: p.z + Math.cos(a) * 0.4, w: 3.2, h: 2, d: 0.12, rotY: a + 0.3, style: 'cobertor' });
+        const fx = lx + Math.cos(a + Math.PI / 2) * 6;
+        const fz = lz + Math.sin(a + Math.PI / 2) * 6;
+        const fp = W(fx, fz);
+        const fy = ground(fx, fz);
+        for (let j = 0; j < 6; j++) sb.block({ x: fp.x + Math.cos(j) * 1.1, y: fy - 0.2, z: fp.z + Math.sin(j) * 1.1, w: 0.6, h: 0.5, d: 0.6, rotY: j, style: 'rochaEscura' });
+        sb.block({ x: fp.x, y: fy - 0.1, z: fp.z, w: 1.4, h: 0.3, d: 0.4, rotY: 0.6, style: 'madeira' });
+        fires.push({ x: fp.x, y: fy, z: fp.z });
+      }
+      // fogueira logo na praia de chegada
+      const l = spots.landing;
+      const li = { x: l.x * 0.82, z: l.z * 0.82 };
+      const lp = W(li.x + Math.sin(l.yaw) * 4, li.z - Math.cos(l.yaw) * 4);
+      fires.push({ x: lp.x, y: field.sample(lp.x, lp.z), z: lp.z });
+      for (let k = 0; k < 14; k++) {
+        const a = rand() * 6.3;
+        const d = 12 + rand() * (R - 22);
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        if (!clear(lx, lz, 7)) continue;
+        const p = W(lx, lz);
+        sb.block({ x: p.x, y: ground(lx, lz) - 0.3, z: p.z, w: 1 + rand(), h: 2 + rand() * 4, d: 1 + rand(), rotY: a, style: 'gelo' });
+      }
+      extra = { fires };
+      break;
+    }
+    case 'ruinas': {
+      // pilar do sol no meio, quatro espelhos em volta e a câmara secreta (porta fechada)
+      const a0 = def.campAngle + Math.PI;
+      const sun = { x: 0, z: 0 };
+      const sp = W(0, 0);
+      const sy = ground(0, 0);
+      sb.block({ x: sp.x, y: sy - 0.3, z: sp.z, w: 2.4, h: 1.4, d: 2.4, style: 'arenito' });
+      sb.block({ x: sp.x, y: sy + 1.1, z: sp.z, w: 1, h: 0.8, d: 1, style: 'lanterna' });
+      for (let k = 0; k < 4; k++) sb.block({ x: sp.x + Math.cos(k * 1.57 + 0.78) * 3, y: sy - 0.3, z: sp.z + Math.sin(k * 1.57 + 0.78) * 3, w: 0.9, h: 6 - k, d: 0.9, style: 'pedraLisa' });
+      const local = [];
+      for (let i = 0; i < 4; i++) {
+        const a = a0 + i * 1.2;
+        const d = i % 2 ? 16 : 12;
+        local.push({ x: Math.cos(a) * d, z: Math.sin(a) * d });
+      }
+      // câmara: sala de arenito virada para o último espelho
+      const ca = a0 + 4.6;
+      const C = { x: Math.cos(ca) * 26, z: Math.sin(ca) * 26 };
+      const last = local[3];
+      const fl = Math.hypot(last.x - C.x, last.z - C.z);
+      const f = { x: (last.x - C.x) / fl, z: (last.z - C.z) / fl };
+      const pp = { x: f.z, z: -f.x };
+      const phi = Math.atan2(f.x, f.z);
+      const cy = ground(C.x, C.z);
+      const wall = (ox, oz, w, d) => {
+        const p = W(C.x + ox, C.z + oz);
+        sb.block({ x: p.x, y: cy - 0.4, z: p.z, w, h: 4.8, d, rotY: phi, style: 'arenito' });
+      };
+      wall(-f.x * 4, -f.z * 4, 9, 1); // fundo
+      wall(pp.x * 4, pp.z * 4, 1, 9);
+      wall(-pp.x * 4, -pp.z * 4, 1, 9);
+      wall(f.x * 4 + pp.x * 3.25, f.z * 4 + pp.z * 3.25, 2.5, 1);
+      wall(f.x * 4 - pp.x * 3.25, f.z * 4 - pp.z * 3.25, 2.5, 1);
+      const roof = W(C.x, C.z);
+      sb.block({ x: roof.x, y: cy + 4.4, z: roof.z, w: 9.6, h: 0.8, d: 9.6, rotY: phi, style: 'arenito' });
+      // colunas quebradas espalhadas
+      for (let k = 0; k < 12; k++) {
+        const a = rand() * 6.3;
+        const d = 20 + rand() * (R - 30);
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        if (!clear(lx, lz, 7) || Math.hypot(lx - C.x, lz - C.z) < 9) continue;
+        const p = W(lx, lz);
+        sb.block({ x: p.x, y: ground(lx, lz) - 0.3, z: p.z, w: 1.2, h: 1.5 + rand() * 4.5, d: 1.2, style: 'pedraLisa' });
+      }
+      scatter(trees.palm, 10, R - 14, R - 6, 1.2, 6);
+      scatter(trees.bush, 12, 30, R - 8, 1);
+      const at = (p) => ({ ...W(p.x, p.z), y: ground(p.x, p.z) });
+      const altar = at({ x: C.x - f.x * 1.5, z: C.z - f.z * 1.5 });
+      const mirrors = local.map((m, i) => ({ ...at(m), next: i < 3 ? W(local[i + 1].x, local[i + 1].z) : { x: altar.x, z: altar.z } }));
+      extra = {
+        puzzle: {
+          sun: at(sun), mirrors, altar,
+          chamber: { door: { ...at({ x: C.x + f.x * 4, z: C.z + f.z * 4 }), y: cy - 0.4, rotY: phi }, chest: at({ x: C.x - f.x * 2.2, z: C.z - f.z * 2.2 }) },
+        },
+      };
+      break;
+    }
+    case 'noturno': {
+      // floresta escura, cogumelos que brilham e ecos ilusórios
+      scatter(trees.broad, 40, 8, R - 10, 2.3, 6);
+      scatter(trees.bush, 22, 6, R - 8, 1.2);
+      const caps = [];
+      scatter(caps, 46, 6, R - 8, 1, 3);
+      const geo = new THREE.CylinderGeometry(0.5, 0.15, 0.7, 6).translate(0, 0.35, 0);
+      const cap = new THREE.SphereGeometry(0.75, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 0.65, 0);
+      const mushGeo = mergeTwo(geo, cap);
+      const mesh = new THREE.InstancedMesh(mushGeo, new THREE.MeshStandardMaterial({ color: '#7fe0ff', emissive: '#3ab8ff', emissiveIntensity: 1.3, roughness: 0.5 }), caps.length);
+      const m4 = new THREE.Matrix4();
+      const tint = new THREE.Color();
+      caps.forEach((c, i) => {
+        m4.makeRotationY(c.rotY).scale(new THREE.Vector3(c.scale, c.scale, c.scale)).setPosition(c.x, c.y - 0.05, c.z);
+        mesh.setMatrixAt(i, m4);
+        mesh.setColorAt(i, tint.set(i % 3 ? '#7fe0ff' : '#d08aff'));
+      });
+      mesh.name = `${def.id}-cogumelos`;
+      scene.add(mesh);
+      const echoes = [];
+      for (let k = 0; k < 5; k++) {
+        const a = def.campAngle + 1 + k * 1.1;
+        const d = 18 + (k % 2) * 10;
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        echoes.push({ ...W(lx, lz), y: ground(lx, lz) });
+      }
+      extra = { echoes };
+      break;
+    }
+    case 'bastiao': {
+      // vulcão ativo: cratera de lava, duas cavernas de magma com poças e rochas
+      const top = ground(0, 0);
+      lavaDisc(0, 0, 8, top + 0.5);
+      for (const k of [0, 1]) {
+        const a = def.campAngle + 2 + k * 2.2;
+        const lx = Math.cos(a) * R * 0.62;
+        const lz = Math.sin(a) * R * 0.62;
+        const y = ground(lx, lz);
+        lavaDisc(lx, lz, 3.5, y + 0.15);
+        // arco de rocha da caverna sobre a poça
+        const p = W(lx, lz);
+        const s = { x: Math.sin(a), z: Math.cos(a) };
+        for (const o of [-1, 1]) sb.block({ x: p.x + s.z * o * 4.6, y: y - 0.3, z: p.z - s.x * o * 4.6, w: 2.2, h: 6, d: 4, rotY: a, style: 'rochaEscura' });
+        sb.block({ x: p.x, y: y + 5.4, z: p.z, w: 11, h: 1.8, d: 5, rotY: Math.PI / 2 - a, style: 'rochaEscura' });
+      }
+      for (let k = 0; k < 16; k++) {
+        const a = rand() * 6.3;
+        const d = 16 + rand() * (R - 26);
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        if (!clear(lx, lz, 7) || lavas.some((l) => Math.hypot(def.x + lx - l.x, def.z + lz - l.z) < l.r + 5)) continue;
+        const p = W(lx, lz);
+        sb.block({ x: p.x, y: ground(lx, lz) - 0.4, z: p.z, w: 1.8 + rand() * 2, h: 1.2 + rand() * 2.4, d: 1.8 + rand() * 2, rotY: a, style: 'rochaEscura' });
+      }
+      extra = { crater: { ...W(0, 0), y: top } };
+      break;
+    }
+    case 'masmorra': {
+      // quatro muralhas quadradas (paredes finas), pilares nos cantos; as portas com grade,
+      // as chaves e os espinhos são montados em islandEvents.js
+      const dg = spots.dungeon;
+      const base = ground(0, 0);
+      dg.rings.forEach((S, k) => {
+        const h = 7 + k;
+        for (const side of ['x+', 'x-', 'z+', 'z-']) {
+          for (let t = -S; t <= S; t += 4) {
+            if (side === dg.doors[k].side && Math.abs(t) < 5) continue;
+            const q = sidePoint(side, S, t);
+            const p = W(q.x, q.z);
+            sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 4.2, h, d: 2, rotY: side[0] === 'x' ? Math.PI / 2 : 0, style: 'rochaEscura' });
+          }
+        }
+        for (const [cx, cz] of [[S, S], [S, -S], [-S, S], [-S, -S]]) {
+          const p = W(cx, cz);
+          sb.block({ x: p.x, y: base - 0.5, z: p.z, w: 3, h: h + 2, d: 3, style: 'pedra' });
+        }
+      });
+      // chão de pedra dentro da muralha de fora e tochas nas portas
+      const fl = W(0, 0);
+      sb.block({ x: fl.x, y: base - 0.2, z: fl.z, w: dg.rings[0] * 2, h: 0.5, d: dg.rings[0] * 2, style: 'caminho' });
+      for (const d of dg.doors) for (const o of [-4.6, 4.6]) {
+        const q = d.side[0] === 'x' ? { x: d.x, z: d.z + o } : { x: d.x + o, z: d.z };
+        const p = W(q.x, q.z);
+        sb.block({ x: p.x, y: base + 4, z: p.z, w: 0.5, h: 0.5, d: 0.5, style: 'lanterna' });
+      }
+      scatter(trees.pine, 8, dg.rings[0] + 10, R - 6, 1.4, 6);
+      const at = (p) => ({ ...W(p.x, p.z), y: base + 0.3 }); // em cima do chão de pedra
+      extra = { dungeon: { doors: dg.doors.map((d) => ({ ...at(d), rotY: d.rotY })), altars: dg.altars.map(at), spikes: dg.spikes.map((s) => ({ ...at(s), offset: s.offset })) } };
+      break;
+    }
     case 'praia': {
       scatter(trees.palm, 14, R - 14, R - 6, 1.25, 7);
       scatter(trees.bush, 12, 8, R - 16, 1);
@@ -350,12 +613,8 @@ export function buildSeaIsland({ scene, physics, def }) {
     case 'vulcao': {
       // lago de lava na cratera (queima quem entra) e rochas escuras
       const top = ground(0, 0);
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(7.5, 24), new THREE.MeshStandardMaterial({ color: '#ff6a1a', emissive: '#ff4a10', emissiveIntensity: 1.4, roughness: 0.6 }));
-      disc.rotation.x = -Math.PI / 2;
-      disc.position.set(def.x, top + 0.5, def.z);
-      disc.name = 'lava';
-      scene.add(disc);
-      lava = { x: def.x, z: def.z, r: 7.5, y: top + 0.5 };
+      lavaDisc(0, 0, 7.5, top + 0.5);
+      lava = lavas[0];
       for (let k = 0; k < 14; k++) {
         const a = rand() * 6.3;
         const d = 16 + rand() * (R - 26);
@@ -413,22 +672,22 @@ export function buildSeaIsland({ scene, physics, def }) {
   const gp = W(sx, sz);
   sb.sign({ x: gp.x, y: ground(sx, sz), z: gp.z, rotY: g.yaw, title: def.nome, hint: `Nv. ${def.faixa[0]}–${def.faixa[1]} · Chefe: ${def.boss.nome}` });
   sb.finish();
-  if (def.biome === 'vulcao') {
+  if (def.biome === 'vulcao' || def.biome === 'bastiao') {
     const lavaMesh = sb.group.getObjectByName('estruturas_lava');
     if (lavaMesh) {
       lavaMesh.material.emissive = new THREE.Color('#ff4a10');
       lavaMesh.material.emissiveIntensity = 1.2;
     }
   }
-  placeInstances(scene, `${def.id}-arvores`, kit.broad[def.seed % 3], trees.broad);
-  placeInstances(scene, `${def.id}-pinheiros`, kit.pine, trees.pine, { tint: def.biome === 'neve' ? '#e8f0f4' : null });
+  placeInstances(scene, `${def.id}-arvores`, kit.broad[def.seed % 3], trees.broad, { tint: def.biome === 'noturno' ? '#3a4a6a' : null });
+  placeInstances(scene, `${def.id}-pinheiros`, kit.pine, trees.pine, { tint: def.biome === 'neve' || def.biome === 'geleira' ? '#e8f0f4' : null });
   placeInstances(scene, `${def.id}-coqueiros`, kit.palm.geo, trees.palm);
   placeInstances(scene, `${def.id}-arbustos`, kit.bush[0], trees.bush, { shadow: false });
   for (const t of [...trees.broad, ...trees.pine]) physics.addCylinder({ x: t.x, y: t.y + 1.9 * t.scale, z: t.z }, 1.9 * t.scale, 0.3 * t.scale, { climbable: true, material: 'madeira' });
   for (const t of trees.palm) physics.addCylinder({ x: t.x, y: t.y + kit.palm.height * t.scale * 0.4, z: t.z }, kit.palm.height * t.scale * 0.4, 0.3, { climbable: true, material: 'madeira' });
   const toWorld = (p) => ({ ...W(p.x, p.z) });
   return {
-    def, field, localField, signs: sb.signs, lava,
+    def, field, localField, signs: sb.signs, lava, lavas, extra,
     enemies: spots.enemies.map(toWorld), boss: toWorld(spots.boss), landing: { ...toWorld(spots.landing), yaw: spots.landing.yaw },
   };
 }

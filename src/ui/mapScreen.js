@@ -2,6 +2,7 @@
 // (as placas) e a posição do jogador. Mostra a ilha onde o jogador está (cada ilha tem o seu
 // campo de alturas local e a origem no mundo).
 
+import { seaOf, SEA_NAMES } from '../islands/secondSea.js';
 import { renderIslandImage } from './islandMap.js';
 
 export class MapScreen {
@@ -71,9 +72,16 @@ export class MapScreen {
       z0 = Math.min(z0, i.origin.z - i.field.half * 0.7);
       z1 = Math.max(z1, i.origin.z + i.field.half * 0.7);
     }
+    // sem ilhas: uma área em volta do jogador
+    if (x0 === Infinity) {
+      x0 = this.player.x - 200;
+      x1 = this.player.x + 200;
+      z0 = this.player.z - 200;
+      z1 = this.player.z + 200;
+    }
     // portões da travessia do mar mostrado entram na carta
     for (const m of this.markers ?? []) {
-      if (!m.chart || (m.z < -1700 ? 2 : 1) !== (this.seaNo ?? 1)) continue;
+      if (!m.chart || seaOf(m.z) !== (this.seaNo ?? 1)) continue;
       x0 = Math.min(x0, m.x - 30);
       x1 = Math.max(x1, m.x + 30);
       z0 = Math.min(z0, m.z - 30);
@@ -84,8 +92,8 @@ export class MapScreen {
 
   // ilhas do mar onde o jogador está (1: Primeiro Mar, 2: Segundo Mar)
   seaIslands() {
-    const list = this.islands.filter((i) => (i.mar ?? 1) === (this.seaNo ?? 1));
-    return list.length ? list : this.islands;
+    // um mar ainda sem ilhas (Terceiro Mar até a atualização 28) mostra só portões e o jogador
+    return this.islands.filter((i) => (i.mar ?? 1) === (this.seaNo ?? 1));
   }
 
   seaCenter() {
@@ -94,7 +102,7 @@ export class MapScreen {
   }
 
   updateTitle() {
-    if (this.title) this.title.lastChild.textContent = this.mode === 'mar' ? `Carta do ${this.seaNo === 2 ? 'Segundo' : 'Primeiro'} Mar` : `Mapa · ${this.island.name}`;
+    if (this.title) this.title.lastChild.textContent = this.mode === 'mar' ? `Carta do ${SEA_NAMES[this.seaNo ?? 1]}` : `Mapa · ${this.island.name}`;
     if (this.seaButton) this.seaButton.textContent = this.mode === 'mar' ? 'Mapa da ilha' : 'Carta do mar';
   }
 
@@ -140,7 +148,7 @@ export class MapScreen {
   }
 
   open(player) {
-    this.seaNo = player.z < -1700 ? 2 : 1;
+    this.seaNo = seaOf(player.z);
     this.island = this.islandAt(player.x, player.z);
     // no mar (fora de todas as ilhas) abre direto a carta do mar
     const i = this.island;

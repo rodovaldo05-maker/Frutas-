@@ -19,8 +19,8 @@ function height(x, z) {
 }
 
 describe('Segundo Mar: ilhas', () => {
-  it('três ilhas com faixas seguidas de 700 a 975, no Segundo Mar', () => {
-    expect(SEA2.map((d) => d.faixa)).toEqual([[700, 775], [775, 875], [875, 975]]);
+  it('oito ilhas com faixas seguidas de 700 a 1500, no Segundo Mar', () => {
+    expect(SEA2.map((d) => d.faixa)).toEqual([[700, 775], [775, 875], [875, 975], [975, 1075], [1075, 1175], [1175, 1275], [1275, 1375], [1375, 1500]]);
     for (const d of SEA2) expect(seaOf(d.z)).toBe(2);
     for (const d of SEA) expect(seaOf(d.z)).toBe(1);
   });
@@ -77,7 +77,7 @@ describe('travessia', () => {
   it('só abre depois de derrotar a Guardiã da Fenda Celeste', () => {
     expect(crossingUnlocked({})).toBe(false);
     expect(crossingUnlocked({ bosses: { 'fenda-celeste-chefe': 1 } })).toBe(true);
-    expect(migrate({ ...newSave(), seas: { segundo: 'sim' } }).seas).toEqual({ segundo: false });
+    expect(migrate({ ...newSave(), seas: { segundo: 'sim' } }).seas).toEqual({ segundo: false, terceiro: false });
     expect(migrate({ ...newSave(), seas: { segundo: true } }).seas.segundo).toBe(true);
   });
 

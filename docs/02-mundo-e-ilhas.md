@@ -103,7 +103,48 @@ acima é o alvo final.
   ruínas; Serpente-Raiz, Nv. 875) e Cidadela de Granito (duas muralhas, torre de menagem e
   catapultas; General Basalto, Nv. 975). Cada uma com acampamento de 4 inimigos do nível e um
   navio corsário (Maré Traiçoeira, Cipó Negro, Punho de Granito).
-- **Ainda não:** as ilhas 14 a 18, caravelas no estaleiro, rios navegáveis e interiores.
+- **Ainda não:** caravelas no estaleiro, rios navegáveis e interiores.
+
+#### Situação no jogo (atualização 27): Segundo Mar completo
+
+![As cinco ilhas novas](segundo-mar-v27.png)
+
+| Ilha | Centro (x, z) | Raio | O que tem |
+|---|---|---|---|
+| Geleira Silente | (−820, −2480) | 70 | Placa de gelo, três navios presos no gelo, espinhos de gelo e **fogueiras** (uma em cada naufrágio e uma na praia de chegada) |
+| Ruínas do Sol Poente | (820, −2440) | 64 | Pilar do sol no meio, **quatro espelhos** e a **câmara secreta**, colunas quebradas |
+| Ilha do Bosque Noturno | (780, −3020) | 66 | Floresta escura, 46 **cogumelos luminosos**, **névoa** fechada e cinco **ecos ilusórios** |
+| Bastião Vulcânico | (−780, −3040) | 68 | Vulcão com cratera de lava, duas **cavernas de magma** (arco de rocha sobre poça de lava) e **erupções** |
+| Masmorra do Abismo | (0, −3220) | 62 | Quatro muralhas quadradas, portas de grade, **três chaves**, **espinhos** e a cela do Carcereiro no meio |
+
+- **Nevasca (Geleira):** a cada 45 s vem uma nevasca de 18 s (aviso 4 s antes; a neblina fecha).
+  O frio sobe 7/s na nevasca, cai 5/s fora dela e 30/s perto de uma fogueira (raio 6). Frio
+  cheio: lento e 2% da vida a cada 2 s. Fruta da Geada com maestria da imunidade não sente.
+- **Quebra-cabeça de luz (Ruínas):** o pilar do sol manda a luz para o espelho 1, que passa
+  para o 2, e assim até o altar dentro da câmara. Cada espelho gira 90° pelo botão de ação
+  ("Girar espelho"); só gira o espelho a que a luz já chega. Os quatro certos abrem a porta da
+  câmara e o baú (8.000 moedas, 2 chaves da roleta, Cristal Marinho, Pérolas, um item e 3.000 de
+  experiência). Uma vez por salvo; fica resolvido ao recarregar.
+- **Ecos ilusórios (Bosque Noturno):** vultos roxos que vagam. Golpear um eco com a Percepção
+  ligada desfaz o eco e dá 3 de Haki da Observação (até 30 por visita); sem ela, é uma ilusão
+  e deixa lento por 2 s. Voltam depois de 60 s.
+- **Erupções (Bastião):** a cada 30 s o vulcão treme (aviso 5 s antes) e entra em erupção por 6 s:
+  12 rochas caem em volta da cratera, cada uma com círculo laranja 1,3 s antes. Acerto: 8% da
+  vida e queimadura. A lava da cratera e das cavernas queima quem pisa (a Brasa com a maestria
+  da imunidade não queima).
+- **Masmorra:** a porta de fora está aberta; cada andar tem um altar com uma chave (Bronze,
+  Prata, Ouro), pega pelo botão de ação e em ordem. Cada chave abre a grade do andar seguinte
+  (portas em lados alternados: é preciso dar a volta). Espinhos sobem por 1,2 s a cada 3 s, com
+  aviso vermelho antes: 6% da vida. O Carcereiro Sem-Rosto e os guardas só saem do lugar com o
+  jogador perto (não atravessam as muralhas). As chaves ficam salvas.
+- **Chefes:** Rainha do Inverno Eterno (gelo, Nv. 1075), Sentinela Dourado (raio, Nv. 1175),
+  Senhora das Sombras (Nv. 1275), Titã de Obsidiana (fogo, Nv. 1375) e Carcereiro Sem-Rosto
+  (Nv. 1500). Cada ilha tem um navio corsário (Presa do Inverno, Vela do Poente, Mortalha
+  Noturna, Brasa de Obsidiana, Grilhão do Abismo).
+- **Portão do Abismo:** ao norte da Masmorra (0, −3420). Só deixa passar depois de derrotar o
+  Carcereiro Sem-Rosto; a tempestade leva ao **Terceiro Mar** (chegada em (0, −4310); primeira
+  travessia: +1.500 de experiência). O **Portão do Horizonte** traz de volta. A carta mostra o
+  "Terceiro Mar" (por enquanto só o portão; as ilhas 19 a 25 vêm na atualização 28).
 
 ### Terceiro Mar
 

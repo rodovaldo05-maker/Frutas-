@@ -322,6 +322,26 @@ Criatura de juba branca e dois chifres rubros. **Combo:** Garras de Marfim (11 /
 | T | Pisão da Besta | Solo se rompe ao redor e arremessa | 27 / 7,5 / 38 |
 | G | Fúria Carmesim | 6 s de golpes sem recuo e +20% de dano | 30 / 14 / 0 |
 
+**No jogo (0.27.5):** ![Efeitos da Besta](besta-efeitos-v275.png)
+
+- **Presa de Marfim** — gesto: abaixa a cabeça com os chifres à frente, investe e joga a cabeça
+  para cima. Efeito: brilho carmesim nos chifres ao preparar; dois rasgos cruzados de marfim de
+  baixo para cima, faixa e rachaduras no chão, onda em cone, coluna de chifrada (carmesim por
+  fora, marfim por dentro), terra e pedras arrancadas, anéis de choque e tremor.
+- **Rugido Carmesim** — gesto: enche o peito inclinando para trás e avança o tronco com os braços
+  abertos em garra, tremendo no fim. Efeito: ar e brasas puxados para a boca ao inspirar;
+  clarão na boca, três cones sobrepostos, seis anéis de som em pé crescendo, poeira varrida e
+  rachaduras em leque, arcos sônicos do laboratório e tremor que dura o rugido.
+- **Pisão da Besta** — gesto: sobe numa perna com a outra erguida até o peito e os braços acima da
+  cabeça, e desce num agachamento fundo. Efeito: marca no chão e energia subindo ao preparar;
+  clarão e coluna no centro, fendas carmesim e marfim, três ondas de choque, doze espinhos de
+  terra e marfim em anel, pedras e poeira subindo, fendas radiais do laboratório e tremor forte.
+- **Formas:** a híbrida e a completa usam as animações da Besta do laboratório (Presa de Marfim,
+  Rugido Carmesim e Pisão da Besta), com o tempo ajustado para o golpe cair junto do efeito. O
+  modelo da forma completa não mudou.
+- **M1 (Garras de Marfim):** garra com três riscos, golpe de cauda com vento e poeira varrida,
+  chifrada com coluna curta e pedras, investida com rachaduras, anel e tremor.
+
 ### 2.14 Fênix — Mítica, família ave (a confirmar)
 
 Penas azuis com pontas violeta e ouro. Voa (teto maior que o Falcão). **Combo:** Talões da Aurora (9 / 12 / 16). **Esquiva:** Rasante Solar.

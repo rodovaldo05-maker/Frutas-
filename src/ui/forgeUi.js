@@ -2,6 +2,7 @@
 // Melhorar com prévia do antes/depois), Vender materiais (Mercadora) e a aba Profissões em
 // Personagem (maestrias de Mineração, Pesca e Forja, ferramentas e materiais guardados).
 
+import { materialIcon, itemIcon } from './sprites.js';
 import { RECIPES, recipeName, craft, craftBlock, upgrade, upgradeBlock, upgradeCost, previewAttrs, MAX_UP } from '../crafting/forge.js';
 import { MATERIALS, MATERIAL_IDS, TOOLS, countOf, sellMaterial } from '../crafting/materials.js';
 import { ITEMS, QUALITY, SLOT_NAMES, itemLabel } from '../items/items.js';
@@ -14,7 +15,7 @@ const ATTR_NAMES = { defesa: 'defesa', vida: 'vida', folego: 'fôlego', energia:
 const fmtAttr = (k, v) => (k === 'elemental' ? `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : (Math.round(v * 10) / 10).toLocaleString('pt-BR'));
 const matsHtml = (save, mats) => Object.entries(mats).map(([id, n]) => {
   const have = countOf(save, id);
-  return `<span class="${have >= n ? 'ok' : 'no'}">${MATERIALS[id].icone} ${MATERIALS[id].nome} ${have}/${n}</span>`;
+  return `<span class="${have >= n ? 'ok' : 'no'}">${materialIcon(id, MATERIALS[id].icone)} ${MATERIALS[id].nome} ${have}/${n}</span>`;
 }).join('');
 
 export const PROFESSIONS = [
@@ -88,7 +89,7 @@ export class ForgeUi {
       const c = max ? null : upgradeCost(it);
       const rows = previewAttrs(it, { up: (it.up ?? 0) + 1 }).map((a) => `${ATTR_NAMES[a.k]} ${fmtAttr(a.k, a.now)}${max ? '' : ` → <i>${fmtAttr(a.k, a.next)}</i>`}`).join(' · ');
       return `<div class="forge-card" style="--qc:${QUALITY[d.qualidade]}">
-        <header><b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]}${eq.has(it.uid) ? ' · equipado' : ''}</small></header>
+        <header>${itemIcon(it.id)}<b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]}${eq.has(it.uid) ? ' · equipado' : ''}</small></header>
         <div class="attrs">${rows}</div>
         ${max ? '<div class="why">Melhoria máxima (+10)</div>' : `<div class="mats">${matsHtml(s, c.mats)}<span class="${s.coins >= c.moedas ? 'ok' : 'no'}">🪙 ${fmt(c.moedas)}</span></div>`}
         ${why && !max ? `<div class="why">${why}</div>` : ''}
@@ -124,7 +125,7 @@ export class ForgeUi {
       ? have.map((id) => {
         const m = MATERIALS[id];
         const n = countOf(s, id);
-        return `<div class="mat-row"><span class="ic">${m.icone}</span><b>${m.nome} ×${n}</b><small>${m.raridade} · ${fmt(m.valor)} cada · tudo: ${fmt(m.valor * n)}</small>
+        return `<div class="mat-row"><span class="ic">${materialIcon(id, m.icone)}</span><b>${m.nome} ×${n}</b><small>${m.raridade} · ${fmt(m.valor)} cada · tudo: ${fmt(m.valor * n)}</small>
           <div class="row-btns"><button class="btn" data-sell="${id}" data-n="1">Vender 1</button><button class="btn gold" data-sell="${id}" data-n="all">Vender tudo</button></div></div>`;
       }).join('')
       : '<p class="muted">Sem materiais. Minere, pesque ou derrote Recrutas.</p>';
@@ -143,6 +144,6 @@ export class ForgeUi {
     return `<h4>Maestrias</h4>${profs}
       <h4>Ferramentas</h4><div class="row-btns">${tools}</div>
       <p class="muted">Picareta com a Rosa (Ferreira) e Vara de Pesca com a Joana (Mercadora), no Porto das Origens.</p>
-      <h4>Materiais</h4><div class="mat-list">${mats.length ? mats.map((id) => `<div class="mat-row"><span class="ic">${MATERIALS[id].icone}</span><b>${MATERIALS[id].nome} ×${countOf(s, id)}</b><small>${MATERIALS[id].raridade}</small></div>`).join('') : '<p class="muted">Nenhum material ainda.</p>'}</div>`;
+      <h4>Materiais</h4><div class="mat-list">${mats.length ? mats.map((id) => `<div class="mat-row"><span class="ic">${materialIcon(id, MATERIALS[id].icone)}</span><b>${MATERIALS[id].nome} ×${countOf(s, id)}</b><small>${MATERIALS[id].raridade}</small></div>`).join('') : '<p class="muted">Nenhum material ainda.</p>'}</div>`;
   }
 }

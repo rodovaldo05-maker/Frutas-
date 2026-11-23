@@ -6,6 +6,10 @@
 // habilidades sem transformação (moves 3 e 4); as formas chegam na atualização 13.
 
 import { FRUTOMotion } from '../animation/fruto-motion.js';
+import { BESTA_CLIPS } from './bestaMoves.js';
+
+// gestos próprios por fruta (no lugar do gesto de reserva do formato)
+const OWN = { besta: BESTA_CLIPS };
 
 // Clipe de reserva por formato (frutas sem gesto próprio no laboratório)
 const FALLBACK = {
@@ -44,7 +48,7 @@ export function powersOf(fruit) {
   return shapes.map(([index, kind, params], slot) => {
     const m = fruit.moves[index];
     const own = `${fruit.id}${index}`;
-    const clip = index <= 2 && FRUTOMotion.clips[own] && !(fruit.forms && index > 0) ? own : FALLBACK[kind];
+    const clip = OWN[fruit.id]?.[slot] ?? (index <= 2 && FRUTOMotion.clips[own] && !(fruit.forms && index > 0) ? own : FALLBACK[kind]);
     return {
       slot, index, kind, params, clip, fruit: fruit.id, color: fruit.color,
       nome: m.name, curto: m.short || m.name, detalhe: m.detail,

@@ -128,6 +128,14 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Besta e ícones (0.27.5): as três habilidades da Besta ganharam gestos próprios na forma humana
+(chifrada, rugido de peito aberto e pisão com a perna erguida), as formas híbrida e completa
+passaram a usar as animações da própria Besta do laboratório e os efeitos ficaram bem mais
+fortes (colunas, espinhos de terra, ondas de som, pedras e rachaduras em marfim e carmesim).
+Todas as frutas ganharam um reforço de clarão e faíscas no golpe, e as marcas míticas do
+Rugido, do Pisão e das habilidades da Fênix e dos Dragões passaram a aparecer. Materiais,
+equipamentos e frutas usam os ícones desenhados no lugar dos emojis.
+
 Meditação da fruta (0.27.1, automática na 0.27.2): o Descanso virou meditação em flor de
 lótus — a aura da fruta envolve o corpo e a maestria sobe sozinha até o máximo ou até cancelar;
 nas oportunidades de respiração, tocar no dourado dobra o progresso. Na 0.27.4, quanto mais

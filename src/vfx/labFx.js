@@ -16,6 +16,7 @@
 
 import * as THREE from 'three';
 import { createFruitFX, FRUTOElements, FRUTOMythFX } from './fruto-fx.js';
+import { BestaFx } from './bestaFx.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const v3 = (p) => V(p.x, p.y, p.z);
@@ -34,6 +35,8 @@ export class LabFx {
     this.time = 0;
     this.jobs = [];
     this.zones = [];
+    this.shake = shake;
+    this.besta = new BestaFx(this); // habilidades da Besta mais fortes (0.27.5)
     this.fx = createFruitFX({ T: THREE, scene, V, mobile, soft: false, emit, now: () => this.time, shake, calm, ground, level });
   }
 
@@ -102,6 +105,7 @@ export class LabFx {
     const q = p.params;
     const color = p.color;
     const at = this.floor(dest);
+    if (f.id === 'besta') this.besta.cast(p.slot, pos, dir);
     if (p.kind === 'alvo') {
       const total = release + (q.delay ?? 0) + (q.pulses ?? 1) * (q.interval ?? 0) + 0.4;
       if (f.id === 'tormenta') {
@@ -120,7 +124,25 @@ export class LabFx {
     const fn = this[`k_${p.kind}`];
     if (!fn) return false;
     fn.call(this, f, p, ctx);
+    if (f.id !== 'besta') this.juice(f, p, ctx);
     return true;
+  }
+
+  // reforço para todas as frutas (0.27.5): clarão, faíscas e anel na cor da fruta no instante
+  // do golpe, e um tremor leve na habilidade mais forte (slot 3)
+  juice(f, p, { pos, dir }) {
+    if (!this.glow || !pos) return;
+    const q = p.params;
+    const reach = q.range ?? q.length ?? q.distance ?? q.radius ?? 3;
+    const g = this.floor(pos);
+    const d = dir ? v3(dir).setY(0) : V(0, 0, 1);
+    if (d.lengthSq() < 1e-6) d.set(0, 0, 1);
+    d.normalize();
+    const at = p.kind === 'area' ? g : g.clone().addScaledVector(d, Math.min(4, reach * 0.4));
+    this.glow.flash(at.clone().add(V(0, 1.2, 0)), f.color, 2.6 + p.slot * 0.8, 0.26);
+    this.glow.burst(at.clone().add(V(0, 0.8, 0)), f.color, { count: 10 + p.slot * 6, speed: 5 + p.slot, up: 4, size: 0.24, life: 0.55, gravity: -8 });
+    if (p.kind === 'area' || p.slot === 2) this.glow.ring(at, f.color, Math.min(6, (q.radius ?? 3) * 1.1), 0.45);
+    if (p.slot === 2) this.shake?.(0.06);
   }
 
   // projétil: devolve o visual que o sistema de poderes move
@@ -136,7 +158,7 @@ export class LabFx {
       this.fx.pulse(h, '#6cf7ff', 1.35, 0.28);
       this.fx.sparks(h, '#ffdf6b', 8, 2.8, { life: 0.34, size: 0.055, gravity: -0.5 });
     }
-    this.myth(f, 'skill', h, d, p.slot);
+    this.myth(f, 'skill', h, d, p.index);
     // como no laboratório (launch): o projétil fica na cena fora da lista de efeitos
     const root = this.fx.projectile(h, d, p.color, kind);
     this.scene.add(root);
@@ -228,7 +250,7 @@ export class LabFx {
         break;
       case 'fenix':
       case 'ocidental':
-        this.myth(f, 'skill', g, d, p.slot);
+        this.myth(f, 'skill', g, d, p.index);
         this.fx.pulse(g, f.color, r, 0.5);
         for (let i = 0; i < 6; i++) {
           const a = (i * Math.PI) / 3;
@@ -236,9 +258,7 @@ export class LabFx {
         }
         break;
       case 'besta':
-        this.myth(f, 'skill', g, d, p.slot);
-        this.fx.cracks(g, f.color, r, 0.8);
-        this.fx.pulse(g, f.color, r, 0.45);
+        this.besta.pisao(f, p, g, d);
         break;
       default:
         this.fx.pulse(g, f.color, r, 0.5);
@@ -291,13 +311,13 @@ export class LabFx {
         break;
       }
       case 'oriental':
-        this.myth(f, 'skill', at, d, p.slot);
+        this.myth(f, 'skill', at, d, p.index);
         this.fx.lightning(at.clone().add(V(0, 9, 0)), at.clone().add(V(0, 0.2, 0)), '#ffbe33', 0.3);
         this.glow?.bolt(at.clone().add(V(0, 9, 0)), at.clone().add(V(0, 0.2, 0)), '#ffe08a', 0.3);
         this.fx.pulse(at, f.color, r, 0.45);
         break;
       case 'ocidental':
-        this.myth(f, 'skill', at, d, p.slot);
+        this.myth(f, 'skill', at, d, p.index);
         this.fx.fire(at, r * 0.45, 2.6, 0.9, '#ff931e');
         this.fx.pulse(at, f.color, r, 0.45);
         break;
@@ -334,7 +354,7 @@ export class LabFx {
         for (let i = 1; i <= 3; i++) this.later(i * 0.08, () => this.fx.feathers(along((q.length * i) / 3.2).add(V(0, 1.2, 0)), dir, 1.1));
         break;
       case 'oriental':
-        this.myth(f, 'skill', start.clone().add(V(0, 1.4, 0)), dir, p.slot);
+        this.myth(f, 'skill', start.clone().add(V(0, 1.4, 0)), dir, p.index);
         for (let i = 1; i <= 4; i++) this.later(i * 0.06, () => this.fx.fire(along((q.length * i) / 4.4), 0.5, 1.7, 0.6, '#ff6b4a'));
         break;
       default:
@@ -366,13 +386,12 @@ export class LabFx {
         else this.fx.magnet(hand, hand.clone().addScaledVector(d, 3.3), 0.33, false);
         break;
       case 'besta':
-        this.myth(f, 'skill', hand, d, p.slot);
-        this.fx.talons(hand, hand.clone().addScaledVector(d, q.range * 0.7), 1, true);
-        this.fx.cracks(this.floor(g.clone().addScaledVector(d, q.range * 0.5)), f.color, q.range * 0.4, 0.6);
+        if (p.slot === 1) this.besta.rugido(f, p, g, d);
+        else this.besta.presa(f, p, g, d);
         break;
       case 'fenix':
       case 'ocidental':
-        this.myth(f, 'skill', hand, d, p.slot);
+        this.myth(f, 'skill', hand, d, p.index);
         for (let i = 1; i <= 4; i++) this.later(i * 0.05, () => this.fx.fire(this.floor(g.clone().addScaledVector(d, (q.range * i) / 4.5)), 0.35 + i * 0.12, 1.4, 0.55, f.id === 'fenix' ? '#6cf7ff' : '#ff931e'));
         break;
       default:
@@ -427,6 +446,7 @@ export class LabFx {
     else if (f.id === 'geada') this.fx.snow(pt, 1, 9);
     else if (f.id === 'brasa') this.fx.sparks(pt, '#ffa549', 4, 1.3, { gravity: -0.65 });
     else if (f.id === 'eco') this.fx.echoAnswer(pt, v3(dir), 0.67);
+    else if (f.id === 'besta') this.besta.hit(p.slot, pt, v3(dir));
     this.myth(f, 'hit', pt, v3(dir), p.slot);
   }
 
@@ -516,8 +536,7 @@ export class LabFx {
         case 'placas': fx.sparks(P, '#c8d8e8', 8, 2.4, { gravity: 4, life: 0.3, size: 0.07 }); break;
         case 'sucata': fx.sparks(P, '#a0a8b0', 14, 3.2, { gravity: 7, life: 0.45, size: 0.08 }); fx.cracks(floor, '#8bc2e7', 1, 0.6); break;
         // Besta: poeira, riscos, choque de massa (sem magia genérica)
-        case 'poeira': case 'cauda': case 'chifres': fx.sparks(floor, '#b89a78', 10 + tier * 4, 2.4, { gravity: 6, life: 0.45, size: 0.07 }); break;
-        case 'massa': fx.sparks(floor, '#b89a78', 18, 3.2, { gravity: 6, life: 0.5, size: 0.08 }); fx.pulse(floor, '#d8c0a0', 1.6, 0.4); break;
+        case 'poeira': case 'cauda': case 'chifres': case 'massa': this.besta.m1(attack.vfx, P, D, step); break;
         // Fênix: penas luminosas e fogo azul com partículas limitadas
         case 'penas': fx.feathers(P, D, 0.6); break;
         case 'fogo_azul': fx.fire(P, 0.25, 0.45, 0.3, '#53d9ff'); break;

@@ -2,6 +2,7 @@
 // proficiência que libera cada uma) e botões Comprar / Equipar. Compradas ficam em
 // save.weapons; a equipada em save.weapon (slot 2 da barra de baixo).
 
+import { itemIcon } from './sprites.js';
 import { WEAPONS, WEAPON_IDS } from '../weapons/weapons.js';
 import { profOf, profXpToNext } from '../progression/proficiency.js';
 import { ITEMS, ITEM_IDS, QUALITY, SLOT_NAMES, ARMOR_SLOTS, addItem, equipItem, repairCost, repairAll } from '../items/items.js';
@@ -66,7 +67,7 @@ export class Armory {
       const owned = s.items.filter((x) => x.id === id).length;
       const attrs = Object.entries(d.attrs).map(([k, v]) => `<li><span>${k === 'elemental' ? 'Resistência elemental' : k === 'folego' ? 'Fôlego' : k[0].toUpperCase() + k.slice(1)}</span><i>+${k === 'elemental' ? `${Math.round(v * 100)}%` : v}</i></li>`).join('');
       return `<div class="weapon-card" style="--rc:${QUALITY[d.qualidade]}">
-        <header><b>${d.nome}</b><span>${d.qualidade}</span></header>
+        <header>${itemIcon(id)}<b>${d.nome}</b><span>${d.qualidade}</span></header>
         <div class="dmg">${SLOT_NAMES[d.slot]} · Nv. ${d.nivel} · peso ${d.peso}${d.dur ? ` · durab. ${d.dur}` : ''}${owned ? ` · tem ${owned}` : ''}</div>
         <ul>${attrs}${d.sinergia ? `<li><span>${d.sinergia.texto}</span></li>` : ''}</ul>
         <button class="btn gold" data-act="buy-item" data-id="${id}" data-icon="coin">Comprar · ${fmt(d.preco)}</button>

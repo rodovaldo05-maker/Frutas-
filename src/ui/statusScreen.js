@@ -5,6 +5,7 @@
 // - Treinamento: atributos que sobem pela prática, com nível, barra em %, bônus, próximo
 //   marco e como treinar; não são distribuíveis. Ganhos recentes mostra o histórico.
 
+import { itemIcon } from './sprites.js';
 import { ATTRS, ATTR_KEYS, progress, nextMilestone, xpToNext as attrXpToNext } from '../progression/training.js';
 import { xpToNext, MAX_LEVEL } from '../progression/level.js';
 import { STATUS_KEYS, STATUS_INFO, TRAINED_TWIN, allocate, resetStatus, maxHealth, maxStamina, normalizeStatus } from '../progression/status.js';
@@ -218,13 +219,13 @@ export class StatusScreen {
     const slots = SLOTS.map((slot) => {
       const it = s.items.find((x) => x.uid === s.gear[slot]);
       const d = it && ITEMS[it.id];
-      return `<div class="gear-slot" style="--qc:${d ? QUALITY[d.qualidade] : '#4a4458'}"><small>${SLOT_NAMES[slot]}</small>${d ? `<b>${itemLabel(it)}</b><span>${attrs(d, it)}</span>${dur(it)}<button class="btn" data-gear="off" data-slot="${slot}">Tirar</button>` : '<span class="muted">vazio</span>'}</div>`;
+      return `<div class="gear-slot" style="--qc:${d ? QUALITY[d.qualidade] : '#4a4458'}"><small>${SLOT_NAMES[slot]}</small>${d ? `${itemIcon(it.id)}<b>${itemLabel(it)}</b><span>${attrs(d, it)}</span>${dur(it)}<button class="btn" data-gear="off" data-slot="${slot}">Tirar</button>` : '<span class="muted">vazio</span>'}</div>`;
     }).join('');
     const free = s.items.filter((it) => !Object.values(s.gear).includes(it.uid));
     const bag = free.length
       ? free.map((it) => {
         const d = ITEMS[it.id];
-        return `<div class="gear-item" style="--qc:${QUALITY[d.qualidade]}"><b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · peso ${d.peso}</small><span>${attrs(d, it)}${d.sinergia ? ` · <i>${d.sinergia.texto}</i>` : ''}</span>${dur(it)}<button class="btn gold" data-gear="equip" data-uid="${it.uid}">Equipar</button></div>`;
+        return `<div class="gear-item" style="--qc:${QUALITY[d.qualidade]}">${itemIcon(it.id)}<b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · peso ${d.peso}</small><span>${attrs(d, it)}${d.sinergia ? ` · <i>${d.sinergia.texto}</i>` : ''}</span>${dur(it)}<button class="btn gold" data-gear="equip" data-uid="${it.uid}">Equipar</button></div>`;
       }).join('')
       : '<p class="muted">Sem itens guardados. Compre com o Mestre de Armas ou derrote Recrutas.</p>';
     $('pane-gear').innerHTML = `

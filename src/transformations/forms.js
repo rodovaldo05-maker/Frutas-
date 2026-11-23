@@ -8,6 +8,7 @@
 // Híbrida: maestria 191 da fruta. Completa: maestria 491. Tecla H ou botão Forma: humana → híbrida
 // → completa → humana. Transformar leva 0,6 s, com invulnerabilidade; não gasta energia.
 
+import { sourceTime } from '../fruits/bestaMoves.js';
 import * as THREE from 'three';
 import DATA from '../../data/fruto-catalog.json';
 import { FRUTOModels } from '../characters/fruto-models.js';
@@ -131,7 +132,7 @@ export function animateFormRig(rig, s) {
   } else if (s.swimming) id = drive > 0.2 ? 'swim' : 'tread';
   else if (s.action) {
     id = poseIdFor(rig, s.action.clip);
-    t = s.action.t;
+    t = sourceTime(FRUTOMotion.clips[s.action.clip], s.action.t); // gesto próprio → animação do laboratório
   } else if (s.dash) {
     id = poseIdFor(rig, s.dash.clip);
     t = s.dash.t;

@@ -2,6 +2,7 @@
 // (ou que sobraram). Lista as peças da mochila com o valor de venda; equipadas aparecem
 // marcadas e não são vendidas. "Vender todos" pede um segundo toque para confirmar.
 
+import { itemIcon } from './sprites.js';
 import { ITEMS, QUALITY, SLOT_NAMES, itemLabel, itemMult, sellValue, sellItem, sellMany, isEquipped } from '../items/items.js';
 
 const $ = (id) => document.getElementById(id);
@@ -67,7 +68,7 @@ export class SellItemsUi {
         const m = itemMult(it);
         const attrs = Object.entries(d.attrs).map(([k, v]) => `+${fmtAttr(k, v * m)} ${ATTR_NAMES[k]}`).join(' · ');
         const wear = d.dur > 0 ? ` · durabilidade ${Math.round(it.dur ?? d.dur)}/${d.dur}` : '';
-        return `<div class="mat-row item-sell" style="--qc:${QUALITY[d.qualidade]}"><span class="ic q"></span>
+        return `<div class="mat-row item-sell" style="--qc:${QUALITY[d.qualidade]}"><span class="ic q">${itemIcon(it.id)}</span>
           <b>${itemLabel(it)}</b><small>${SLOT_NAMES[d.slot]} · ${d.qualidade} · Nv. ${d.nivel} · ${attrs}${wear}</small>
           <div class="row-btns">${eq ? '<span class="tag-eq">Equipado</span>' : `<button class="btn gold" data-sell-item="${it.uid}">Vender · ${fmt(sellValue(it))}</button>`}</div></div>`;
       }).join('')

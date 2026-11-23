@@ -49,6 +49,7 @@ import { SaveSystem } from './saves/saveSystem.js';
 import { Dust } from './vfx/dust.js';
 import { buildMarket } from './world/npcs.js';
 import { fruitThumbs } from './fruits/fruitArt.js';
+import { fruitUrl } from './ui/sprites.js';
 import { FruitShop } from './ui/fruitShop.js';
 import { eat, findItem, isWaterCursed, ensureBag, rarityOf } from './fruits/roulette.js';
 import { RANK, FRUIT, fruitName, draw as drawFruit, validate as validateFruits } from './fruits/catalog.js';
@@ -2199,7 +2200,9 @@ async function boot() {
   });
   statusScreen.setFigure(renderPortrait(renderer.renderer, DATA, 256, { full: true, race: save.race }));
   let thumbList = null;
-  const thumbs = () => (thumbList ??= fruitThumbs(renderer.renderer, DATA.fruits));
+  // miniaturas das frutas: os ícones desenhados (src/assets/icons); renderiza o modelo 3D só
+  // se faltar algum ícone
+  const thumbs = () => (thumbList ??= DATA.fruits.every((f) => fruitUrl(f.id)) ? DATA.fruits.map((f) => fruitUrl(f.id)) : fruitThumbs(renderer.renderer, DATA.fruits));
   thumbs();
   ensureBag(save);
   const fruitIndex = (id) => DATA.fruits.findIndex((f) => f.id === id);

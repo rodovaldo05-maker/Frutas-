@@ -145,12 +145,10 @@ export class Input {
         let dy = e.clientY - p.oy;
         const len = Math.hypot(dx, dy);
         if (len > radius) {
-          // o joystick acompanha o dedo quando passa do limite
-          p.ox += (dx / len) * (len - radius);
-          p.oy += (dy / len) * (len - radius);
-          dx = e.clientX - p.ox;
-          dy = e.clientY - p.oy;
-          stick.base.style.transform = `translate(${p.ox - 70}px, ${p.oy - 70}px)`;
+          // a base fica parada onde o dedo tocou (antes ela acompanhava o dedo e ia "subindo"
+          // pela tela ao segurar para a frente); a bolinha para na borda
+          dx *= radius / len;
+          dy *= radius / len;
         }
         stick.knob.style.transform = `translate(${dx}px, ${dy}px)`;
         const m = Math.min(1, Math.hypot(dx, dy) / radius);

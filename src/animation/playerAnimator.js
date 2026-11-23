@@ -160,12 +160,11 @@ export class PlayerAnimator {
       this.updateBlob(ctl, root);
       return;
     }
-    // treino com pesos e descanso (atualização 24)
-    if (this.workout || this.rest || this.meditate) {
+    // treino com pesos (atualização 24) e meditação (25; da fruta em lótus)
+    if (this.workout || this.meditate) {
       this.player.setGlider(0, !!ctl.unlocks?.glide);
       if (this.workout) this.poseWorkout(t, this.workout, root);
-      else if (this.meditate) this.poseMeditate(t, this.meditate);
-      else this.poseRest(t, this.rest);
+      else this.poseMeditate(t, this.meditate);
       this.balance.reset();
       this.updateFace(dt, ctl);
       this.updateBlob(ctl, root);
@@ -288,56 +287,51 @@ export class PlayerAnimator {
     }
   }
 
-  // Descanso: senta no chão com os joelhos para cima e as mãos sobre eles, respirando
-  poseRest(t, r) {
-    const body = this.body;
-    const j = body.joints;
-    const e = r.enter * r.enter * (3 - 2 * r.enter);
-    motion.apply(THREE, body, this.data, { id: 'idle', t, clock: t, phase: 0, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
-    j.cintura.position.y -= 1.22 * e;
-    j.tronco.rotation.x += (0.12 + 0.03 * Math.sin(t * 1.6)) * e;
-    body.root.updateMatrixWorld(true);
-    for (const [side, sign] of SIDES) {
-      const ankle = body.root.worldToLocal(j['pe_' + side].getWorldPosition(V(0, 0, 0)));
-      this.legIK(side, ankle.lerp(V(sign * 0.42, 0.22, 1.05), e), 0);
-    }
-    body.root.updateMatrixWorld(true);
-    for (const [side, sign] of SIDES) {
-      const knee = body.root.worldToLocal(j['canela_' + side].getWorldPosition(V(0, 0, 0)));
-      const wrist = body.root.worldToLocal(j['mao_' + side].getWorldPosition(V(0, 0, 0)));
-      this.armIK(side, wrist.lerp(knee.add(V(0, 0.15, 0.1)), e), V(sign * 1.5, 1.6, -0.4), 0);
-    }
-  }
-
   // Meditação (atualização 25): sentado de pernas cruzadas, joelhos para fora, coluna reta,
   // mãos sobre os joelhos com as palmas para cima; o tórax expande na inspiração.
+  // Meditação da fruta: flor de lótus (cada pé sobre a coxa do outro lado) e, ao subir de nível
+  // de maestria, levita (m.lift 0..1) abrindo os braços.
   poseMeditate(t, m) {
     const body = this.body;
     const j = body.joints;
     const e = m.enter * m.enter * (3 - 2 * m.enter);
     const inhale = Math.sin(Math.PI * (m.breath ?? 0)); // 0 → 1 → 0 no ciclo
+    const lift = m.lift ?? 0;
     motion.apply(THREE, body, this.data, { id: 'idle', t, clock: t, phase: 0, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
     j.cintura.position.y -= 1.3 * e;
+    j.cintura.position.y += lift * (m.height ?? 1.3) + 0.06 * lift * Math.sin(t * 3);
     j.cintura.rotation.set(j.cintura.rotation.x * (1 - e), j.cintura.rotation.y * (1 - e), j.cintura.rotation.z * (1 - e));
-    j.tronco.rotation.x = lerp(j.tronco.rotation.x, -0.04 - 0.03 * inhale, e);
+    j.tronco.rotation.x = lerp(j.tronco.rotation.x, -0.04 - 0.03 * inhale - 0.12 * lift, e);
     j.tronco.rotation.y *= 1 - e;
     j.tronco.scale.set(1 + 0.035 * inhale * e, 1 + 0.015 * inhale * e, 1 + 0.05 * inhale * e);
-    j.cabeca.rotation.x = lerp(j.cabeca.rotation.x, 0.12 - 0.05 * inhale, e);
+    j.cabeca.rotation.x = lerp(j.cabeca.rotation.x, 0.12 - 0.05 * inhale - 0.35 * lift, e);
     j.cabeca.rotation.y *= 1 - e;
     body.root.updateMatrixWorld(true);
+    const local = (joint) => body.root.worldToLocal(joint.getWorldPosition(V(0, 0, 0)));
     for (const [side, sign] of SIDES) {
-      const ankle = body.root.worldToLocal(j['pe_' + side].getWorldPosition(V(0, 0, 0)));
-      // tornozelos cruzados à frente; joelhos abertos para os lados
-      const goal = V(-sign * 0.28, 0.2, 0.62);
+      const ankle = local(j['pe_' + side]);
+      let goal;
+      if (m.lotus) {
+        // flor de lótus: o pé apoiado em cima da coxa do outro lado, perto do quadril
+        const other = side === 'E' ? 'D' : 'E';
+        const hip = local(j['coxa_' + other]);
+        goal = hip.add(V(sign * 0.12, 0.42, 0.48 + (side === 'E' ? 0.05 : -0.05)));
+      } else goal = V(-sign * 0.28, 0.2, 0.62); // tornozelos cruzados à frente
       ankle.lerp(goal, e);
       motion.twoBone(THREE, body, j['coxa_' + side], j['canela_' + side], j['pe_' + side], ankle, V(sign * 1.9, 0.6, 0.9), 0.73, 0.72, 0.4 * e);
     }
     body.root.updateMatrixWorld(true);
     for (const [side, sign] of SIDES) {
-      const knee = body.root.worldToLocal(j['canela_' + side].getWorldPosition(V(0, 0, 0)));
-      const wrist = body.root.worldToLocal(j['mao_' + side].getWorldPosition(V(0, 0, 0)));
-      this.armIK(side, wrist.lerp(knee.add(V(-sign * 0.05, 0.22, 0.05)), e), V(sign * 1.6, 1.5, -0.3), 0);
-      j['mao_' + side].rotation.z += sign * 1.2 * e; // palmas para cima
+      const knee = local(j['canela_' + side]);
+      const wrist = local(j['mao_' + side]);
+      const rest = knee.add(V(-sign * 0.05, 0.22, 0.05));
+      if (lift > 0) {
+        // levitando: braços abertos para os lados e um pouco para cima, palmas para fora
+        const sh = local(j['ombro_' + side]);
+        rest.lerp(sh.add(V(sign * 1.25, 0.45, 0.25)), lift);
+      }
+      this.armIK(side, wrist.lerp(rest, e), V(sign * 1.6, 1.5, -0.3), 0);
+      j['mao_' + side].rotation.z += sign * 1.2 * e * (1 - lift); // palmas para cima
     }
   }
 

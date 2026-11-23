@@ -1,5 +1,6 @@
 // Menu TREINAMENTO (slot 4 da barra; atualização 24) e painel da série em andamento.
-// Abas: Físico (flexões e agachamentos com pesos), Estatísticas e Descanso. Mostra tipo,
+// Abas: Físico (flexões e agachamentos com pesos), Meditação da fruta, Respiração e Haki,
+// Estatísticas. Mostra tipo,
 // carga, séries, repetições, fadiga, atributos beneficiados e o botão de interromper. O painel
 // atualiza só os textos que mudam (sem recriar a árvore a cada quadro).
 
@@ -11,7 +12,7 @@ const fmt = (n) => Math.round(n).toLocaleString('pt-BR');
 const ATTR_NAME = (k) => ATTRS[k]?.nome ?? k;
 
 export class TrainingUi {
-  // handlers: { start(exercise, kg, sets), rest(), rep(), pause(), lower(), cancel(), extraTabs() }
+  // handlers: { start(exercise, kg, sets), rep(), pause(), lower(), cancel(), extraTabs(), action(go) }
   constructor({ save, handlers }) {
     this.save = save;
     this.h = handlers;
@@ -32,7 +33,6 @@ export class TrainingUi {
       if (b.dataset.kg) this.kg = Number(b.dataset.kg);
       if (b.dataset.sets) this.sets = Number(b.dataset.sets);
       if (b.dataset.go === 'start') return this.h.start(this.exercise, this.kg, this.sets);
-      if (b.dataset.go === 'rest') return this.h.rest();
       if (b.dataset.go) return this.h.action?.(b.dataset.go);
       this.render();
     });
@@ -78,9 +78,6 @@ export class TrainingUi {
       const keys = ['constituicao', 'forca', 'impulsao', 'resistencia', 'defesa', 'folego', 'agilidade', 'velocidade', 'precisao', 'reflexos', 'recuperacao', 'natacao'];
       html = `<div class="w-stats">${keys.map((k) => `<div><span>${ATTR_NAME(k)}</span><b>Nv. ${t.attrs[k]?.level ?? 1}</b></div>`).join('')}</div>
         <p class="muted small">Repetições feitas: flexões <b>${fmt(s.workout?.reps?.flexao ?? 0)}</b> · agachamentos <b>${fmt(s.workout?.reps?.agachamento ?? 0)}</b></p>`;
-    } else if (this.tab === 'descanso') {
-      html = `<p class="muted small">Sente e recupere fadiga, vida e fôlego. A Recuperação só sobe quando há o que recuperar (cansado ou ferido), com limite por sessão. Mexer-se ou levar dano interrompe.</p>
-        <button class="btn gold w-start" data-go="rest">Descansar</button>`;
     } else html = this.h.extraTabs?.(this.tab) ?? '';
     $('treino-body').innerHTML = html;
   }

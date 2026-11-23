@@ -60,7 +60,7 @@ import { powersOf } from './fruits/powers.js';
 import { fruitStyle } from './combat/rules.js';
 import { FRUTOMotion } from './animation/fruto-motion.js';
 import { domainOf, addDomainXp, domainBonus } from './progression/domain.js';
-import { envMultiplier, stageOf, addTrackXp, marcoMods, MARCOS, naturalLightning, envImmune, affinityCostMult, techniqueCdMult, MASTERY_AWAKEN, AWAKEN_TITLES } from './progression/mastery.js';
+import { masteryXpToNext, envMultiplier, stageOf, addTrackXp, marcoMods, MARCOS, naturalLightning, envImmune, affinityCostMult, techniqueCdMult, MASTERY_AWAKEN, AWAKEN_TITLES } from './progression/mastery.js';
 import { PowerFx } from './vfx/powerFx.js';
 import { SkillBar } from './ui/skillBar.js';
 import { WEAPONS, weaponPowers, weaponStyle } from './weapons/weapons.js';
@@ -85,6 +85,8 @@ import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
 import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } from './islands/secondSea.js';
 import { IslandEvents } from './world/islandEvents.js';
+import { CULTIVO, cultivoXp, liftAt } from './progression/cultivation.js';
+import { MeditationAura } from './vfx/meditationAura.js';
 import { normalizeIslands } from './islands/islandRules.js';
 import { Storm } from './world/storm.js';
 import { WEATHER, STRIKE, stepWeather, weatherDamage } from './world/weather.js';
@@ -528,8 +530,7 @@ async function boot() {
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           if (workout) endWorkout('Treino interrompido pelo golpe.', 'bad');
-          if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio')) endHaki('Concentração quebrada pelo golpe.');
-          if (resting) endRest('Descanso interrompido.');
+          if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio' || haki.kind === 'cultivo')) endHaki('Concentração quebrada pelo golpe.');
           floats.add(head, `−${d.damage}`, 'jogador');
           vibrate(d.damage >= 20 ? 60 : 25);
           audio.play('impacto', 'acerto', 0.5);
@@ -847,12 +848,10 @@ async function boot() {
   // ===== Treinamento (atualização 24; Prompt Mestre, seções 8 e 9) =====
   save.workout = normalizeWorkout(save.workout);
   let workout = null; // { s, weights, enter }
-  let resting = null; // { t, gained, tick }
   const trainingUi = new TrainingUi({
     save,
     handlers: {
       start: (ex, kg, sets) => startWorkout(ex, kg, sets),
-      rest: () => startRest(),
       rep: () => workoutRep(),
       pause: () => workout && pauseSession(workout.s, workout.s.phase !== 'pausa'),
       lower: () => {
@@ -862,14 +861,13 @@ async function boot() {
       },
       cancel: () => {
         if (workout) endWorkout('Treino interrompido.');
-        if (resting) endRest('Descanso encerrado.');
       },
       extraTabs: (tab) => hakiTabHtml(tab),
       action: (go) => startHaki(go),
     },
   });
   function openTraining() {
-    if (workout || resting) return;
+    if (workout || haki) return;
     trainingUi.render();
     openModal('treino');
   }
@@ -926,45 +924,33 @@ async function boot() {
     hud.toast(msg, kind);
     saveNow(true);
   }
-  // Descanso: recupera vida e fôlego; Recuperação só sobe se havia o que recuperar
-  function startRest() {
-    const why = trainBlock();
-    if (why) return hud.toast(why);
-    closeModal('treino');
-    resting = { t: 0, gained: 0, tick: 0 };
-    animator.rest = { enter: 0 };
-    cam.sizeMult = 1.2;
-    cam.pitch = Math.max(cam.pitch, 0.35);
-    hud.toast('Descansando… mexa-se para levantar.');
-  }
-  function restStep(dt) {
-    const r = resting;
-    r.t += dt;
-    animator.rest = { enter: Math.min(1, r.t / 0.6) };
-    const rec = bonuses(save.training).recovery;
-    const hurt = ctl.health < ctl.maxHealth * 0.95;
-    ctl.health = Math.min(ctl.maxHealth, ctl.health + ctl.maxHealth * 0.04 * rec * dt);
-    r.tick += dt;
-    if (r.tick >= 2) {
-      r.tick = 0;
-      // anti-AFK: só com o que recuperar, e no máximo 30 por descanso
-      if (hurt && r.gained < 30) {
-        tracker.grant('recuperacao', 2, 'descanso', ctl.pos, { repeat: false });
-        r.gained += 2;
-      }
-    }
-  }
-  function endRest(msg) {
-    if (!resting) return;
-    resting = null;
-    animator.rest = null;
-    cam.sizeMult = 1;
-    hud.toast(msg);
+  // Meditação da fruta: aura em volta do corpo e explosão de energia ao subir de nível
+  const meditationAura = new MeditationAura(renderer.scene);
+  function levelBurst(color) {
+    const at = { x: ctl.pos.x, y: ctl.pos.y + CULTIVO.height + 0.6, z: ctl.pos.z };
+    const ground = { x: ctl.pos.x, y: ctl.pos.y, z: ctl.pos.z };
+    fx.flash(at, '#ffffff', 5, 0.35);
+    fx.flash(at, color, 7, 0.5);
+    fx.burst(at, color, { count: settings.reduceFx ? 24 : 60, speed: 11, up: 6, size: 0.32, life: 0.9, gravity: -4 });
+    fx.burst(at, '#ffffff', { count: 16, speed: 7, up: 4, size: 0.2, life: 0.6 });
+    fx.ring(ground, color, 6, 0.8);
+    fx.ring(ground, '#ffffff', 3.2, 0.5);
+    fx.pillar(ground, color, 1.6, 9, 0.9);
+    if (!settings.reduceMotion) shake = Math.max(shake, 0.35);
+    vibrate(60);
+    audio.play('base', 'wing', 1);
   }
   // ===== Meditação e Haki (atualização 25; Prompt Mestre, seções 10 a 13) =====
   let haki = null; // sessão: meditacao | desafio | observacao | armamento
   const hakiLevel = (kind) => profOf(save, HAKI[kind].prof).level;
   function hakiTabHtml(tab) {
+    if (tab === 'cultivo') {
+      const f = eatenFruit();
+      const d = f ? domainOf(save, f.id) : null;
+      return `<p class="muted small">Sente em <b>flor de lótus</b> e cultive a energia da sua fruta: a aura dela envolve o corpo. Toque em <b>Cultivar</b> quando o círculo ficar dourado — cada respiração no ritmo dá maestria da fruta (até ${CULTIVO.cap} por sessão) e recupera vida, fôlego e energia. Sem respirar por 3 ciclos, a meditação acaba. Ao subir de nível o corpo levita e solta uma explosão de energia. Mexer-se ou levar dano interrompe.</p>
+        ${f ? `<p>Fruta: <b style="color:${f.color}">${f.name}</b> · maestria <b>${d.level}</b> <span class="muted small">(lugares favoráveis à fruta rendem mais)</span></p>` : '<p class="muted">Sem fruta comida: a meditação só recupera o corpo. Coma uma fruta para cultivar a maestria.</p>'}
+        <button class="btn gold w-start" data-go="cultivo">Meditar em lótus</button>`;
+    }
     if (tab === 'meditacao') {
       const place = meditationPlace(envContext());
       return `<p class="muted small">Sente, alinhe a coluna e respire: toque em <b>Respirar</b> quando o círculo estiver cheio (dourado). Cada respiração no ritmo treina Concentração (energia e Vontade) e Resistência Mental; sem respirar por 3 ciclos, a meditação acaba. Mexer-se ou levar dano interrompe. Não dá maestria de fruta.</p>
@@ -993,7 +979,7 @@ async function boot() {
     return `${head}<p class="muted small">Pulso de Vontade (Y ou 👑): ${REI.cost} de Vontade, recarga ${REI.cooldown} s, raio ${Math.round(pulseRadius(lv))}. Inimigos fracos ficam intimidados por pouco tempo; os outros perdem postura; chefes e bestas resistem. Sobe ao atingir inimigos com o pulso e ao vencer desafios. Não é dano em área.</p><button class="btn gold w-start" data-go="desafio">Repetir o Desafio da Vontade (treino)</button>`;
   }
   function startHaki(kind) {
-    if (haki || workout || resting) return;
+    if (haki || workout) return;
     const why = trainBlock();
     if (why && kind !== 'observacao' && kind !== 'armamento') return hud.toast(why);
     if (kind === 'desafio' && !save.vontade?.soberana) {
@@ -1001,14 +987,25 @@ async function boot() {
       if (block) return hud.toast(block);
     }
     closeModal('treino');
-    if (kind === 'meditacao' || kind === 'desafio') {
+    if (kind === 'cultivo') {
+      if (form) setForm(null, true);
+      const f = eatenFruit();
+      haki = { kind, m: newMeditation(), fruit: f ?? null, enter: 0, breaths: 0, lift: -1, burst: false, gained: 0, tick: 0 };
+      animator.meditate = { enter: 0, breath: 0, lotus: true, lift: 0, height: CULTIVO.height };
+      meditationAura.setColor(f?.color ?? '#bfe8ff');
+      cam.sizeMult = 1.3;
+      cam.pitch = Math.max(cam.pitch, 0.3);
+      $('h-tap').textContent = 'Cultivar';
+      $('h-title').textContent = f ? `Meditação · ${f.name}` : 'Meditação';
+      $('h-barlabel').textContent = 'Maestria';
+    } else if (kind === 'meditacao' || kind === 'desafio') {
       if (form) setForm(null, true);
       haki = kind === 'meditacao' ? { kind, m: newMeditation(), place: meditationPlace(envContext()), enter: 0 } : { kind, c: newChallenge(), enter: 0 };
       animator.meditate = { enter: 0, breath: 0 };
       cam.sizeMult = 1.2;
       cam.pitch = Math.max(cam.pitch, 0.32);
       $('h-tap').textContent = kind === 'meditacao' ? 'Respirar' : 'Resistir';
-      $('h-title').textContent = kind === 'meditacao' ? `Meditação · ${haki.place.label} ×${String(haki.place.mult).replace('.', ',')}` : 'Desafio da Vontade';
+      $('h-title').textContent = kind === 'meditacao' ? `Respiração · ${haki.place.label} ×${String(haki.place.mult).replace('.', ',')}` : 'Desafio da Vontade';
       $('h-barlabel').textContent = kind === 'meditacao' ? 'Sessão' : 'Pressão';
     } else if (kind === 'observacao') {
       haki = { kind, shots: 0, next: 1.2, list: [], dodged: 0, hit: 0 };
@@ -1025,6 +1022,31 @@ async function boot() {
   }
   function hakiTap() {
     if (!haki) return;
+    if (haki.kind === 'cultivo') {
+      if (haki.lift >= 0 || haki.enter < 0.9) return; // levitando ou ainda sentando
+      if (!meditationTap(haki.m)) return;
+      const h = haki;
+      h.breaths += 1;
+      if (powers) powers.energy = Math.min(powers.energyMax ?? 100, (powers.energy ?? 0) + CULTIVO.energy);
+      const color = h.fruit?.color ?? '#bfe8ff';
+      fx.ring(ctl.pos, color, 1.8, 0.6);
+      fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.2, z: ctl.pos.z }, color, { count: 10, speed: 2.5, up: 3, gravity: 2 });
+      if (!h.fruit) return;
+      const d = domainOf(save, h.fruit.id);
+      const xp = cultivoXp(d.level, h.breaths);
+      if (!xp) return hud.notice('Limite da sessão: a energia já foi cultivada', 'zone', 'cultivo');
+      const before = d.level;
+      grantDomain(h.fruit.id, xp, `cultivo:${h.breaths}`, false);
+      grantTrack(h.fruit.id, 'sincronia', xp * 0.2, `cultivo:${h.breaths}`, false);
+      tracker.grant('concentracao', 1.5, `cultivo:${h.breaths}`, ctl.pos, { repeat: false });
+      if (domainOf(save, h.fruit.id).level > before) {
+        // subiu de nível: levita e solta a energia
+        h.lift = 0;
+        h.burst = false;
+        audio.play(h.fruit.id, 'preparar', 0.9);
+      }
+      return;
+    }
     if (haki.kind === 'meditacao') {
       if (meditationTap(haki.m)) {
         const xp = meditationXp(haki.m, haki.place.mult);
@@ -1049,6 +1071,50 @@ async function boot() {
       if (el && el.textContent !== v) el.textContent = v;
     };
     const bar = (k) => ($('h-bar').style.transform = `scaleX(${Math.max(0, Math.min(1, k))})`);
+    if (h.kind === 'cultivo') {
+      h.enter = Math.min(1, h.enter + dt / 0.8);
+      // levitação da subida de nível: o tempo da respiração para enquanto paira
+      let lift = 0;
+      if (h.lift >= 0) {
+        h.lift += dt;
+        lift = liftAt(h.lift);
+        if (!h.burst && h.lift >= CULTIVO.burstAt) {
+          h.burst = true;
+          levelBurst(h.fruit?.color ?? '#bfe8ff');
+        }
+        if (h.lift >= CULTIVO.levitate) h.lift = -1;
+      } else if (meditationStep(h.m, dt) === 'fim') return endHaki('Meditação encerrada: sem cultivar no ritmo.');
+      const phase = breathPhase(h.m.t);
+      h.lv = lift;
+      animator.meditate = { enter: h.enter, breath: phase, lotus: true, lift, height: CULTIVO.height };
+      // recupera o corpo como o antigo descanso (a Recuperação só sobe se havia o que recuperar)
+      const rec = bonuses(save.training).recovery;
+      const hurt = ctl.health < ctl.maxHealth * 0.95;
+      ctl.health = Math.min(ctl.maxHealth, ctl.health + ctl.maxHealth * CULTIVO.heal * rec * dt);
+      h.tick += dt;
+      if (h.tick >= 2) {
+        h.tick = 0;
+        if (hurt && h.gained < 30) {
+          tracker.grant('recuperacao', 2, 'descanso', ctl.pos, { repeat: false });
+          h.gained += 2;
+        }
+      }
+      const ring = $('h-ring');
+      ring.style.transform = `scale(${0.55 + 0.45 * Math.sin(Math.PI * phase)})`;
+      ring.classList.toggle('peak', h.lift < 0 && breathValid(h.m.t));
+      set('h-big', h.lift >= 0 ? 'Subiu de nível!' : breathValid(h.m.t) ? 'Agora!' : phase < 0.5 ? 'Inspire…' : 'Expire…');
+      if (h.fruit) {
+        const d = domainOf(save, h.fruit.id);
+        set('h-sub', `Maestria ${d.level}`);
+        set('h-state', h.breaths >= CULTIVO.cap ? 'Limite da sessão: a energia já foi cultivada' : `${h.breaths}/${CULTIVO.cap} respirações · toque quando o círculo ficar dourado`);
+        bar(d.xp / masteryXpToNext(d.level));
+      } else {
+        set('h-sub', `${h.breaths} respirações`);
+        set('h-state', 'Sem fruta: só recupera o corpo');
+        bar(ctl.health / ctl.maxHealth);
+      }
+      return;
+    }
     if (h.kind === 'meditacao' || h.kind === 'desafio') {
       h.enter = Math.min(1, h.enter + dt / 0.7);
       const t = h.kind === 'meditacao' ? h.m.t : h.c.t;
@@ -1148,6 +1214,7 @@ async function boot() {
     document.body.classList.remove('blind');
     haki = null;
     animator.meditate = null;
+    meditationAura.update(0, { on: false });
     cam.sizeMult = 1;
     $('haki-hud').classList.add('hidden');
     hud.toast(msg, kind);
@@ -2711,33 +2778,31 @@ async function boot() {
       }
       gatherWorld.update(dt, ocean);
       // meditação e desafio da vontade (atualização 25): sentado, respirando no ritmo
-      if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio')) {
+      if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio' || haki.kind === 'cultivo')) {
         const tap = inp.attackPressed || inp.jumpPressed;
         const moved = Math.hypot(inp.moveX, inp.moveY) > 0.3 || inp.dashPressed;
         inp.moveX = inp.moveY = 0;
         inp.attackPressed = inp.jumpPressed = inp.jump = inp.dashPressed = inp.block = false;
         inp.skill = -1;
         inp.racePressed = inp.formPressed = false;
-        if (moved) endHaki(haki.kind === 'meditacao' ? 'Meditação interrompida.' : 'Desafio abandonado.');
+        if (moved && !(haki.kind === 'cultivo' && haki.lift >= 0)) endHaki(haki.kind === 'desafio' ? 'Desafio abandonado.' : 'Meditação interrompida.');
         else {
           if (tap) hakiTap();
           hakiStep(dt);
         }
       } else if (haki) hakiStep(dt);
       // treino com pesos e descanso (atualização 24): o corpo fica no exercício
-      if (workout || resting) {
+      if (workout) {
         const wantsRep = inp.attackPressed || inp.jumpPressed;
         const moved = Math.hypot(inp.moveX, inp.moveY) > 0.3 || inp.dashPressed;
         inp.moveX = inp.moveY = 0;
         inp.attackPressed = inp.jumpPressed = inp.jump = inp.dashPressed = inp.block = false;
         inp.skill = -1;
         inp.racePressed = inp.formPressed = false;
-        if (workout) {
+        if (moved) endWorkout('Treino interrompido.');
+        else {
           if (wantsRep) workoutRep();
           workoutStep(dt);
-        } else {
-          if (moved) endRest('Descanso interrompido.');
-          else restStep(dt);
         }
       }
       if (boat.aboard) {
@@ -2923,7 +2988,10 @@ async function boot() {
       fx.update(animDt);
       lab.update(animDt);
       // aura da fruta do laboratório: com o slot da fruta equipado; mais forte no despertar
-      lab.aura(mode === 'game' && save.equipped === 'fruta' && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened, animDt, form?.shape);
+      // na meditação da fruta a aura fica forte e envolve o corpo (casca, lótus e faíscas)
+      const cultivating = haki?.kind === 'cultivo' ? haki : null;
+      lab.aura(mode === 'game' && (save.equipped === 'fruta' || cultivating) && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened || !!cultivating, animDt, form?.shape);
+      meditationAura.update(animDt, { on: !!cultivating, root: player.body.root.position, enter: cultivating?.enter ?? 0, breath: cultivating ? breathPhase(cultivating.m.t) : 0, lift: cultivating?.lv ?? 0, height: CULTIVO.height });
       if (mode === 'game') {
         skillBar.update(powers, true, save.equipped === 'arma' ? blade : save.equipped === 'estilo' ? art : powers);
         const learned = save.vontade.armadura || save.vontade.percepcao;
@@ -3309,6 +3377,10 @@ async function boot() {
     toggleForm: (off) => toggleForm(off),
     spawnWreck: () => spawnWreck(),
     islandEvents,
+    get haki() { return haki; },
+    startHaki: (k) => startHaki(k),
+    hakiTap: () => hakiTap(),
+    domainOf: (id) => domainOf(save, id),
     seaOfPlayer: () => seaOf(ctl.pos.z),
     forgeUi,
     get form() {

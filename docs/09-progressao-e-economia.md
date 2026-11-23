@@ -127,7 +127,7 @@ Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `t
 ## 3.10 Treinamento físico com pesos (atualização 24; Prompt Mestre, seções 8 e 9)
 
 - **Onde.** Slot 4 da barra de equipar (TREINAMENTO, tecla 4). Abas: Físico, Estatísticas e
-  Descanso (Meditação e os Haki entram na atualização 25).
+  Meditação da fruta (antes Descanso), Respiração e os Haki.
 - **Flexões e agachamentos.** Cada série tem exatamente 10 repetições; 1, 2, 3, 5, 10 ou
   outro número de séries (até 50). Cada repetição precisa de um toque em Repetir (ou ataque /
   Espaço) e da animação completa: na flexão o corpo vira prancha, as mãos ficam no chão sob os
@@ -148,8 +148,20 @@ Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `t
   fadiga, com limite suave por sessão e por minuto. Flexão: Constituição, Força, Resistência
   Física, Defesa e Fôlego. Agachamento: Constituição, Impulsão, Agilidade, Resistência e
   Fôlego. Série completa: Fôlego (condicionamento). Nunca mexe na maestria da fruta.
-- **Descanso.** Sentado, recupera vida (mais rápido com Recuperação). A Recuperação só sobe
-  havendo o que recuperar, no máximo 30 por descanso; mexer-se ou levar dano levanta.
+- **Meditação da fruta (substitui o Descanso, atualização 27.1).** Aba **Meditação** do
+  TREINAMENTO. O personagem senta em **flor de lótus** (cada pé sobre a coxa do outro lado,
+  mãos nos joelhos com as palmas para cima) e a **aura da fruta envolve o corpo**: casca de
+  energia na cor da fruta que pulsa com a respiração, chamas de energia subindo, uma flor de
+  lótus de energia aberta no chão e a aura própria da fruta (forte, como no despertar). Tocar
+  em **Cultivar** quando o círculo fica dourado cultiva a energia: cada respiração no ritmo dá
+  4% do nível atual de maestria da fruta (com o multiplicador de ambiente da fruta), um pouco
+  de Sincronia e Concentração, e +8 de energia; até 25 respirações por sessão (no máximo ~1
+  nível). Sem tocar por 3 ciclos a sessão acaba (nada de XP parado). Continua recuperando vida
+  como o descanso fazia (a Recuperação só sobe havendo o que recuperar, até 30 por sessão).
+  **Ao subir um nível de maestria** o corpo levita 1,3 de altura abrindo os braços e, no alto,
+  solta uma **explosão de energia na cor da aura** (clarão, estilhaços, anel e coluna no chão,
+  tremor e vibração); depois desce de volta para a lótus. Sem fruta comida, só recupera o corpo.
+  Mexer-se ou levar dano interrompe. A antiga meditação da Vontade virou a aba **Respiração**.
 - **Atributos novos por ação.** Constituição (treino com pesos; até +20% de vida),
   Velocidade (correr rápido de verdade, saindo do lugar; até +10% de corrida), Impulsão
   (agachamentos e saltos que levam a outro lugar; até +10% de salto), Precisão (acertar

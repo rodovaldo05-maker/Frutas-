@@ -59,6 +59,7 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 |---|---|---|
 | Com fruta comida, trocar para o Estilo (ou Arma) deixava a lista de habilidades da fruta na tela | Na atualização 13 o botão da Forma híbrida entrou no meio do `if / else` que escolhe a lista; o `else` passou a depender de "tem fruta" | A lista volta a seguir o slot equipado (fruta, arma ou estilo); o botão da forma é tratado depois |
 | Botões Forma, Armadura, Percepção e Raça sobrepostos (e por cima das moedas) em telas estreitas | Cada um tinha posição fixa própria, calculada para telas largas | Os quatro numa fileira só embaixo dos ícones do topo; avisos no espaço livre entre a fileira e o minimapa; textos de Fôlego/Energia/Vontade curtos (o ícone diz qual é) |
+| Analógico "subia" pela tela | A base do joystick acompanhava o dedo quando ele passava do limite; segurando para a frente ela ia subindo | A base fica parada onde o dedo tocou; a bolinha para na borda |
 | Haki do Rei desperto sumia ao recarregar | O normalizador do salvo recriava a Vontade só com Armadura e Percepção | O salvo guarda `soberana`; teste de persistência cobre |
 | Toque de ataque com o joystick segurado às vezes não contava | A duração do toque usava a hora de processamento do evento; com o aparelho ocupado passava de 280 ms | Usa o horário real do toque (`timeStamp`) |
 | `__game.toggleForm` duplicado sempre alternava a forma (mesmo pedindo "desligar") | Duas chaves com o mesmo nome no objeto de teste; a segunda vencia | Uma chave só, que respeita o "desligar" |

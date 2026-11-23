@@ -128,6 +128,11 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Meditação da fruta (0.27.1): o Descanso virou meditação em flor de lótus — a aura da fruta
+envolve o corpo, cada respiração no ritmo cultiva maestria da fruta e, ao subir de nível, o
+personagem levita e solta uma explosão de energia na cor da aura. O analógico agora fica
+parado onde o dedo toca.
+
 Segundo Mar completo (atualização 27): as ilhas 14 a 18 — Geleira Silente (nevasca e
 fogueiras), Ruínas do Sol Poente (quebra-cabeça de espelhos e câmara secreta), Ilha do Bosque
 Noturno (névoa e ecos ilusórios que a Percepção desfaz), Bastião Vulcânico (erupções marcadas e

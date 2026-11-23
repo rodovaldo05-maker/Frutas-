@@ -162,6 +162,34 @@ Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `t
     ciclos de 4 s). O círculo aparece e o botão **Respirar** acende; tocar quando o círculo fica
     dourado deixa o progresso **×2** por 6 s (renovando a cada respiração certa, dá para manter o
     dobro a oportunidade toda). Um toque por ciclo; tocar fora da hora não tira nada.
+  - **Bônus que se multiplicam (0.27.4):** altura × condições da fruta × respiração (teto ×40).
+    - **Altura:** ×1 no nível do mar, sobe 1/30 a cada metro acima de 5 m, até ×2,5 a 50 m
+      (o topo do Pico Gélido, a 37 m, dá ×2,1). A altura também multiplica a energia ganha.
+    - **Condições de cada fruta** (valem enquanto forem verdade; "ao começar" vale a sessão
+      toda; o raio vale até o fim da meditação, e um raio natural não interrompe a meditação):
+
+      | Fruta | Condições |
+      |---|---|
+      | Besta | ferida ao começar (menos da metade da vida) ×3 · atingida por um raio ×2 |
+      | Lobo | noite ×2 · ferido ao começar ×2 |
+      | Fênix | ferida ao começar ×3 · sol no céu ×1,5 |
+      | Brasa | até 10 m da lava ×3 · terra vulcânica ×2 |
+      | Ocidental | terra vulcânica ×2 · perto da lava ×2 |
+      | Geada | gelo e neve ×2 · dentro da nevasca da Geleira ×3 |
+      | Tormenta | tempestade ×3 · atingida por um raio ×2 |
+      | Oriental | tempestade ×2 · atingido por um raio ×2 |
+      | Maré | beira d’água ×2 · chuva ou tempestade ×2 |
+      | Eclipse | noite ×3 · Bosque Noturno ×2 |
+      | Cristal | granito, masmorra ou ruínas ×2 · noite ×1,5 |
+      | Eco | entre muralhas (forte, cidadela, masmorra, arena, cidade) ×2 · noite ×1,5 |
+      | Ímã | perto de metal (as mesmas muralhas) ×2 · tempestade ×1,5 |
+      | Duna | areia (deserto ou praia) ×2 · tempestade de areia ×2 |
+      | Falcão | picos de 40 m ou mais ×2 · tempestade ×1,5 |
+      | Impacto | ferido ao começar ×2 · arena ou forte ×2 |
+
+      Exemplo da Besta: ferida (×3) e atingida por um raio (×2) = ×6; acertando a respiração
+      (×2) = ×12; e no alto de uma montanha a 35 m, ×24. A meditação usa esses bônus no lugar
+      do multiplicador de ambiente das lutas. O painel mostra o total e cada bônus ativo.
   - **Ao subir um nível de maestria** o corpo levita 1,3 de altura abrindo os braços e, no alto,
     solta uma **explosão de energia na cor da aura** (clarão, estilhaços, anel e coluna no chão,
     tremor e vibração); depois desce de volta para a lótus e continua cultivando.

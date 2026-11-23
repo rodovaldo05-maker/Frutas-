@@ -73,3 +73,31 @@ describe('meditação da fruta (cultivo automático)', () => {
     expect(liftAt(-1)).toBe(0);
   });
 });
+
+import { meditationBonus, altitudeMult, MEDITATION_CAP, FRUIT_MEDITATION } from '../src/progression/cultivation.js';
+
+describe('bônus da meditação (0.27.4)', () => {
+  it('exemplo da Besta: ferida ×3, raio ×2 = ×6; com a respiração ×12', () => {
+    expect(meditationBonus('besta', { y: 2, wounded: true }).total).toBe(3);
+    expect(meditationBonus('besta', { y: 2, wounded: true, struck: true }).total).toBe(6);
+    expect(meditationBonus('besta', { y: 2, wounded: true, struck: true }, true).total).toBe(12);
+    expect(meditationBonus('besta', { y: 2 }).total).toBe(1);
+  });
+
+  it('quanto mais alto, mais rápido e mais energia (teto de altura ×2,5)', () => {
+    expect(altitudeMult(0)).toBe(1);
+    expect(altitudeMult(20)).toBeGreaterThan(altitudeMult(10));
+    expect(altitudeMult(50)).toBe(2.5);
+    expect(altitudeMult(500)).toBe(2.5);
+    const b = meditationBonus('besta', { y: 35, wounded: true, struck: true }, true);
+    expect(b.total).toBeCloseTo(24);
+    expect(b.energy).toBeCloseTo(2);
+  });
+
+  it('as 16 frutas têm condições próprias; o total tem teto', () => {
+    expect(Object.keys(FRUIT_MEDITATION).length).toBe(16);
+    for (const list of Object.values(FRUIT_MEDITATION)) expect(list.length).toBeGreaterThanOrEqual(2);
+    const all = { y: 99, wounded: true, struck: true, weather: 'tempestade', night: true, nearLava: true, blizzard: true, biome: 'vulcao', nearWater: true, sun: true };
+    for (const id of Object.keys(FRUIT_MEDITATION)) expect(meditationBonus(id, all, true).total).toBeLessThanOrEqual(MEDITATION_CAP);
+  });
+});

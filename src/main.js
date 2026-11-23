@@ -85,7 +85,7 @@ import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
 import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } from './islands/secondSea.js';
 import { IslandEvents } from './world/islandEvents.js';
-import { CULTIVO, cultivoRate, newCultivo, cultivoStep, cultivoTap, cultivoPhase, cultivoPeak, inOpportunity, liftAt } from './progression/cultivation.js';
+import { CULTIVO, cultivoRate, newCultivo, cultivoStep, cultivoTap, cultivoPhase, cultivoPeak, inOpportunity, liftAt, meditationBonus, FRUIT_MEDITATION } from './progression/cultivation.js';
 import { MeditationAura } from './vfx/meditationAura.js';
 import { normalizeIslands } from './islands/islandRules.js';
 import { Storm } from './world/storm.js';
@@ -530,7 +530,8 @@ async function boot() {
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           if (workout) endWorkout('Treino interrompido pelo golpe.', 'bad');
-          if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio' || haki.kind === 'cultivo')) endHaki('Concentração quebrada pelo golpe.');
+          // raio natural na meditação da fruta não quebra a concentração (algumas frutas até ganham bônus)
+          if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio' || (haki.kind === 'cultivo' && d.source !== 'raio'))) endHaki('Concentração quebrada pelo golpe.');
           floats.add(head, `−${d.damage}`, 'jogador');
           vibrate(d.damage >= 20 ? 60 : 25);
           audio.play('impacto', 'acerto', 0.5);
@@ -948,7 +949,8 @@ async function boot() {
       const f = eatenFruit();
       const d = f ? domainOf(save, f.id) : null;
       return `<p class="muted small">Sente em <b>flor de lótus</b> e a energia da sua fruta é cultivada <b>sozinha</b>: a aura dela envolve o corpo e a maestria sobe sem tocar na tela, até o nível máximo ou até você cancelar (Interromper, mexer-se ou levar dano). Também recupera vida e energia. De vez em quando aparece uma <b>oportunidade de respiração</b>: toque em <b>Respirar</b> quando o círculo ficar dourado e o progresso <b>dobra</b>. Ao subir de nível o corpo levita e solta uma explosão de energia.</p>
-        ${f ? `<p>Fruta: <b style="color:${f.color}">${f.name}</b> · maestria <b>${d.level}</b> <span class="muted small">(lugares favoráveis à fruta rendem mais)</span></p>` : '<p class="muted">Sem fruta comida: a meditação só recupera o corpo. Coma uma fruta para cultivar a maestria.</p>'}
+        <p class="muted small">Os bônus se <b>multiplicam</b>: <b>altura</b> (do nível do mar ×1 até ×2,5 a 50 m; também dá mais energia) × <b>condições da fruta</b> × <b>respiração</b> ×2.</p>
+        ${f ? `<p>Fruta: <b style="color:${f.color}">${f.name}</b> · maestria <b>${d.level}</b></p><ul class="haki-stages">${(FRUIT_MEDITATION[f.id] ?? []).map(([label, mult]) => `<li class="on"><i>×${String(mult).replace('.', ',')}</i>${label}</li>`).join('')}</ul>` : '<p class="muted">Sem fruta comida: a meditação só recupera o corpo. Coma uma fruta para cultivar a maestria.</p>'}
         <button class="btn gold w-start" data-go="cultivo">Meditar em lótus</button>`;
     }
     if (tab === 'meditacao') {
@@ -990,7 +992,8 @@ async function boot() {
     if (kind === 'cultivo') {
       if (form) setForm(null, true);
       const f = eatenFruit();
-      haki = { kind, c: newCultivo(), fruit: f ?? null, enter: 0, lift: -1, burst: false, gained: 0, tick: 0, acc: 0, lv: 0 };
+      haki = { kind, c: newCultivo(), fruit: f ?? null, enter: 0, lift: -1, burst: false, gained: 0, tick: 0, acc: 0, lv: 0, wounded: ctl.health < ctl.maxHealth * 0.5, struck: false, bonus: null, bonusT: 0 };
+      if (f && haki.wounded && FRUIT_MEDITATION[f.id]?.some(([, , t]) => t({ wounded: true, y: 0 }))) hud.notice('Ferido ao começar: a fruta medita mais rápido', 'good', 'cultivo-bonus');
       animator.meditate = { enter: 0, breath: 0, lotus: true, lift: 0, height: CULTIVO.height };
       meditationAura.setColor(f?.color ?? '#bfe8ff');
       cam.sizeMult = 1.3;
@@ -1080,14 +1083,23 @@ async function boot() {
       const phase = inOpportunity(h.c) ? cultivoPhase(h.c) : 0.5 + 0.5 * Math.sin(h.c.t * 0.8) * 0.4; // fora da oportunidade: respiração calma
       animator.meditate = { enter: h.enter, breath: phase, lotus: true, lift, height: CULTIVO.height };
       // cultivo automático (a cada 1 s), dobrado com a respiração certa
-      if (powers) powers.energy = Math.min(powers.energyMax ?? 100, (powers.energy ?? 0) + CULTIVO.energy * dt);
+      // bônus (recalculados 2x por segundo): altura, condições da fruta e respiração
+      h.bonusT -= dt;
+      if (h.bonusT <= 0 || !h.bonus) {
+        h.bonusT = 0.5;
+        const ctx = envContext();
+        const nearLava = sea.some((s) => s.lavas.some((l) => Math.hypot(ctl.pos.x - l.x, ctl.pos.z - l.z) < l.r + 10));
+        const blizzard = islandEvents.here === 'geleira' && !!islandEvents.blizzard?.on;
+        h.bonus = meditationBonus(h.fruit?.id, { ...ctx, y: ctl.pos.y, wounded: h.wounded, struck: h.struck, nearLava, blizzard }, h.c.boost > 0);
+      }
+      if (powers) powers.energy = Math.min(powers.energyMax ?? 100, (powers.energy ?? 0) + CULTIVO.energy * h.bonus.energy * dt);
       const rec = bonuses(save.training).recovery;
       const hurt = ctl.health < ctl.maxHealth * 0.95;
       ctl.health = Math.min(ctl.maxHealth, ctl.health + ctl.maxHealth * CULTIVO.heal * rec * dt);
       if (h.fruit && h.enter >= 1) {
         const d = domainOf(save, h.fruit.id);
         if (d.level >= MASTERY_MAX) return endHaki(`Maestria de ${h.fruit.name} no nível máximo (${MASTERY_MAX})!`, 'gold');
-        h.acc += cultivoRate(d.level) * step.mult * dt;
+        h.acc += cultivoRate(d.level) * h.bonus.total * dt;
       }
       h.tick += dt;
       if (h.tick >= 1) {
@@ -1116,11 +1128,13 @@ async function boot() {
       ring.classList.toggle('peak', cultivoPeak(h.c));
       $('h-tap').disabled = !opp;
       const boosted = h.c.boost > 0;
-      set('h-big', h.lift >= 0 ? 'Subiu de nível!' : opp ? (cultivoPeak(h.c) ? 'Agora!' : phase < 0.5 ? 'Inspire…' : 'Expire…') : boosted ? 'Cultivando ×2' : 'Cultivando…');
+      set('h-big', h.lift >= 0 ? 'Subiu de nível!' : opp ? (cultivoPeak(h.c) ? 'Agora!' : phase < 0.5 ? 'Inspire…' : 'Expire…') : h.bonus.total > 1.01 ? `Cultivando ${'×' + String(Math.round(h.bonus.total * 10) / 10).replace('.', ',')}` : 'Cultivando…');
       if (h.fruit) {
         const d = domainOf(save, h.fruit.id);
-        set('h-sub', `Maestria ${d.level}${boosted ? ' · ×2' : ''}`);
-        set('h-state', opp ? `Oportunidade de respiração (${Math.ceil(h.c.opp)} s): toque no dourado para dobrar` : 'Automático · Interromper ou mexer-se para parar');
+        set('h-sub', `Maestria ${d.level}`);
+        const fmtX = (k) => `×${String(Math.round(k * 10) / 10).replace('.', ',')}`;
+        const bon = h.bonus.list.map((b) => `${b.label} ${fmtX(b.mult)}`).join(' · ');
+        set('h-state', opp ? `Oportunidade de respiração (${Math.ceil(h.c.opp)} s): toque no dourado · ${fmtX(h.bonus.total)}` : `${fmtX(h.bonus.total)}${bon ? ` · ${bon}` : ' · automático'}`);
         bar(d.xp / masteryXpToNext(d.level));
       } else {
         set('h-sub', 'Sem fruta');
@@ -1289,7 +1303,8 @@ async function boot() {
     } else amount *= tracker.farm.repetition(`dominio:${key}`, ctl.pos, tracker.now);
     if (amount <= 0) return;
     // ambiente (atualização 23): favorável 1,5x, ideal 2x, extremo 2,5x, raro até 4x (teto 4x)
-    const env = envFor(fruitId, foe);
+    // (a meditação usa os bônus próprios dela: altura e condições da fruta)
+    const env = free ? { mult: 1 } : envFor(fruitId, foe);
     amount *= env.mult;
     if (env.mult > 1) {
       grantTrack(fruitId, 'afinidade', amount * 0.3);
@@ -1797,6 +1812,12 @@ async function boot() {
         naturalStrike();
       } else if (!boat.aboard && Math.hypot(ctl.pos.x - m.x, ctl.pos.z - m.z) < STRIKE.radius && Math.abs(ctl.pos.y - m.y) < 4) {
         naturalStrike(); // Batismo do Trovão (Tormenta)
+        if (haki?.kind === 'cultivo' && !haki.struck) {
+          haki.struck = true;
+          haki.bonusT = 0;
+          const f = haki.fruit;
+          if (f && FRUIT_MEDITATION[f.id]?.some(([, , t]) => t({ struck: true, y: 0 }))) hud.notice('Atingido por um raio meditando: a energia dobrou!', 'good', 'cultivo-bonus');
+        }
         // maestria 451+ da Tormenta: imune ao raio natural comum (não a ataques de chefes)
         const ef = eatenFruit();
         if (ef && envImmune(ef.id, domainOf(save, ef.id).level, 'raio-natural')) floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Absorveu o raio', 'esquiva');

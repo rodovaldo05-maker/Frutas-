@@ -210,6 +210,35 @@ Chegada pelo Portão do Abismo (depois do Carcereiro Sem-Rosto); a carta mostra 
   serpente (1800) de dia; lanterna (1900) e serpente (2000) à noite. Se o bote afundar, o
   Barqueiro traz outro até a Capital.
 
+### NPCs de missão (atualização 29)
+
+![Missões das ilhas](missoes-ilhas-v29.png)
+
+Cada uma das 24 ilhas dos três mares tem um NPC de missão parado ao lado da praia de chegada
+(Tamires na Praia dos Saqueadores, Ivo no Bosque Sussurrante… até O Esquecido na Ilha Oculta,
+que só aparece depois do enigma). Cada um oferece uma corrente de **3 missões**:
+
+1. **Limpar o acampamento** — derrotar 4 inimigos do acampamento da própria ilha.
+2. **O desafio da ilha** — a mecânica da ilha quando ela tem uma (aquecer-se numa fogueira na
+   nevasca, abrir a câmara dos espelhos, desfazer 3 ecos com a Percepção, sobreviver a uma
+   erupção, pegar as três chaves da masmorra, escapar de um Sopro Ancestral, usar um
+   para-raios, sobreviver a uma canhonada ou aos gêiseres, concluir a Prova da Aurora); senão,
+   **juntar 3 núcleos elementais** (ilhas de inimigos de fogo, gelo ou raio) ou **explorar o
+   coração da ilha** (marcado na carta quando a missão é rastreada). Desafios já feitos antes
+   (espelhos, chaves, Aurora) contam na hora.
+3. **Derrotar o chefe** da ilha.
+
+- **Fluxo:** falar com o NPC → aceitar (a missão passa a ser rastreada) → o progresso conta sozinho
+  (avisos na tela) → voltar ao NPC para receber a recompensa e a próxima missão.
+- **Marcadores:** "!" dourado sobre a cabeça = missão para aceitar; "?" verde = voltar para
+  receber; "…" = em andamento. Os NPCs com "!" e "?" aparecem na carta do mar.
+- **Recompensas:** crescem com o nível da ilha e com a missão (moedas = nível × 12 × passo;
+  experiência = de 3 a 9 inimigos do nível). A segunda dá uma Pérola; a terceira dá uma chave da
+  roleta, um equipamento e Cristais Marinhos.
+- **Janela de Missões:** aba **Ilhas** com as 24 ilhas por mar, os três passos de cada uma e o
+  botão Rastrear. O rastreador da tela mostra a missão de ilha rastreada (tem prioridade sobre as
+  da vila). O progresso fica salvo (`islandQuests`).
+
 ## 3. Terrenos
 
 Base: o terreno voxel quadriculado do HTML original. A estética se mantém; a geração e o

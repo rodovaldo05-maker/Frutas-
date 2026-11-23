@@ -1,3 +1,4 @@
+import { normalizeIslandQuests } from '../quests/islandQuests.js';
 import { normalizeIslands } from '../islands/islandRules.js';
 import { normalizeOutfit } from '../characters/outfits.js';
 import { normalizeWeather } from '../world/weather.js';
@@ -194,7 +195,8 @@ export function migrate(save) {
   // mares liberados (atualização 17): segundo = já atravessou a tempestade
   // terceiro = já atravessou o Portão do Abismo (atualização 27)
   out.seas = { segundo: out.seas?.segundo === true, terceiro: out.seas?.terceiro === true };
-  out.islands = normalizeIslands(out.islands); // espelhos das Ruínas e chaves da Masmorra (atualização 27)
+  out.islands = normalizeIslands(out.islands);
+  out.islandQuests = normalizeIslandQuests(out.islandQuests); // missões dos NPCs das ilhas (atualização 29) // espelhos das Ruínas e chaves da Masmorra (atualização 27)
   // combate naval (atualização 16): casco do bote (null = inteiro) e navios afundados por id
   out.boatHull = Number.isFinite(out.boatHull) && out.boatHull >= 0 ? Math.round(out.boatHull) : null;
   out.ships = out.ships && typeof out.ships === 'object' && !Array.isArray(out.ships)

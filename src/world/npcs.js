@@ -221,8 +221,9 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
         n.clock += dt;
         // longe do jogador: não desenha nem anima (desempenho)
         const far = Math.abs(playerPos.x - n.x) > LOD_FAR || Math.abs(playerPos.z - n.z) > LOD_FAR;
-        n.body.root.visible = !far;
-        if (far) {
+        const hid = !!n.hidden?.(); // NPC da Ilha Oculta antes do enigma
+        n.body.root.visible = !far && !hid;
+        if (far || hid) {
           n.tag.visible = false;
           continue;
         }
@@ -252,7 +253,7 @@ export function buildMarket({ scene, physics, field, data, extra = [] }) {
       let bd = radius;
       for (const n of npcs) {
         const d = Math.hypot(playerPos.x - n.x, playerPos.z - n.z);
-        if (d < bd && Math.abs(playerPos.y - n.ground) < 3) {
+        if (d < bd && Math.abs(playerPos.y - n.ground) < 3 && !n.hidden?.()) {
           bd = d;
           best = n;
         }

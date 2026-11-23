@@ -113,6 +113,7 @@ export class ThirdSeaEvents {
       this.fx.pillar({ x: this.shrine.x, y: this.shrine.y, z: this.shrine.z }, '#ffe8a0', 2, 20, 1.4);
       this.fx.burst({ x: this.shrine.x, y: this.shrine.y + 1, z: this.shrine.z }, '#ffe8a0', { count: 40, speed: 7, up: 6 });
       this.h.reward('aurora');
+      this.h.quest?.('aurora');
       this.refresh();
       this.h.persist();
     }
@@ -133,7 +134,10 @@ export class ThirdSeaEvents {
         this.fx.pillar(at, '#ff8a2a', 1.8, 4.5, 0.5);
       }
       this.h.shake?.(0.15);
-      if (ctx.alive && inLane(l, ctx.pos)) this.h.hit(BREATH.damage, { id: 'sopro', posture: 12, knock: 2, reaction: 'media', element: 'fogo', effects: { queimando: { duration: 4, stacks: 2 } } }, ctx.pos);
+      const caught = ctx.alive && inLane(l, ctx.pos);
+      if (caught) this.breathHit = true;
+      if (ctx.alive && !this.breathHit && this.lanes.length === 0 && ctx.island === 'santuario-escamas') this.h.quest?.('sopro'); // escapou de todas as faixas
+      if (caught) this.h.hit(BREATH.damage, { id: 'sopro', posture: 12, knock: 2, reaction: 'media', element: 'fogo', effects: { queimando: { duration: 4, stacks: 2 } } }, ctx.pos);
     }
     if (!s) return;
     const cyc = Math.floor(this.t / BREATH.cycle);
@@ -144,6 +148,7 @@ export class ThirdSeaEvents {
     }
     if (cyc !== this.breathCycle && k < 0.5) {
       this.breathCycle = cyc;
+      this.breathHit = false;
       for (const l of breathLanes(s.extra.breath, s.def.R, ctx.pos, this.rand)) {
         this.lanes.push({ ...l, t: BREATH.telegraph });
         const mid = { x: l.start.x + l.dir.x * l.len * 0.5, y: 0, z: l.start.z + l.dir.z * l.len * 0.5 };
@@ -175,6 +180,7 @@ export class ThirdSeaEvents {
       this.fx.flash({ x: rod.x, y: rod.y, z: rod.z }, '#ffe45a', 3, 0.3);
       this.fx.line({ x: rod.x, y: rod.y, z: rod.z }, { x: rod.x, y: rod.gy, z: rod.z }, '#ffe45a', { count: 8, speed: 0.5, up: 0.5, size: 0.3, life: 0.3, gravity: 0 });
       this.h.notice('O para-raios atraiu o raio', 'zone', 'para-raios');
+      this.h.quest?.('pararaios');
       return;
     }
     const at = { x: ctx.pos.x + (this.rand() - 0.5) * 3, z: ctx.pos.z + (this.rand() - 0.5) * 3 };
@@ -208,7 +214,9 @@ export class ThirdSeaEvents {
         this.fx.flash({ x: sh.x, y: sh.y + 1, z: sh.z }, '#ffd27a', 3, 0.2);
       }
       this.h.shake?.(0.1);
-      if (ctx.alive && Math.hypot(ctx.pos.x - sh.x, ctx.pos.z - sh.z) <= c.radius + 0.4 && Math.abs(ctx.pos.y - sh.y) < 4) {
+      const hitMe = ctx.alive && Math.hypot(ctx.pos.x - sh.x, ctx.pos.z - sh.z) <= c.radius + 0.4 && Math.abs(ctx.pos.y - sh.y) < 4;
+      if (this.shells.length === 0 && ctx.alive) this.h.quest?.(c === BARRAGE.ossos ? 'geiser' : 'canhonada'); // aguentou a saraivada até o fim
+      if (hitMe) {
         this.h.hit(c.damage, { id: c === BARRAGE.ossos ? 'geiser' : 'canhonada', posture: 12, knock: 3, reaction: 'media', element: c === BARRAGE.ossos ? null : 'fogo', effects: c.effects }, sh);
       }
     }

@@ -88,6 +88,8 @@ import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } f
 import { IslandEvents } from './world/islandEvents.js';
 import { buildBeastTraits } from './characters/beastTraits.js';
 import { SEA3 } from './islands/thirdSea.js';
+import { IslandQuestUi } from './ui/islandQuestUi.js';
+import { QUEST_NPCS, islandQuestEvent, normalizeIslandQuests } from './quests/islandQuests.js';
 import { ThirdSeaEvents } from './world/thirdSeaEvents.js';
 import { SeaEvents, EVENTS3 } from './world/seaEvents.js';
 import { AURORA } from './islands/islandRules.js';
@@ -173,7 +175,20 @@ async function boot() {
   for (const s of sea) island.signs.push(...s.signs);
   // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
   const world = new WorldField([island.field, village.field, ...sea.map((s) => s.field)]);
-  const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: [...BOATMEN, ...SEA_BOATMEN] });
+  // NPCs de missão (atualização 29): um em cada ilha dos três mares, ao lado da praia de chegada
+  const QUEST_LOOKS = [['#c29a7c', '#2a1d14', '#2f6a8a', '#e8dcc0', '#3a2a20'], ['#8a5a3c', '#e8e8e8', '#8a3a2a', '#2a2a33', '#1a1a20'], ['#e0b890', '#6a3a1a', '#3a7a4a', '#5a4a3a', '#2a2018'], ['#a8714c', '#101010', '#c8a040', '#2a3a55', '#1a1a20'], ['#d8b090', '#c8c8c8', '#5a3a7a', '#e8e8e8', '#2a2a30']];
+  const QUEST_NPC_DEFS = ALL_SEA.filter((d) => QUEST_NPCS[d.id]).map((d, i) => {
+    const l = seaSpots(d).landing;
+    const sx = l.x * 0.88 + Math.sin(l.yaw) * 3.6;
+    const sz = l.z * 0.88 - Math.cos(l.yaw) * 3.6;
+    const [skin, hair, shirt, shorts, shoes] = QUEST_LOOKS[i % QUEST_LOOKS.length];
+    return {
+      id: `missao-${d.id}`, role: 'missao', island: d.id, name: QUEST_NPCS[d.id][0], art: '', x: d.x + sx, z: d.z + sz, yaw: l.yaw + Math.PI, stall: false,
+      look: { skin, hair, shirt, shorts, shoes }, hint: `${QUEST_NPCS[d.id][1]}: missões de ${d.nome}.`,
+      hidden: d.hidden ? () => !save.islands?.oculta?.revealed : null,
+    };
+  });
+  const market = buildMarket({ scene: renderer.scene, physics, field: world, data: DATA, extra: [...BOATMEN, ...SEA_BOATMEN, ...QUEST_NPC_DEFS] });
   // moradores do Porto das Origens (rotina pela hora do jogo)
   const villagers = new Villagers({ scene: renderer.scene, data: DATA, village: village.village, offset: VILLAGE.offset, physics, baseY: VILLAGE.plateau });
   // veios de minério e pontos de pesca (atualização 12)
@@ -679,6 +694,7 @@ async function boot() {
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${xpGain} exp · +${coinGain} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${xpGain} exp · +${coinGain} moedas${blood ? ' (Lua de Sangue)' : ''}`, 'good');
       villageUi.defeat(foe.def);
+      islandQuest({ kind: 'defeat', id: foe.id });
       raceSys.onTrialKill(foe.def);
       for (const [id, n] of materialDrop(foe.def)) {
         addMaterial(save, id, n);
@@ -1767,6 +1783,7 @@ async function boot() {
   const islandEvents = new IslandEvents({
     scene: renderer.scene, physics, islands: sea,
     hooks: {
+      quest: (id) => islandQuest({ kind: 'mech', id }),
       fx,
       save: () => (save.islands ??= normalizeIslands(null)),
       persist: () => saveNow(true),
@@ -1824,6 +1841,7 @@ async function boot() {
   const thirdEvents = new ThirdSeaEvents({
     scene: renderer.scene, islands: sea,
     hooks: {
+      quest: (id) => islandQuest({ kind: 'mech', id }),
       fx,
       save: () => (save.islands?.oculta && save.islands?.aurora ? save.islands : (save.islands = normalizeIslands(save.islands))),
       persist: () => saveNow(true),
@@ -2369,6 +2387,54 @@ async function boot() {
       ctl.stamina.value = ctl.stamina.max;
     },
   });
+  // ===== Missões das ilhas (atualização 29) =====
+  save.islandQuests = normalizeIslandQuests(save.islandQuests);
+  const questDefs = ALL_SEA.filter((d) => QUEST_NPCS[d.id]);
+  const islandQuestUi = new IslandQuestUi({
+    scene: renderer.scene, defs: questDefs, npcs: market.npcs.filter((n) => n.role === 'missao'),
+    hooks: {
+      state: () => save.islandQuests,
+      islands: () => save.islands,
+      materials: () => save.materials ?? {},
+      level: () => save.level,
+      dialog: (title, text, actions) => villageUi.openDialog(title, text, actions),
+      close: () => closeModal('npc-dialog'),
+      toast: (text, kind) => hud.toast(text, kind),
+      changed: () => {
+        refreshMission();
+        saveNow(true);
+      },
+      reward: (def, r, q, last) => {
+        save.coins += r.coins;
+        save.keys = (save.keys ?? 0) + r.keys;
+        if (r.material) addMaterial(save, r.material[0], r.material[1]);
+        let extra = '';
+        if (r.item) {
+          const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].nivel >= 5);
+          const it = addItem(save, pool[Math.floor(Math.random() * pool.length)]);
+          extra = ` · ${ITEMS[it.id].nome}`;
+        }
+        grantXp(r.xp);
+        hud.toast(`Missão concluída: ${q.titulo} (${def.nome}) · +${fmt(r.coins)} moedas · +${fmt(r.xp)} exp${r.keys ? ` · +${r.keys} chave` : ''}${extra}`, 'gold');
+        if (last) hud.toast(`${def.nome}: todas as missões da ilha concluídas!`, 'gold');
+        audio.play('base', 'wing', 0.9);
+        refreshProfile();
+      },
+    },
+  });
+  // progresso das missões das ilhas: avisa e atualiza marcadores e rastreador
+  function islandQuest(ev) {
+    const changed = islandQuestEvent(save.islandQuests, questDefs, ev);
+    if (!changed.length) return;
+    for (const c of changed) {
+      const e = save.islandQuests.by[c.def.id];
+      hud.toast(c.ready ? `${c.quest.titulo} (${c.def.nome}) concluída! Volte a ${QUEST_NPCS[c.def.id][0]}.` : `${c.quest.titulo}: ${e.progress}/${c.quest.total}`, c.ready ? 'gold' : 'good');
+    }
+    islandQuestUi.refresh();
+    refreshMission();
+    saveNow(true);
+  }
+  let questScanT = 0;
   const forgeUi = new ForgeUi({
     save,
     toast: (text, kind) => hud.toast(text, kind),
@@ -2479,6 +2545,13 @@ async function boot() {
   function refreshMission() {
     const st = save.missions.treino;
     const next = mission.next();
+    const iq = islandQuestUi.tracked();
+    if (iq) {
+      hud.setTracker({ visible: true, title: iq.title, step: iq.step, reward: `${ICONS.coin} ${iq.reward}`, done: iq.done });
+      hud.setQuestBadge(mission.complete && !st.claimed);
+      renderMissionList();
+      return;
+    }
     const vq = villageUi.tracked();
     if (vq) {
       hud.setTracker({ visible: true, title: vq.title, step: vq.step, reward: `${ICONS.coin} ${vq.reward}`, done: false });
@@ -2595,6 +2668,7 @@ async function boot() {
     else $(id).classList.remove('hidden');
     if (id === 'worldmap') {
       mapScreen.markers = boat.aboard ? [] : [{ x: boat.s.x, z: boat.s.z, label: 'Seu bote' }];
+      mapScreen.markers.push(...islandQuestUi.mapMarkers());
       for (const g of Object.values(GATES)) mapScreen.markers.push({ x: g.x, z: g.z, label: g.nome, color: '#ffb040', chart: true });
       mapScreen.open({ x: ctl.pos.x, z: ctl.pos.z, yaw: ctl.yaw });
     }
@@ -2772,6 +2846,7 @@ async function boot() {
     if (nearAction.kind === 'fish') return gathering.startFish(nearAction.spot);
     if (nearAction.kind === 'pull') return gathering.pull();
     const npc = nearAction.npc;
+    if (npc.role === 'missao') return islandQuestUi.talk(npc);
     if (npc.role === 'barqueiro') {
       for (const n of villageUi.questTalk(npc.id, false)) hud.toast(n, 'good');
       return openBoatman(npc);
@@ -2781,7 +2856,8 @@ async function boot() {
   $('btn-interact').addEventListener('click', talk);
   $('btn-map').addEventListener('click', () => openModal('worldmap'));
   $('btn-untrack').addEventListener('click', () => {
-    if (villageUi.tracked()) save.quests.tracked = null;
+    if (islandQuestUi.tracked()) save.islandQuests.tracked = null;
+    else if (villageUi.tracked()) save.quests.tracked = null;
     else save.missions.treino.tracked = false;
     refreshMission();
   });
@@ -2805,6 +2881,11 @@ async function boot() {
   }
   function renderMissionList() {
     const list = $('mission-list');
+    if (missionTab === 'ilhas') {
+      list.innerHTML = islandQuestUi.listHtml();
+      islandQuestUi.bindList(list);
+      return;
+    }
     if (missionTab === 'secundarias') {
       list.innerHTML = villageUi.activeHtml();
       villageUi.bindActive(list);
@@ -3022,6 +3103,12 @@ async function boot() {
       beastStep(dt);
       wreckStep(dt);
       crossingStep(dt);
+      questScanT -= dt;
+      if (questScanT <= 0) {
+        questScanT = 0.5;
+        islandQuest({ kind: 'visit', pos: ctl.pos });
+        islandQuest({ kind: 'material', counts: save.materials ?? {} });
+      }
       thirdEvents.step(dt, { pos: ctl.pos, alive: ctl.faint <= 0 && mode === 'game', island: sea.find((s) => s.def.mar === 3 && s.field.inside(ctl.pos.x, ctl.pos.z))?.def.id ?? null });
       seaEvents.step(dt, {
         sea: seaOf(ctl.pos.z), night: daylight(hourOf(save.clock)).k < 0.3, day: Math.floor(save.clock / (24 * 60)), time,
@@ -3130,6 +3217,7 @@ async function boot() {
       animator.update(animDt, ctl, view);
       dust.update(animDt);
       market.update(mode === 'title' ? dt : animDt, view);
+      islandQuestUi.update(animDt, ctl.pos);
       arena.render(animDt, view);
       if (mode === 'title') titleCamera(clock);
       else cam.update(Math.max(animDt, 1e-4), ctl, view, ocean);
@@ -3255,7 +3343,7 @@ async function boot() {
           const opts = [];
           const p = ctl.pos;
           const npc = ctl.state === 'ground' ? market.nearest(p) : null;
-          if (npc) opts.push({ d: Math.hypot(p.x - npc.x, p.z - npc.z), kind: 'npc', npc, key: npc.id, text: `Falar com ${npc.art ?? 'o'} ${npc.name}` });
+          if (npc) opts.push({ d: Math.hypot(p.x - npc.x, p.z - npc.z), kind: 'npc', npc, key: npc.id, text: `Falar com ${npc.art === '' ? '' : `${npc.art ?? 'o'} `}${npc.name}` });
           const vm = ctl.state === 'ground' ? villagers.nearest(p) : null;
           if (vm) {
             const w = villagers.world(vm);
@@ -3535,6 +3623,8 @@ async function boot() {
     spawnWreck: () => spawnWreck(),
     islandEvents,
     thirdEvents,
+    islandQuestUi,
+    islandQuest: (ev) => islandQuest(ev),
     get seaEvents() { return seaEvents; },
     get haki() { return haki; },
     startHaki: (k) => startHaki(k),

@@ -261,6 +261,7 @@ export class IslandEvents {
       z.collider = null;
       this.fx.burst({ x: z.e.altar.x, y: z.e.altar.y + 2, z: z.e.altar.z }, '#ffe8a0', { count: 30, speed: 7, up: 6 });
       this.h.toast('A luz do Sol Poente abriu a câmara secreta!', 'gold');
+      this.h.quest?.('espelhos');
       this.h.persist();
     } else this.h.notice(`Luz até o espelho ${Math.min(MIRRORS, lit + 1)}`, 'zone', 'espelho');
   }
@@ -289,6 +290,7 @@ export class IslandEvents {
       this.fx.burst({ x: door.x, y: door.y + 3, z: door.z }, DUNGEON.keys[k].cor, { count: 24, speed: 6, up: 5 });
     }
     this.h.toast(`${DUNGEON.keys[k].nome}: ${k + 1 < DUNGEON.keys.length ? `a porta do ${k + 2}º andar abriu` : 'a cela do Carcereiro abriu'}!`, 'gold');
+    if (dg.st.keys >= DUNGEON.keys.length) this.h.quest?.('chaves');
     this.h.persist();
   }
 
@@ -304,6 +306,7 @@ export class IslandEvents {
         this.echoXp += r.xp;
         if (r.xp > 0) this.h.obsXp(r.xp);
         this.h.notice('Eco desfeito pela Percepção', 'good', 'eco');
+        this.h.quest?.('eco');
       } else {
         this.h.condition('lento', { duration: r.slow });
         this.h.notice('Era uma ilusão! (ligue a Percepção para ver)', 'bad', 'eco');
@@ -357,6 +360,7 @@ export class IslandEvents {
     this.cold = stepCold(this.cold, dt, { on: ph.on, nearFire, immune });
     if (before < 60 && this.cold >= 60) this.h.notice('Muito frio… procure uma fogueira', 'bad', 'frio');
     if (nearFire && before > 0 && this.cold === 0) this.h.notice('Aquecido pela fogueira', 'good', 'frio');
+    if (nearFire && ph.on) this.h.quest?.('fogueira');
     if (ph.on) this.fog = { near: 4, far: 45, color: '#dfe8f0' };
     if (frozen(this.cold) && ctx.alive) {
       this.coldTick -= dt;
@@ -402,6 +406,8 @@ export class IslandEvents {
       }
     }
     if (!ph.on) {
+      // fim de uma erupção com o jogador no Bastião, vivo: desafio da ilha
+      if (was?.on && s && ctx.alive) this.h.quest?.('erupcao');
       this.rocks.length = 0;
       return;
     }

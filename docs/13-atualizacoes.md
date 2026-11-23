@@ -101,5 +101,6 @@ que a anterior entregou. Os detalhes de cada sistema estão nos docs 02 a 12.
 | 26 | **Interface, persistência e otimização** (Prompt Mestre, fase H) | Salvo v6 com cópia de segurança e recuperação, UI parcial, toques robustos, perda de contexto gráfico, regressão completa; relatório em `15-prompt-mestre-relatorio.md` | Testes 14 a 17 | **Feita** (falta teste em aparelho real) |
 | 27 | **Segundo Mar completo** (doc 02) | Ilhas 14 a 18 do Segundo Mar (Geleira Silente a Masmorra do Abismo) e o acesso ao Terceiro Mar | Navegar e derrotar os chefes do Segundo Mar | **Feita** (nevasca, espelhos de luz, ecos ilusórios, erupções, masmorra com chaves; Portão do Abismo) |
 | 28 | **Terceiro Mar** (doc 02) | Ilhas finais e chefes de alto nível | Navegar e derrotar os chefes | **Feita** (7 ilhas com mecânicas, enigma da Ilha Oculta, Lua de Sangue, Navio Fantasma, Maré Celeste) |
+| 29 | **NPCs com missões nas ilhas** | Um NPC de missão em cada uma das 24 ilhas dos três mares, com corrente de 3 missões (caça, desafio da ilha, chefe), marcadores "!" e "?", aba Ilhas, rastreador e carta | Aceitar, cumprir e receber as 72 missões | **Feita** |
 
 Por último: multijogador opcional (doc 00, fase F8).

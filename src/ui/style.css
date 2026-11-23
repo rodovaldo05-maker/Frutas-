@@ -1332,3 +1332,18 @@ body.blind #game { filter: brightness(0.35) saturate(0.4); }
 .item-sell .ic.q:has(.spr) { width: auto; height: auto; background: none; box-shadow: none; }
 .weapon-card header:has(.spr), .forge-card header:has(.spr) { align-items: center; }
 .weapon-card header:has(.spr) b { flex: 1; }
+
+/* missões das ilhas (atualização 29) */
+.iq-list { display: grid; gap: 6px; }
+.iq-sea { margin: 8px 0 2px; color: var(--gold-hi); }
+.iq-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(20, 16, 26, 0.6); border: 1px solid rgba(255, 241, 207, 0.08); }
+.iq-row > div { display: grid; gap: 2px; }
+.iq-row small { color: rgba(255, 241, 207, 0.7); font-size: 12px; }
+.iq-row.iq-pronta { border-color: rgba(126, 224, 106, 0.6); }
+.iq-row.iq-disponivel { border-color: rgba(255, 208, 64, 0.45); }
+.iq-row.iq-concluida { opacity: 0.6; }
+.iq-dots { display: inline-flex; gap: 4px; margin-left: 6px; }
+.iq-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 241, 207, 0.18); }
+.iq-dots i.on { background: #7ee06a; }
+.iq-dots i.now { background: #ffd040; }
+.iq-row b { color: #fff1cf; font: 700 15px var(--title-font); }

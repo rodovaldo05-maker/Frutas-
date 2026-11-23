@@ -128,6 +128,10 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+NPCs com missões (atualização 29): cada uma das 24 ilhas dos três mares tem um NPC com três
+missões (caçar o acampamento, o desafio próprio da ilha e o chefe), com "!" e "?" sobre a cabeça,
+aba Ilhas na janela de Missões, rastreador e marcas na carta.
+
 Terceiro Mar (atualização 28): as ilhas 19 a 25 — Capital dos Mil Mastros (castelo e docas),
 Santuário das Escamas (Sopro Ancestral), Tempestade Eterna (raios e para-raios), Fortaleza do
 Horizonte (canhonada), Mar dos Ossos (ilhotas, costelas gigantes e gêiseres), Templo da Aurora

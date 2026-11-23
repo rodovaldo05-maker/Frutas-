@@ -87,6 +87,10 @@ import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/
 import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } from './islands/secondSea.js';
 import { IslandEvents } from './world/islandEvents.js';
 import { buildBeastTraits } from './characters/beastTraits.js';
+import { SEA3 } from './islands/thirdSea.js';
+import { ThirdSeaEvents } from './world/thirdSeaEvents.js';
+import { SeaEvents, EVENTS3 } from './world/seaEvents.js';
+import { AURORA } from './islands/islandRules.js';
 import { CULTIVO, cultivoRate, newCultivo, cultivoStep, cultivoTap, cultivoPhase, cultivoPeak, inOpportunity, liftAt, meditationBonus, FRUIT_MEDITATION } from './progression/cultivation.js';
 import { MeditationAura } from './vfx/meditationAura.js';
 import { normalizeIslands } from './islands/islandRules.js';
@@ -138,7 +142,7 @@ async function boot() {
   island.signs.push(...village.signs);
   // Primeiro Mar (atualização 14): as ilhas 2 a 10
   await setLoading('Erguendo o Primeiro Mar…', 52);
-  const ALL_SEA = [...SEA, ...SEA2];
+  const ALL_SEA = [...SEA, ...SEA2, ...SEA3];
   const sea = ALL_SEA.map((def) => buildSeaIsland({ scene: renderer.scene, physics, def }));
   // Barqueiro do Cais das Correntes (Segundo Mar): leva de volta ao Porto das Origens
   const correntes = SEA2[0];
@@ -149,11 +153,22 @@ async function boot() {
       mooring: { x: correntes.x + cLand.x * 1.28, z: correntes.z + cLand.z * 1.28, yaw: cLand.yaw },
     },
   };
+  // Capital dos Mil Mastros (Terceiro Mar): cais e barqueiro de volta ao Cais das Correntes
+  const capital = SEA3[0];
+  const kLand = seaSpots(capital).landing;
+  SEA_DOCKS.capital = {
+    island: capital.nome, x: capital.x + kLand.x * 0.92, z: capital.z + kLand.z * 0.92, yaw: kLand.yaw + Math.PI, ground: true,
+    mooring: { x: capital.x + kLand.x * 1.28, z: capital.z + kLand.z * 1.28, yaw: kLand.yaw },
+  };
   const ALL_DOCKS = { ...DOCKS, ...SEA_DOCKS };
   const SEA_BOATMEN = [{
     id: 'barqueiro-correntes', role: 'barqueiro', to: 'porto', name: 'Barqueiro das Correntes', x: SEA_DOCKS.correntes.x + 2, z: SEA_DOCKS.correntes.z + 2, yaw: cLand.yaw + Math.PI, stall: false, here: 'correntes',
     look: { skin: '#8a5a3c', hair: '#e8e8e8', shirt: '#1f4f6a', shorts: '#e8dcc0', shoes: '#2a2018' },
     hint: 'Viagem rápida ao Porto das Origens (Primeiro Mar) ou trazer o seu bote até este cais.',
+  }, {
+    id: 'barqueiro-capital', role: 'barqueiro', to: 'correntes', name: 'Barqueiro dos Mil Mastros', x: SEA_DOCKS.capital.x + 2, z: SEA_DOCKS.capital.z + 2, yaw: kLand.yaw + Math.PI, stall: false, here: 'capital',
+    look: { skin: '#c29a7c', hair: '#e8e8e8', shirt: '#2a3a6a', shorts: '#e8e8e8', shoes: '#1a1a22' },
+    hint: 'Viagem rápida ao Cais das Correntes (Segundo Mar) ou trazer o seu bote até este cais.',
   }];
   for (const s of sea) island.signs.push(...s.signs);
   // chão do mundo todo: cada ilha responde pela sua área; fora delas, fundo do mar
@@ -172,7 +187,7 @@ async function boot() {
     for (const s of sea) {
       const lv = levelsFor(s.def);
       s.enemies.forEach((p, k) => add(`${s.def.id}-${k + 1}`, p.x, p.z, scaledDef(s.def.enemy, lv[k], s.def.enemyExtra)));
-      add(`${s.def.id}-chefe`, s.boss.x, s.boss.z, bossDef(s.def.boss, s.def.faixa[1], s.def.bossExtra));
+      add(`${s.def.id}-chefe`, s.boss.x, s.boss.z, bossDef(s.def.boss, s.def.faixa[1], { ...(s.def.boss.scale ? { scale: s.def.boss.scale } : {}), ...s.def.bossExtra }));
     }
     const o = VILLAGE.offset;
     const [cx, cz] = PORTO_CAMP.local.camp;
@@ -267,6 +282,7 @@ async function boot() {
   let condTimer = 0;
   let playerTint = '#000000';
   let wingBurst = 0;
+  let seaEvents = null; // eventos raros do Terceiro Mar (atualização 28)
   let form = null; // forma de fera ativa { id, shape, rig } (atualizações 13 e 21)
   // números da forma + marcos de transformação da sincronia (atualização 23)
   function formModsNow() {
@@ -599,6 +615,8 @@ async function boot() {
   });
   // golpe de inimigo: dano, condições do elemento e treino de Resistência Elemental
   function enemyHit(enemy, attack, damage, from = enemy.pos) {
+    // Lua de Sangue: inimigos do Terceiro Mar batem mais forte
+    if (seaEvents?.bloodMoon && enemy.home && seaOf(enemy.home.z) === 3) damage = Math.round(damage * EVENTS3.blood.enemyDamage);
     const r = combat.receive({ attacker: { x: from.x, y: from.y, z: from.z, yaw: enemy.yaw }, attack, damage, source: enemy.id, life: enemy.life });
     if (attack.element && (r.result === 'hit' || r.result === 'break')) {
       for (const [name, opts] of Object.entries(attack.effects || {})) conditions.apply(name, opts);
@@ -637,7 +655,16 @@ async function boot() {
     enemyHit(enemy, attack, computeDamage(sp.damage * enemy.def.damageMult), { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z });
   };
   const onEnemyDefeated = (foe) => {
-      save.coins += foe.def.coins;
+      // Lua de Sangue: +50% de experiência e moedas no Terceiro Mar, e chance de material raro
+      const blood = seaEvents?.bloodMoon && foe.home && seaOf(foe.home.z) === 3;
+      const k = blood ? EVENTS3.blood.reward : 1;
+      const xpGain = Math.round(foe.def.xp * k);
+      const coinGain = Math.round(foe.def.coins * k);
+      if (blood && Math.random() < EVENTS3.blood.rareChance) {
+        addMaterial(save, 'escama', 1);
+        hud.toast('Lua de Sangue: +1 Escama Abissal', 'gold');
+      }
+      save.coins += coinGain;
       if (foe.boss) bossReward(foe);
       const drop = dropFor(foe.def.level);
       if (drop) {
@@ -649,8 +676,8 @@ async function boot() {
         }
         hud.toast(`Item encontrado: ${d.nome} (${d.qualidade})${save.gear[d.slot] === it.uid ? ' · equipado' : ''}`, 'gold');
       }
-      floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${foe.def.xp} exp · +${foe.def.coins} moedas`, 'info');
-      hud.toast(`${foe.def.nome} derrotado! +${foe.def.xp} exp · +${foe.def.coins} moedas`, 'good');
+      floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${xpGain} exp · +${coinGain} moedas`, 'info');
+      hud.toast(`${foe.def.nome} derrotado! +${xpGain} exp · +${coinGain} moedas${blood ? ' (Lua de Sangue)' : ''}`, 'good');
       villageUi.defeat(foe.def);
       raceSys.onTrialKill(foe.def);
       for (const [id, n] of materialDrop(foe.def)) {
@@ -658,7 +685,7 @@ async function boot() {
         hud.toast(`+${n} ${MATERIALS[id].nome}`, 'good');
       }
       audio.play('base', 'death', 0.6);
-      grantXp(foe.def.xp);
+      grantXp(xpGain);
       saveNow(true);
   };
   for (const r of arena.recrutas) r.onDefeated = onEnemyDefeated;
@@ -1768,6 +1795,77 @@ async function boot() {
     },
   });
 
+  // raio natural que atinge o jogador (tempestade do clima e a Tempestade Eterna): Batismo do
+  // Trovão, bônus da meditação, imunidade da Tormenta e o dano
+  function lightningOnPlayer(m, frac = STRIKE.damage) {
+    naturalStrike(); // Batismo do Trovão (Tormenta)
+    if (haki?.kind === 'cultivo' && !haki.struck) {
+      haki.struck = true;
+      haki.bonusT = 0;
+      const f = haki.fruit;
+      if (f && FRUIT_MEDITATION[f.id]?.some(([, , t]) => t({ struck: true, y: 0 }))) hud.notice('Atingido por um raio meditando: a energia dobrou!', 'good', 'cultivo-bonus');
+    }
+    // maestria 451+ da Tormenta: imune ao raio natural comum (não a ataques de chefes)
+    const ef = eatenFruit();
+    if (ef && envImmune(ef.id, domainOf(save, ef.id).level, 'raio-natural')) floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Absorveu o raio', 'esquiva');
+    else enemyHit({ id: 'raio', pos: m, yaw: 0, life: 1 }, { id: 'raio-tempestade', posture: 10, knock: 1.5, reaction: 'media', element: 'raio', effects: { choque: { stacks: 2 } } }, Math.round(ctl.maxHealth * frac), m);
+  }
+  // ===== Terceiro Mar (atualização 28): acontecimentos das ilhas e eventos raros =====
+  const treasure = (coins, keys, mats, xp, label) => {
+    save.coins += coins;
+    save.keys = (save.keys ?? 0) + keys;
+    for (const [id, n] of mats) addMaterial(save, id, n);
+    const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].nivel >= 5);
+    const it = addItem(save, pool[Math.floor(Math.random() * pool.length)]);
+    hud.toast(`${label}: ${coins.toLocaleString('pt-BR')} moedas, ${keys} chave(s), ${mats.map(([id, n]) => `${n} ${MATERIALS[id].nome}`).join(', ')}, ${ITEMS[it.id].nome}`, 'gold');
+    grantXp(xp);
+    saveNow(true);
+  };
+  const thirdEvents = new ThirdSeaEvents({
+    scene: renderer.scene, islands: sea,
+    hooks: {
+      fx,
+      save: () => (save.islands?.oculta && save.islands?.aurora ? save.islands : (save.islands = normalizeIslands(save.islands))),
+      persist: () => saveNow(true),
+      ground: (x, z) => world.sample(x, z),
+      hit: (frac, attack, at) => enemyHit({ id: `perigo-${attack.id}`, pos: at, yaw: 0, life: 1 }, attack, Math.max(1, Math.round(ctl.maxHealth * frac)), at),
+      lightning: (at) => lightningOnPlayer(at, 0.07),
+      notice: (text, kind, key) => hud.notice(text, kind, key),
+      toast: (text, kind) => hud.toast(text, kind),
+      shake: (a) => {
+        if (!settings.reduceMotion) shake = Math.max(shake, a);
+      },
+      reward: (kind) => {
+        if (kind === 'aurora') treasure(AURORA.coins, AURORA.keys, [['cristal', 8], ['perola', 6]], AURORA.xp, 'Prova da Aurora concluída');
+      },
+      reveal: () => hud.notice('A Ilha Oculta apareceu!', 'good', 'oculta'),
+    },
+  });
+  seaEvents = new SeaEvents({
+    scene: renderer.scene,
+    hooks: {
+      fx, ocean, physics,
+      notice: (text, kind, key) => hud.notice(text, kind, key),
+      toast: (text, kind) => hud.toast(text, kind),
+      playerLevel: () => save.level,
+      hullHit: (frac, at) => fleet.damageHull(Math.round(fleet.maxHull * frac), at),
+      damageFloat: (at, n) => floats.add({ x: at.x, y: at.y + 3, z: at.z }, `−${Math.round(n)}`, 'forte'),
+      reward: (kind) => {
+        if (kind === 'fantasma') {
+          treasure(30000, 2, [['escama', 3], ['polvora', 4]], 8000, 'Tesouro do Navio Fantasma');
+          if (Math.random() < 0.25 && save.bag.length < 60) {
+            const r = drawFruit('npc');
+            if (r) {
+              save.bag.push({ uid: save.nextUid++, fruit: r.fruit, fav: false, at: Date.now(), origem: 'fantasma' });
+              hud.toast(`O Navio Fantasma guardava uma fruta: ${fruitName(r.fruit)}!`, 'gold');
+            }
+          }
+        }
+        if (kind === 'mare-celeste') treasure(15000, 1, [['cristal', 4], ['perola', 3]], 4000, 'Baú da Maré Celeste');
+      },
+    },
+  });
+
   // ===== Clima (atualização 19): sol, chuva e tempestade por mar; raios na tempestade =====
   powers.weatherMult = (fruitId) => weatherDamage(save.weather?.state ?? 'sol', fruitId);
   let weatherTick = 0;
@@ -1821,24 +1919,14 @@ async function boot() {
         fleet.damageHull(Math.round(fleet.maxHull * STRIKE.hull), m);
         naturalStrike();
       } else if (!boat.aboard && Math.hypot(ctl.pos.x - m.x, ctl.pos.z - m.z) < STRIKE.radius && Math.abs(ctl.pos.y - m.y) < 4) {
-        naturalStrike(); // Batismo do Trovão (Tormenta)
-        if (haki?.kind === 'cultivo' && !haki.struck) {
-          haki.struck = true;
-          haki.bonusT = 0;
-          const f = haki.fruit;
-          if (f && FRUIT_MEDITATION[f.id]?.some(([, , t]) => t({ struck: true, y: 0 }))) hud.notice('Atingido por um raio meditando: a energia dobrou!', 'good', 'cultivo-bonus');
-        }
-        // maestria 451+ da Tormenta: imune ao raio natural comum (não a ataques de chefes)
-        const ef = eatenFruit();
-        if (ef && envImmune(ef.id, domainOf(save, ef.id).level, 'raio-natural')) floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Absorveu o raio', 'esquiva');
-        else enemyHit({ id: 'raio', pos: m, yaw: 0, life: 1 }, { id: 'raio-tempestade', posture: 10, knock: 1.5, reaction: 'media', element: 'raio', effects: { choque: { stacks: 2 } } }, Math.round(ctl.maxHealth * STRIKE.damage), m);
+        lightningOnPlayer(m);
       }
     }
   }
 
   // ===== Bestas marinhas (atualização 19): encontros no mar aberto =====
   const beasts = new BeastManager({ scene: renderer.scene, ocean, fx, lab, onEvent: (n, d) => beastEvent(n, d) });
-  fleet.extraTargets = () => beasts.targets();
+  fleet.extraTargets = () => [...beasts.targets(), ...(seaEvents?.targets() ?? [])];
   fleet.encounter = () => beasts.active;
   const LAND = [{ x: 0, z: 0, r: ISLAND.half * 0.75 }, { x: VILLAGE.offset.x, z: VILLAGE.offset.z, r: VILLAGE.half * 0.75 }, ...ALL_SEA.map((d) => ({ x: d.x, z: d.z, r: d.R }))];
   const distToLand = (p) => Math.min(...LAND.map((l) => Math.hypot(p.x - l.x, p.z - l.z) - l.r));
@@ -2059,8 +2147,9 @@ async function boot() {
         hud.toast('O bote afundou! Um Barqueiro leva outro, meio consertado, até o cais da Ilha de Treino.', 'bad');
         break;
       case 'boatRestored': {
-        const second = seaOf(boat.s.z) === 2 && save.seas?.segundo;
-        const dock = second ? ALL_DOCKS.correntes : DOCKS.treino;
+        const here = seaOf(boat.s.z);
+        const second = here === 2 && save.seas?.segundo;
+        const dock = here === 3 && save.seas?.terceiro ? ALL_DOCKS.capital : second ? ALL_DOCKS.correntes : DOCKS.treino;
         const m = dock.mooring;
         boat.place(m.x, m.z, m.yaw);
         // nadando longe de qualquer ilha: o Barqueiro resgata e leva até o cais
@@ -2134,7 +2223,7 @@ async function boot() {
     islands: [
       { name: ISLAND.name, field: island.field, origin: { x: 0, z: 0 }, faixa: 'Nv. 1–10', mar: 1 },
       { name: VILLAGE.name, field: village.localField, origin: VILLAGE.offset, plan: village.village, faixa: 'Nv. 1–25', mar: 1 },
-      ...sea.map((s) => ({ name: s.def.nome, field: s.localField, origin: { x: s.def.x, z: s.def.z }, faixa: `Nv. ${s.def.faixa[0]}–${s.def.faixa[1]}`, mar: s.def.mar ?? 1 })),
+      ...sea.map((s) => ({ name: s.def.nome, field: s.localField, origin: { x: s.def.x, z: s.def.z }, faixa: `Nv. ${s.def.faixa[0]}–${s.def.faixa[1]}`, mar: s.def.mar ?? 1, hidden: s.def.hidden ? () => !save.islands?.oculta?.revealed : null })),
     ],
   });
   const thumb = renderIslandImage(island.field, 256, 'parchment').toDataURL('image/png');
@@ -2933,6 +3022,20 @@ async function boot() {
       beastStep(dt);
       wreckStep(dt);
       crossingStep(dt);
+      thirdEvents.step(dt, { pos: ctl.pos, alive: ctl.faint <= 0 && mode === 'game', island: sea.find((s) => s.def.mar === 3 && s.field.inside(ctl.pos.x, ctl.pos.z))?.def.id ?? null });
+      seaEvents.step(dt, {
+        sea: seaOf(ctl.pos.z), night: daylight(hourOf(save.clock)).k < 0.3, day: Math.floor(save.clock / (24 * 60)), time,
+        aboard: boat.aboard, swimming: ctl.state === 'swim' || ctl.state === 'dive',
+        boat: { x: boat.s.x, z: boat.s.z, yaw: boat.s.yaw, velocity: boat.velocity }, openSea: distToLand(boat.aboard ? boat.s : ctl.pos) > ENCOUNTER.openSea,
+      });
+      // névoa encantada: enquanto a Ilha Oculta não aparece, a corrente empurra o bote de volta
+      const hid = SEA3.find((d) => d.hidden);
+      if (hid && !thirdEvents.revealed && boat.aboard && Math.hypot(boat.s.x - hid.x, boat.s.z - hid.z) < hid.R + 110 && gateBlockT <= 0) {
+        hud.notice('Uma névoa encantada empurra o bote de volta. Há um enigma nas pedras rúnicas…', 'bad', 'oculta');
+        boat.s.yaw = Math.atan2(boat.s.x - hid.x, boat.s.z - hid.z);
+        boat.s.speed = 6;
+        gateBlockT = 2;
+      }
       islandEvents.step(dt, {
         pos: ctl.pos, alive: ctl.faint <= 0 && mode === 'game', sense: vontade.sense,
         island: sea.find((s) => s.extra && s.field.inside(ctl.pos.x, ctl.pos.z))?.def.id ?? null,
@@ -3117,7 +3220,7 @@ async function boot() {
         fog.far = renderer.quality.viewDistance;
       }
       // neblina das ilhas (nevasca da Geleira, névoa do Bosque Noturno), com transição
-      const fo = mode === 'game' && !cam.underwater ? islandEvents.fog : null;
+      const fo = mode === 'game' && !cam.underwater ? islandEvents.fog ?? thirdEvents.fog ?? seaEvents.fog : null;
       if (fo) islandFog.last = fo;
       islandFog.mix += ((fo ? 1 : 0) - islandFog.mix) * Math.min(1, dt * 1.5);
       if (islandFog.mix > 0.01 && islandFog.last) {
@@ -3164,8 +3267,10 @@ async function boot() {
             const sp = gatherWorld.nearestSpot(p);
             if (sp) opts.push({ d: Math.hypot(p.x - sp.x, p.z - sp.z) - 5, kind: 'fish', spot: sp, key: `fish-${sp.id}`, text: 'Pescar' });
           }
-          const io = ctl.state === 'ground' ? islandEvents.nearest(p) : null;
-          if (io) opts.push({ ...io, kind: 'island' });
+          for (const src of [islandEvents, thirdEvents, seaEvents]) {
+            const io = ctl.state === 'ground' ? src.nearest(p) : null;
+            if (io) opts.push({ ...io, kind: 'island' });
+          }
           if ((ctl.state === 'ground' || ctl.state === 'swim') && boat.near(p)) opts.push({ d: Math.hypot(p.x - boat.s.x, p.z - boat.s.z) - 1.5, kind: 'board', key: 'board', text: 'Embarcar no bote' });
           act = opts.sort((a, b) => a.d - b.d)[0] ?? null;
         }
@@ -3429,6 +3534,8 @@ async function boot() {
     toggleForm: (off) => toggleForm(off),
     spawnWreck: () => spawnWreck(),
     islandEvents,
+    thirdEvents,
+    get seaEvents() { return seaEvents; },
     get haki() { return haki; },
     startHaki: (k) => startHaki(k),
     hakiTap: () => hakiTap(),

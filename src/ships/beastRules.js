@@ -38,6 +38,7 @@ export const ENCOUNTER = {
 export const SEA_BEASTS = {
   1: { dia: [['serpente'], ['tubarao']], noite: [['serpente'], ['tubarao']] },
   2: { dia: [['tubarao', 900]], noite: [['lanterna'], ['tubarao', 900]] },
+  3: { dia: [['tubarao', 1700], ['serpente', 1800]], noite: [['lanterna', 1900], ['serpente', 2000]] }, // atualização 28
 };
 
 // só aparece besta para quem tem pelo menos metade do nível dela (sem isso, uma mordida

@@ -173,9 +173,9 @@ describe('Masmorra do Abismo: andares, chaves e espinhos', () => {
 describe('salvo', () => {
   it('espelhos resolvidos, baú e chaves persistem; valores inválidos viram padrão', () => {
     const s = migrate({ ...newSave(), islands: { ruinas: { solved: true, chest: true }, masmorra: { keys: 2 } }, seas: { segundo: true, terceiro: true } });
-    expect(s.islands).toEqual({ ruinas: { solved: true, chest: true }, masmorra: { keys: 2 } });
+    expect(s.islands).toMatchObject({ ruinas: { solved: true, chest: true }, masmorra: { keys: 2 } });
     expect(s.seas.terceiro).toBe(true);
     expect(normalizeIslands({ masmorra: { keys: 99 } }).masmorra.keys).toBe(DUNGEON.keys.length);
-    expect(normalizeIslands('x')).toEqual({ ruinas: { solved: false, chest: false }, masmorra: { keys: 0 } });
+    expect(normalizeIslands('x')).toEqual({ ruinas: { solved: false, chest: false }, masmorra: { keys: 0 }, aurora: { done: false }, oculta: { step: 0, revealed: false } });
   });
 });

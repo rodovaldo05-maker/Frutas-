@@ -128,6 +128,13 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Terceiro Mar (atualização 28): as ilhas 19 a 25 — Capital dos Mil Mastros (castelo e docas),
+Santuário das Escamas (Sopro Ancestral), Tempestade Eterna (raios e para-raios), Fortaleza do
+Horizonte (canhonada), Mar dos Ossos (ilhotas, costelas gigantes e gêiseres), Templo da Aurora
+(escada em espiral até o santuário) e a Ilha Oculta (só aparece depois do enigma das pedras
+rúnicas, com o chefe mundial Soberano Esquecido) — e os eventos raros Lua de Sangue, Navio
+Fantasma e Maré Celeste. Detalhes no [doc 02](docs/02-mundo-e-ilhas.md).
+
 Besta e ícones (0.27.5): as três habilidades da Besta ganharam gestos próprios na forma humana
 (chifrada, rugido de peito aberto e pisão com a perna erguida), as formas híbrida e completa
 passaram a usar as animações da própria Besta do laboratório e os efeitos ficaram bem mais

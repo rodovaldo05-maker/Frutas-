@@ -93,7 +93,7 @@ export class MapScreen {
   // ilhas do mar onde o jogador está (1: Primeiro Mar, 2: Segundo Mar)
   seaIslands() {
     // um mar ainda sem ilhas (Terceiro Mar até a atualização 28) mostra só portões e o jogador
-    return this.islands.filter((i) => (i.mar ?? 1) === (this.seaNo ?? 1));
+    return this.islands.filter((i) => (i.mar ?? 1) === (this.seaNo ?? 1) && !i.hidden?.());
   }
 
   seaCenter() {

@@ -13,6 +13,7 @@ export const WEATHER = {
 export const CLIMATE = {
   1: { sol: 0.7, chuva: 0.25, tempestade: 0.05 },
   2: { sol: 0.55, chuva: 0.3, tempestade: 0.15 },
+  3: { sol: 0.45, chuva: 0.3, tempestade: 0.25 }, // Terceiro Mar (atualização 28)
 };
 
 // duração em minutos do jogo (2 a 5 horas)

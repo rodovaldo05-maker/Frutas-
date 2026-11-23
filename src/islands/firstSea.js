@@ -13,6 +13,7 @@ import { natureKit, placeInstances } from '../world/nature.js';
 import { generateVillage } from '../world/village.js';
 import { smooth, valueNoise2D, mulberry32 } from '../core/math.js';
 import { DUNGEON } from './islandRules.js';
+import { ENIGMA } from './thirdSea.js';
 
 // ===== Ilhas =====
 // enemy/boss: aparência e golpe marcado (os números vêm de scaledDef/bossDef pelo nível)
@@ -92,8 +93,15 @@ const PALETTES = {
   noturno: { low: '#1f3a34', high: '#29473c', sand: '#4a5a52', rock: '#343c44' },
   bastiao: { low: '#3a3236', high: '#2e282c', sand: '#4a3e3c', rock: '#241e22' },
   masmorra: { low: '#4e4e54', high: '#58585e', sand: '#7a7468', rock: '#3a3a40' },
+  // Terceiro Mar (atualização 28)
+  santuario: { low: '#5f7a5a', high: '#7a8a6a', sand: '#cfc29a', rock: '#6a6a70' },
+  tempestade: { low: '#3e4a4e', high: '#4a565a', sand: '#8a8a80', rock: '#2e3438' },
+  fortaleza: { low: '#6a7a5a', high: '#788a64', sand: '#d2c69a', rock: '#7a7a80' },
+  ossos: { low: '#8a9a7a', high: '#a0a88a', sand: '#e8e0c8', rock: '#c8c0a8' },
+  aurora: { low: '#d8ccaa', high: '#ece0c0', sand: '#f4ecd4', rock: '#e0c890' },
+  oculta: { low: '#3a2a5a', high: '#4a3a6a', sand: '#8a7aa0', rock: '#2a2040' },
 };
-const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3, selva: 3.4, granito: 4, geleira: 2.4, ruinas: 3.2, noturno: 3, bastiao: 3, masmorra: 4 };
+const PLATEAU = { praia: 2.2, floresta: 3, deserto: 2.8, forte: 3.6, neve: 3, cidade: 3.2, vulcao: 3, arena: 3, ceu: 3, selva: 3.4, granito: 4, geleira: 2.4, ruinas: 3.2, noturno: 3, bastiao: 3, masmorra: 4, santuario: 3, tempestade: 3, fortaleza: 4, ossos: 2.6, aurora: 3.4, oculta: 3.2 };
 
 // ===== Relevo =====
 export function seaHeight(def) {
@@ -113,6 +121,32 @@ export function seaHeight(def) {
       case 'selva': return 9 * Math.pow(Math.max(0, 1 - r / (R * 0.55)), 1.4) + 2.5 * n1(x / 18, z / 18) + n2(x / 9, z / 9);
       case 'granito': return 0.4 * n2(x / 16, z / 16);
       case 'masmorra': return 0.15 * n2(x / 16, z / 16);
+      // Terceiro Mar
+      case 'fortaleza': return 0.3 * n2(x / 16, z / 16);
+      case 'santuario': {
+        // cinco agulhas de pedra (os ninhos ficam em volta delas)
+        let h = 2 * n1(x / 20, z / 20);
+        for (let k = 0; k < 5; k++) {
+          const a = k * 1.256 + def.seed;
+          const d = Math.hypot(x - Math.cos(a) * R * 0.45, z - Math.sin(a) * R * 0.45);
+          h += 15 * Math.pow(Math.max(0, 1 - d / 7), 1.5);
+        }
+        return h;
+      }
+      case 'tempestade': return 1.6 * n1(x / 18, z / 18) + 0.6 * n2(x / 7, z / 7);
+      case 'ossos': {
+        // ilhotas: três canais de água cortam a ilha a partir do meio
+        let cut = 0;
+        if (r > 13) for (let k = 0; k < 3; k++) {
+          const a = k * 2.094 + 1.2;
+          const side = Math.abs(x * Math.sin(a) - z * Math.cos(a));
+          const ahead = x * Math.cos(a) + z * Math.sin(a);
+          if (ahead > 0) cut = Math.max(cut, 1 - smooth(2.5, 6, side));
+        }
+        return 0.8 * n2(x / 12, z / 12) - (P + 4) * cut;
+      }
+      case 'aurora': return 6 * Math.pow(Math.max(0, 1 - r / (R * 0.4)), 1.2) + 0.5 * n2(x / 14, z / 14);
+      case 'oculta': return 12 * Math.pow(Math.max(0, 1 - r / (R * 0.5)), 1.4) + 2 * n1(x / 16, z / 16);
       // geleira: placa de gelo com cristas baixas
       case 'geleira': return 1.4 * Math.abs(n1(x / 22, z / 22)) + 0.4 * n2(x / 8, z / 8);
       case 'ruinas': return 0.9 * n2(x / 14, z / 14) + 0.6 * n1(x / 30, z / 30);
@@ -142,11 +176,13 @@ export function seaHeight(def) {
 export function seaSpots(def) {
   const R = def.R;
   const a = def.campAngle;
-  const camp = { x: Math.cos(a) * R * 0.45, z: Math.sin(a) * R * 0.45 };
-  const central = def.biome === 'arena' || def.biome === 'forte';
+  const campR = def.biome === 'fortaleza' ? 0.4 : 0.45; // entre as duas muralhas
+  const camp = { x: Math.cos(a) * R * campR, z: Math.sin(a) * R * campR };
+  const central = def.biome === 'arena' || def.biome === 'forte' || def.biome === 'fortaleza';
   const boss = central ? { x: 0, z: 0 } : { x: Math.cos(a + Math.PI * 0.8) * R * 0.4, z: Math.sin(a + Math.PI * 0.8) * R * 0.4 };
   if (def.biome === 'neve') boss.x *= 1.2, boss.z *= 1.2;
-  let enemies = [0, 1, 2, 3].map((k) => ({ x: camp.x + Math.cos(k * 1.6) * 5, z: camp.z + Math.sin(k * 1.6) * 5 }));
+  const spread = def.biome === 'fortaleza' ? 2.2 : 5;
+  let enemies = [0, 1, 2, 3].map((k) => ({ x: camp.x + Math.cos(k * 1.6) * spread, z: camp.z + Math.sin(k * 1.6) * spread }));
   // praia de chegada: lado da ilha voltado para a Ilha de Treino
   // (vem do mar aberto até a areia e entra 4 unidades: a costa varia com o ângulo, e
   // andar de dentro para fora pararia em lagos e baixios do interior)
@@ -233,6 +269,7 @@ function colorFn(def, origin) {
 }
 
 export function buildSeaIsland({ scene, physics, def }) {
+  const before = new Set(scene.children); // para esconder a ilha inteira (Ilha Oculta)
   const half = def.R + 32;
   const spacing = 2.4;
   const height = seaHeight(def);
@@ -507,13 +544,14 @@ export function buildSeaIsland({ scene, physics, def }) {
       break;
     }
     case 'granito':
+    case 'fortaleza':
     case 'forte': {
       // muralha quadrada com portão voltado para a praia de chegada, torres nos cantos
       // (a Cidadela de Granito tem muralhas em camadas: def.walls)
       const g = spots.landing;
       const gateSide = Math.abs(g.x) > Math.abs(g.z) ? (g.x > 0 ? 'x+' : 'x-') : g.z > 0 ? 'z+' : 'z-';
       const base = ground(0, 0);
-      const style = def.biome === 'granito' ? 'pedraLisa' : 'muro';
+      const style = def.biome === 'granito' ? 'pedraLisa' : def.biome === 'fortaleza' ? 'rochaEscura' : 'muro';
       const walls = def.walls ?? [22];
       for (const [wi, S] of walls.entries()) for (const side of ['x+', 'x-', 'z+', 'z-']) {
         for (let k = -S; k <= S; k += 4) {
@@ -530,6 +568,17 @@ export function buildSeaIsland({ scene, physics, def }) {
       }
       const q = W(-8, -8);
       sb.block({ x: q.x, y: base, z: q.z, w: 8, h: 4.5, d: 5, style }); // quartel
+      if (def.biome === 'fortaleza') {
+        // canhões gigantes nas quinas da muralha de dentro, apontando para fora
+        const S = walls[0];
+        for (const [ox, oz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          const p = W(ox * S, oz * S);
+          const yaw = Math.atan2(ox, oz);
+          sb.block({ x: p.x, y: base + 9.5, z: p.z, w: 3, h: 1.2, d: 3, style: 'madeira' });
+          sb.block({ x: p.x + Math.sin(yaw) * 2, y: base + 10.7, z: p.z + Math.cos(yaw) * 2, w: 1.6, h: 1.6, d: 6, rotY: yaw, style: 'rochaEscura' });
+        }
+        extra = { barrage: 'fortaleza' };
+      }
       if (def.biome === 'granito') {
         // torre de menagem no centro e catapultas nos cantos de dentro
         const k = W(0, 6);
@@ -595,6 +644,50 @@ export function buildSeaIsland({ scene, physics, def }) {
         sb.block({ x: p.x, y: base + 3.6, z: p.z, w: 0.6, h: 0.6, d: 0.6, style: 'lanterna' });
       }
       scatter(trees.palm, 10, R - 14, R - 6, 1.2, 6);
+      if (def.castle) {
+        // castelo da Capital, do lado oposto ao cais: muralha, quatro torres e torre de menagem
+        const a = Math.atan2(spots.landing.z, spots.landing.x) + Math.PI;
+        const cx = Math.cos(a) * R * 0.72;
+        const cz = Math.sin(a) * R * 0.72;
+        const cy = ground(cx, cz);
+        const S = 9;
+        for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          for (let k = -S; k <= S; k += 3) {
+            if (ox === 0 && oz === 1 && Math.abs(k) < 3) continue; // portão
+            const p = W(cx + (ox ? ox * S : k), cz + (oz ? oz * S : k));
+            sb.block({ x: p.x, y: cy - 0.5, z: p.z, w: 3, h: 7, d: 3, style: 'muro' });
+          }
+        }
+        for (const [ox, oz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          const p = W(cx + ox * S, cz + oz * S);
+          sb.block({ x: p.x, y: cy - 0.5, z: p.z, w: 4, h: 12, d: 4, style: 'muro' });
+          sb.block({ x: p.x, y: cy + 11.5, z: p.z, w: 4.8, h: 2.2, d: 4.8, style: 'telhadoAzul' });
+        }
+        const k = W(cx, cz);
+        sb.block({ x: k.x, y: cy - 0.5, z: k.z, w: 7, h: 18, d: 7, style: 'muro' });
+        sb.block({ x: k.x, y: cy + 17.5, z: k.z, w: 8, h: 3, d: 8, style: 'telhadoAzul' });
+        sb.block({ x: k.x, y: cy + 20.5, z: k.z, w: 0.3, h: 4, d: 0.3, style: 'madeira' });
+        sb.block({ x: k.x + 0.9, y: cy + 23.5, z: k.z, w: 1.6, h: 1, d: 0.1, style: 'lonaOuro' });
+      }
+      if (def.docks) {
+        // docas militares: três píeres compridos entrando no mar ao lado do cais de chegada
+        const a = Math.atan2(spots.landing.z, spots.landing.x);
+        for (const da of [-0.55, 0.55, 0.85]) {
+          const b = a + da;
+          for (let k = 0; k < 6; k++) {
+            const d = R - 8 + k * 3.2;
+            const p = W(Math.cos(b) * d, Math.sin(b) * d);
+            sb.block({ x: p.x, y: 0.2, z: p.z, w: 3, h: 0.5, d: 3.3, rotY: Math.PI / 2 - b, style: 'madeira' });
+            if (k % 2 === 0) sb.block({ x: p.x, y: -4, z: p.z, w: 0.5, h: 4.6, d: 0.5, style: 'madeira' });
+          }
+        }
+      }
+      if (def.enigmaHint) {
+        // placa com a dica do enigma da Ilha Oculta
+        const a = Math.atan2(spots.landing.z, spots.landing.x) - 0.25;
+        const p = W(Math.cos(a) * (R - 22), Math.sin(a) * (R - 22));
+        sb.sign({ x: p.x, y: ground(Math.cos(a) * (R - 22), Math.sin(a) * (R - 22)), z: p.z, rotY: a + Math.PI / 2, title: 'A Ilha Oculta', hint: ENIGMA.hint });
+      }
       if (def.shipyard) {
         // estaleiro: cascos de caravela em construção sobre berços, perto da praia de chegada
         const a = Math.atan2(spots.landing.z, spots.landing.x) + 0.7;
@@ -608,6 +701,142 @@ export function buildSeaIsland({ scene, physics, def }) {
           sb.block({ x: p.x, y: y + 2.8, z: p.z, w: 0.4, h: 7, d: 0.4, style: 'madeira' });
         }
       }
+      break;
+    }
+    case 'santuario': {
+      // ninhos de dragão aos pés das agulhas de pedra, pontes de pedra entre elas
+      const tops = [];
+      for (let k = 0; k < 5; k++) {
+        const a = k * 1.256 + def.seed;
+        const lx = Math.cos(a) * R * 0.45;
+        const lz = Math.sin(a) * R * 0.45;
+        tops.push({ lx, lz, y: ground(lx, lz) });
+        // ninho: anel de pedras escuras e três ovos que brilham
+        const nx = lx * 0.72;
+        const nz = lz * 0.72;
+        const ny = ground(nx, nz);
+        const n = W(nx, nz);
+        for (let j = 0; j < 7; j++) sb.block({ x: n.x + Math.cos(j * 0.9) * 2.4, y: ny - 0.3, z: n.z + Math.sin(j * 0.9) * 2.4, w: 1.2, h: 0.8, d: 1.2, rotY: j, style: 'rochaEscura' });
+        for (let j = 0; j < 3; j++) sb.block({ x: n.x + Math.cos(j * 2.1) * 0.8, y: ny, z: n.z + Math.sin(j * 2.1) * 0.8, w: 0.7, h: 1, d: 0.7, rotY: j, style: j === 1 ? 'lava' : 'reboco' });
+      }
+      for (let k = 0; k < 5; k++) {
+        const a = tops[k];
+        const b = tops[(k + 1) % 5];
+        const mx = (a.lx + b.lx) / 2;
+        const mz = (a.lz + b.lz) / 2;
+        const p = W(mx, mz);
+        const len = Math.hypot(b.lx - a.lx, b.lz - a.lz) - 6;
+        sb.block({ x: p.x, y: Math.min(a.y, b.y) - 2.5, z: p.z, w: 2.4, h: 0.8, d: len, rotY: Math.atan2(b.lx - a.lx, b.lz - a.lz), style: 'pedraLisa' });
+      }
+      scatter(trees.pine, 14, 10, R - 8, 1.5, 7);
+      extra = { breath: { ...W(0, 0), R } };
+      break;
+    }
+    case 'tempestade': {
+      // para-raios gigantes (o raio prefere eles) e árvores secas
+      const rods = [];
+      for (let k = 0; k < 6; k++) {
+        const a = k * 1.047 + 0.3;
+        const d = k % 2 ? R * 0.35 : R * 0.6;
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        if (!clear(lx, lz, 6)) continue;
+        const p = W(lx, lz);
+        const y = ground(lx, lz);
+        sb.block({ x: p.x, y: y - 0.3, z: p.z, w: 1.6, h: 1.2, d: 1.6, style: 'pedra' });
+        sb.block({ x: p.x, y: y + 0.8, z: p.z, w: 0.5, h: 13, d: 0.5, style: 'rochaEscura' });
+        sb.block({ x: p.x, y: y + 13.6, z: p.z, w: 0.9, h: 0.9, d: 0.9, style: 'lanterna' });
+        rods.push({ x: p.x, y: y + 14, z: p.z, gy: y });
+      }
+      scatter(trees.pine, 12, 10, R - 8, 1.4, 7);
+      extra = { rods };
+      break;
+    }
+    case 'ossos': {
+      // costelas gigantes em arco, um crânio e cascos de navios naufragados
+      const a0 = def.campAngle + 1.6;
+      for (let k = 0; k < 6; k++) {
+        const t = -12 + k * 5;
+        const cx = Math.cos(a0) * t;
+        const cz = Math.sin(a0) * t;
+        const side = { x: -Math.sin(a0), z: Math.cos(a0) };
+        const h = 9 - Math.abs(k - 2.5) * 1.2;
+        for (const s of [-1, 1]) {
+          for (let j = 0; j < 4; j++) {
+            const off = 4.5 - j * j * 0.28;
+            const lx = cx + side.x * s * off;
+            const lz = cz + side.z * s * off;
+            const p = W(lx, lz);
+            sb.block({ x: p.x, y: ground(cx, cz) - 0.4 + j * (h / 4), z: p.z, w: 1.1, h: h / 4 + 0.3, d: 1.1, rotY: a0, style: 'reboco' });
+          }
+        }
+        const top = W(cx, cz);
+        sb.block({ x: top.x, y: ground(cx, cz) - 0.2 + h, z: top.z, w: 1.2, h: 1, d: 3.6, rotY: Math.PI / 2 - a0, style: 'reboco' });
+      }
+      const sk = W(Math.cos(a0) * 20, Math.sin(a0) * 20);
+      const sy = ground(Math.cos(a0) * 20, Math.sin(a0) * 20);
+      sb.block({ x: sk.x, y: sy - 0.3, z: sk.z, w: 6, h: 4.5, d: 7, rotY: a0, style: 'reboco' });
+      sb.block({ x: sk.x, y: sy + 1.5, z: sk.z, w: 6.2, h: 1.2, d: 2, rotY: a0, style: 'rochaEscura' });
+      for (let k = 0; k < 3; k++) {
+        const a = a0 + 2 + k * 1.3;
+        const lx = Math.cos(a) * R * 0.62;
+        const lz = Math.sin(a) * R * 0.62;
+        const p = W(lx, lz);
+        sb.block({ x: p.x, y: ground(lx, lz) - 1.2, z: p.z, w: 4, h: 3, d: 12, rotY: a, style: 'madeira' });
+        sb.block({ x: p.x, y: ground(lx, lz) + 1.2, z: p.z, w: 0.5, h: 6, d: 0.5, rotY: a, style: 'madeira' });
+      }
+      scatter(trees.palm, 8, 8, R - 10, 1.1, 7);
+      extra = { barrage: 'ossos' };
+      break;
+    }
+    case 'aurora': {
+      // colunas colossais em anel e uma escada de plataformas em espiral até o santuário no alto
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        const lx = Math.cos(a) * R * 0.55;
+        const lz = Math.sin(a) * R * 0.55;
+        if (!clear(lx, lz, 6)) continue;
+        const p = W(lx, lz);
+        const y = ground(lx, lz);
+        sb.block({ x: p.x, y: y - 0.5, z: p.z, w: 3, h: 18 + (k % 3) * 3, d: 3, style: 'pedraLisa' });
+        sb.block({ x: p.x, y: y + 17.5 + (k % 3) * 3, z: p.z, w: 3.8, h: 1, d: 3.8, style: 'lanterna' });
+      }
+      const base = ground(0, 0);
+      let shrine = null;
+      for (let k = 0; k < 14; k++) {
+        const a = k * 0.62;
+        const d = 9 - k * 0.3;
+        const lx = Math.cos(a) * d;
+        const lz = Math.sin(a) * d;
+        const p = W(lx, lz);
+        const y = base + 2.2 + k * 2.4;
+        sb.block({ x: p.x, y, z: p.z, w: 3.4, h: 0.8, d: 3.4, rotY: a, style: k % 2 ? 'pedraLisa' : 'arenito' });
+      }
+      const top = base + 2.2 + 14 * 2.4 + 1;
+      const c = W(0, 0);
+      sb.block({ x: c.x, y: top, z: c.z, w: 6, h: 0.8, d: 6, style: 'pedraLisa' });
+      sb.block({ x: c.x, y: top + 0.8, z: c.z, w: 1.4, h: 1.4, d: 1.4, style: 'lanterna' });
+      for (const [ox, oz] of [[2.5, 2.5], [2.5, -2.5], [-2.5, 2.5], [-2.5, -2.5]]) sb.block({ x: c.x + ox, y: top + 0.8, z: c.z + oz, w: 0.5, h: 4, d: 0.5, style: 'arenito' });
+      sb.block({ x: c.x, y: top + 4.8, z: c.z, w: 6.4, h: 0.5, d: 6.4, style: 'lonaOuro' });
+      shrine = { x: c.x, y: top + 0.8, z: c.z };
+      scatter(trees.palm, 10, R - 14, R - 6, 1.2, 6);
+      extra = { shrine };
+      break;
+    }
+    case 'oculta': {
+      // monólitos de obsidiana com runas que brilham, em anel em volta do pico
+      for (let k = 0; k < 9; k++) {
+        const a = (k / 9) * Math.PI * 2;
+        const lx = Math.cos(a) * R * 0.62;
+        const lz = Math.sin(a) * R * 0.62;
+        if (!clear(lx, lz, 6)) continue;
+        const p = W(lx, lz);
+        const y = ground(lx, lz);
+        sb.block({ x: p.x, y: y - 0.5, z: p.z, w: 2.2, h: 9 + (k % 3) * 2, d: 1.4, rotY: a, style: 'rochaEscura' });
+        sb.block({ x: p.x, y: y + 4, z: p.z, w: 2.3, h: 0.6, d: 1.5, rotY: a, style: 'lanterna' });
+      }
+      scatter(trees.pine, 10, 10, R - 10, 1.4, 7);
+      extra = { hidden: true };
       break;
     }
     case 'vulcao': {
@@ -664,6 +893,17 @@ export function buildSeaIsland({ scene, physics, def }) {
     }
     default:
   }
+  // pedra rúnica do enigma da Ilha Oculta (Terceiro Mar)
+  if (def.runa !== undefined) {
+    const l = spots.landing;
+    const a = Math.atan2(l.z, l.x) + 0.35;
+    const lx = Math.cos(a) * (R - 18);
+    const lz = Math.sin(a) * (R - 18);
+    const p = W(lx, lz);
+    const y = ground(lx, lz);
+    sb.block({ x: p.x, y: y - 0.3, z: p.z, w: 1.8, h: 3.2, d: 1.2, rotY: a, style: 'rochaEscura' });
+    extra = { ...(extra ?? {}), rune: { x: p.x, y: y + 2.9, z: p.z, gy: y, runa: def.runa } };
+  }
   // placa de chegada (nome, faixa de nível e chefe)
   // ao lado do caminho, para não ficar no lugar onde o jogador desce
   const g = spots.landing;
@@ -688,6 +928,7 @@ export function buildSeaIsland({ scene, physics, def }) {
   const toWorld = (p) => ({ ...W(p.x, p.z) });
   return {
     def, field, localField, signs: sb.signs, lava, lavas, extra,
+    objects: scene.children.filter((o) => !before.has(o)),
     enemies: spots.enemies.map(toWorld), boss: toWorld(spots.boss), landing: { ...toWorld(spots.landing), yaw: spots.landing.yaw },
   };
 }

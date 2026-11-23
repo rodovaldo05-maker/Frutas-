@@ -23,7 +23,7 @@ const LOOKS = [
   { dark: '#3a2a10', wood: '#6a4a20', sail: '#e8c040', stripe: '#8a1a1a', flag: '#ffd040' },
   { dark: '#e8e8f0', wood: '#9fb8d0', sail: '#ffffff', stripe: '#ffe45a', flag: '#ffe45a' },
 ];
-const NAMES = ['Garra de Coral', 'Sombra do Bosque', 'Vela de Areia', 'Lâmina da Maré', 'Casco de Gelo', 'Lanterna Negra', 'Brasa Errante', 'Estandarte Partido', 'Asa do Vento', 'Maré Traiçoeira', 'Cipó Negro', 'Punho de Granito', 'Presa do Inverno', 'Vela do Poente', 'Mortalha Noturna', 'Brasa de Obsidiana', 'Grilhão do Abismo'];
+const NAMES = ['Garra de Coral', 'Sombra do Bosque', 'Vela de Areia', 'Lâmina da Maré', 'Casco de Gelo', 'Lanterna Negra', 'Brasa Errante', 'Estandarte Partido', 'Asa do Vento', 'Maré Traiçoeira', 'Cipó Negro', 'Punho de Granito', 'Presa do Inverno', 'Vela do Poente', 'Mortalha Noturna', 'Brasa de Obsidiana', 'Grilhão do Abismo', 'Estandarte Imperial', 'Escama Rubra', 'Trovão Errante', 'Bala do Horizonte', 'Costela Negra', 'Vela da Aurora', 'Sombra Esquecida'];
 
 // Um navio por ilha do Primeiro Mar (nível no primeiro terço da faixa) e a Chalupa Ferrugem
 // entre a Ilha de Treino e o Porto das Origens (nível 12)

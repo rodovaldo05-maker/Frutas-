@@ -161,6 +161,55 @@ acima é o alvo final.
 Eventos raros do Terceiro Mar: Lua de Sangue (inimigos fortalecidos e loot raro),
 Navio Fantasma (navio errante com tesouro) e Maré Celeste (ilhas flutuantes temporárias).
 
+#### Situação no jogo (atualização 28): Terceiro Mar
+
+![Terceiro Mar](terceiro-mar-v28.png)
+
+Chegada pelo Portão do Abismo (depois do Carcereiro Sem-Rosto); a carta mostra só o Terceiro Mar.
+
+| Ilha | Centro (x, z) | Raio | O que tem |
+|---|---|---|---|
+| Capital dos Mil Mastros | (0, −4620) | 80 | Cidade grande, **castelo** (muralha, 4 torres, torre de menagem com bandeira), **docas militares** (3 píeres), cais e o **Barqueiro dos Mil Mastros** (leva ao Cais das Correntes), placa com a dica do enigma |
+| Santuário das Escamas | (−820, −4720) | 72 | Cinco agulhas de pedra, **ninhos** com ovos, **pontes de pedra** entre as agulhas, pedra rúnica 1 |
+| Ilha da Tempestade Eterna | (840, −4740) | 68 | Neblina escura, **seis para-raios gigantes**, raios o tempo todo, pedra rúnica 2 |
+| Fortaleza do Horizonte | (−780, −5320) | 72 | Duas muralhas escuras, **canhões gigantes** nas quinas, chefe no pátio |
+| Mar dos Ossos | (820, −5340) | 78 | Ilhotas separadas por **três canais de água**, **costelas gigantes** em arco, crânio e cascos naufragados |
+| Templo da Aurora | (0, −5560) | 70 | Dez colunas colossais, **escada de 14 plataformas em espiral** até o santuário no alto, pedra rúnica 3 |
+| Ilha Oculta | (0, −6180) | 62 | Monólitos de obsidiana com runas; **escondida** até o enigma |
+
+- **Sopro Ancestral (Santuário):** a cada 24 s (aviso 4 s antes) três faixas cruzam a ilha passando
+  perto do jogador, marcadas 1,4 s antes de pegar fogo: 9% da vida e queimadura.
+- **Tempestade Eterna:** um raio a cada ~2,8 s, marcado 1 s antes no lugar do jogador (7% da vida e
+  Choque). A até 8 m de um para-raios o raio cai no para-raios, sem dano. É raio natural: conta
+  para o Batismo do Trovão da Tormenta e para o bônus de raio da meditação, e a imunidade da
+  Tormenta vale.
+- **Canhonada (Fortaleza):** a cada 22 s (aviso 4 s), dez balas marcadas em volta do jogador, a
+  primeira em cima dele: 7% da vida e queimadura. **Gêiseres (Mar dos Ossos):** a cada 18 s, oito
+  gêiseres marcados: 6% e Molhado.
+- **Prova da Aurora:** chegar ao santuário no alto da escada em espiral dá, uma vez por salvo,
+  40.000 moedas, 3 chaves da roleta, Cristal e Pérolas, um item e 12.000 de experiência.
+- **Enigma da Ilha Oculta:** a placa da Capital diz "Primeiro a escama, depois o trovão, por fim a
+  aurora". Tocar as pedras rúnicas do Santuário, da Tempestade e do Templo nessa ordem revela a
+  ilha (no mundo e na carta). Errar a ordem recomeça. Antes disso uma névoa encantada empurra o
+  bote de volta. O progresso fica salvo.
+- **Chefes:** Almirante Mil-Velas (1600), Dragão Ancião (1725, corpo 2,1×), Senhor dos Trovões
+  (1850), Marechal do Horizonte (1975), Leviatã Ósseo (2100, corpo 2,4×, numa ilhota — não nada),
+  Avatar da Aurora (2250) e **Soberano Esquecido** (2400, chefe mundial: corpo 2,6× e o triplo da
+  vida). Cada ilha tem um navio corsário.
+- **Lua de Sangue:** algumas noites (30%, sorteio fixo por dia) no Terceiro Mar: céu e neblina
+  vermelhos, inimigos do Terceiro Mar batem 25% mais forte e dão 50% mais experiência e moedas,
+  com 25% de chance de uma Escama Abissal.
+- **Navio Fantasma:** no mar aberto do Terceiro Mar (chance ~1 a cada 4 min, o dobro à noite):
+  navio verde espectral que circula o bote e solta chamas fantasmas marcadas na água (5% do
+  casco cada). Afundar com o canhão: 30.000 moedas, 2 chaves, Escamas e Pólvora, um item,
+  8.000 de experiência e 25% de chance de uma fruta. Some depois de 4 min.
+- **Maré Celeste:** de dia, no mar aberto (~1 a cada 6 min): sete ilhotas flutuantes sobem do mar
+  formando uma escada até um baú (15.000 moedas, chave, Cristal e Pérolas, item e 4.000 de
+  experiência). Somem depois de 2,5 min.
+- **Clima do Terceiro Mar:** 45% sol, 30% chuva, 25% tempestade. **Bestas:** tubarão (1700) e
+  serpente (1800) de dia; lanterna (1900) e serpente (2000) à noite. Se o bote afundar, o
+  Barqueiro traz outro até a Capital.
+
 ## 3. Terrenos
 
 Base: o terreno voxel quadriculado do HTML original. A estética se mantém; a geração e o

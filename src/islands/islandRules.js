@@ -112,5 +112,62 @@ export function normalizeIslands(s) {
   return {
     ruinas: { solved: !!o.ruinas?.solved, chest: !!o.ruinas?.chest },
     masmorra: { keys: Number.isFinite(k) ? Math.max(0, Math.min(DUNGEON.keys.length, Math.floor(k))) : 0 },
+    // Terceiro Mar (atualização 28): prova da Aurora e enigma da Ilha Oculta
+    aurora: { done: !!o.aurora?.done },
+    oculta: { step: Math.max(0, Math.min(3, Math.floor(Number(o.oculta?.step)) || 0)), revealed: !!o.oculta?.revealed },
   };
 }
+
+// ===== Terceiro Mar (atualização 28) =====
+// Santuário das Escamas: o Sopro Ancestral cruza a ilha em faixas marcadas no chão
+export const BREATH = { cycle: 24, warn: 4, lanes: 3, telegraph: 1.4, halfWidth: 2.2, damage: 0.09 };
+export const breathPhase = (t) => {
+  const k = t % BREATH.cycle;
+  return { fire: k < 0.05 * BREATH.cycle && k >= 0, warn: k >= BREATH.cycle - BREATH.warn };
+};
+// faixas que passam perto do jogador (ângulos variados); [início, direção, comprimento]
+export function breathLanes(center, R, player, rand) {
+  return Array.from({ length: BREATH.lanes }, (_, i) => {
+    const a = rand() * Math.PI * 2;
+    const dir = { x: Math.cos(a), z: Math.sin(a) };
+    const off = (i - 1) * 3.2 + (rand() - 0.5) * 2;
+    const through = { x: player.x - dir.z * off, z: player.z + dir.x * off };
+    const len = R * 2;
+    return { start: { x: through.x - dir.x * R, z: through.z - dir.z * R }, dir, len };
+  });
+}
+// distância de um ponto até a faixa (no plano)
+export function inLane(lane, p, halfWidth = BREATH.halfWidth) {
+  const rx = p.x - lane.start.x;
+  const rz = p.z - lane.start.z;
+  const along = rx * lane.dir.x + rz * lane.dir.z;
+  if (along < 0 || along > lane.len) return false;
+  const side = Math.abs(rx * lane.dir.z - rz * lane.dir.x);
+  return side <= halfWidth;
+}
+
+// Tempestade Eterna: raios o tempo todo; perto de um para-raios o raio vai para o para-raios
+export const ROD_STORM = { every: 2.8, telegraph: 1.0, radius: 2.6, rodRange: 8, damage: 0.07 };
+export const rodNear = (rods, p) => rods.find((r) => Math.hypot(p.x - r.x, p.z - r.z) <= ROD_STORM.rodRange) ?? null;
+
+// Fortaleza do Horizonte (canhonada) e Mar dos Ossos (gêiseres): saraivada marcada em volta
+// do jogador, em ciclo
+export const BARRAGE = {
+  fortaleza: { cycle: 22, warn: 4, shots: 10, spread: 9, telegraph: 1.2, radius: 2.6, damage: 0.07, color: '#3a3a40', label: 'Os canhões do Horizonte miram em você!', effects: { queimando: { duration: 2, stacks: 1 } } },
+  ossos: { cycle: 18, warn: 3, shots: 8, spread: 8, telegraph: 1.1, radius: 2.4, damage: 0.06, color: '#dff6ff', label: 'O mar dos ossos ferve… gêiseres!', effects: { molhado: { duration: 5 } } },
+};
+export function barragePhase(cfg, t) {
+  const k = t % cfg.cycle;
+  return { fire: k < 0.2, warn: k >= cfg.cycle - cfg.warn };
+}
+export function barrageTargets(cfg, player, rand) {
+  return Array.from({ length: cfg.shots }, (_, i) => {
+    const a = rand() * Math.PI * 2;
+    const d = i === 0 ? 0 : rand() * cfg.spread; // o primeiro cai em cima do jogador
+    return { x: player.x + Math.cos(a) * d, z: player.z + Math.sin(a) * d, at: i * 0.22 };
+  });
+}
+
+// Templo da Aurora: prova de mobilidade (subir até o santuário do topo), uma vez por salvo
+export const AURORA = { reach: 3.5, coins: 40000, xp: 12000, keys: 3 };
+export const auroraReached = (shrine, p) => Math.hypot(p.x - shrine.x, p.z - shrine.z) <= AURORA.reach && p.y >= shrine.y - 1.5;

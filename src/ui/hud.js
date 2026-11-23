@@ -174,7 +174,7 @@ export class Hud {
     if (this.timer > 0) return;
     this.timer = 0.1;
     el.healthText.textContent = `Vida ${Math.ceil(ctl.health)} / ${ctl.maxHealth}`;
-    el.staminaText.textContent = `Fôlego ${Math.round(ctl.stamina.value)} / ${Math.round(ctl.stamina.max)}`;
+    el.staminaText.textContent = `${Math.round(ctl.stamina.value)}/${Math.round(ctl.stamina.max)}`; // ícone de raio = Fôlego
     el.state.textContent = stateLabel(ctl);
 
     // placa mais próxima: avisa o nome do lugar uma vez ao chegar perto

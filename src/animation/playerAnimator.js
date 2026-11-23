@@ -159,6 +159,16 @@ export class PlayerAnimator {
       this.updateBlob(ctl, root);
       return;
     }
+    // treino com pesos e descanso (atualização 24)
+    if (this.workout || this.rest) {
+      this.player.setGlider(0, !!ctl.unlocks?.glide);
+      if (this.workout) this.poseWorkout(t, this.workout, root);
+      else this.poseRest(t, this.rest);
+      this.balance.reset();
+      this.updateFace(dt, ctl);
+      this.updateBlob(ctl, root);
+      return;
+    }
     this.player.setGlider(this.glide, !!ctl.unlocks?.glide);
     this.player.glider.group.rotation.z = this.bank;
 
@@ -235,6 +245,66 @@ export class PlayerAnimator {
     this.updateFace(dt, ctl);
     this.updateSounds(ctl, speed);
     this.updateBlob(ctl, root);
+  }
+
+  // ===== Treino (atualização 24) =====
+  // Flexão: o corpo inteiro gira em torno dos pés até a prancha; coluna e quadril alinhados;
+  // as mãos ficam sob os ombros, no chão, e os cotovelos dobram conforme o peito desce.
+  // Agachamento: pés fixos, quadril e joelhos dobram, tronco inclina e braços vão à frente.
+  poseWorkout(t, w, root) {
+    const body = this.body;
+    const j = body.joints;
+    const e = w.enter * w.enter * (3 - 2 * w.enter);
+    const d = w.depth;
+    motion.apply(THREE, body, this.data, { id: 'idle', t, clock: t, phase: 0, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
+    if (w.kind === 'flexao') {
+      const theta = lerp(0.47, 0.2, d); // ângulo do corpo acima do chão (alto em cima, baixo embaixo)
+      const tilt = (Math.PI / 2 - theta) * e;
+      body.root.rotation.set(tilt, body.root.rotation.y, 0, 'YXZ');
+      // corpo reto como uma tábua, cabeça olhando à frente
+      j.cintura.rotation.x *= 1 - e;
+      j.tronco.rotation.x *= 1 - e;
+      j.cabeca.rotation.x = lerp(j.cabeca.rotation.x, -0.65, e);
+      body.root.updateMatrixWorld(true);
+      const ground = this.groundAt(root.x, root.z, root.y + 1) ?? root.y;
+      for (const [side, sign] of SIDES) {
+        const shoulder = j['braco_' + side].getWorldPosition(V(0, 0, 0));
+        const hand = j['mao_' + side].getWorldPosition(V(0, 0, 0));
+        const target = V(shoulder.x, ground + 0.16, shoulder.z).lerp(hand, 1 - e);
+        this.armIK(side, body.root.worldToLocal(target), V(sign * 1.5, 1.6, -0.2), -0.6 * e);
+      }
+    } else {
+      const k = d * e;
+      j.tronco.rotation.x += 0.5 * k;
+      j.cabeca.rotation.x -= 0.4 * k;
+      for (const [side, sign] of SIDES) {
+        j['braco_' + side].rotation.x = lerp(j['braco_' + side].rotation.x, -1.45, e * (0.55 + 0.45 * d));
+        j['braco_' + side].rotation.z = lerp(j['braco_' + side].rotation.z, sign * 0.12, e);
+        j['antebraco_' + side].rotation.x = lerp(j['antebraco_' + side].rotation.x, -0.2, e);
+      }
+      this.lowerPelvis(1.1 * k);
+    }
+  }
+
+  // Descanso: senta no chão com os joelhos para cima e as mãos sobre eles, respirando
+  poseRest(t, r) {
+    const body = this.body;
+    const j = body.joints;
+    const e = r.enter * r.enter * (3 - 2 * r.enter);
+    motion.apply(THREE, body, this.data, { id: 'idle', t, clock: t, phase: 0, gait: 0, runBlend: 0, swimBlend: 0, air: 0, landing: 0 });
+    j.cintura.position.y -= 1.22 * e;
+    j.tronco.rotation.x += (0.12 + 0.03 * Math.sin(t * 1.6)) * e;
+    body.root.updateMatrixWorld(true);
+    for (const [side, sign] of SIDES) {
+      const ankle = body.root.worldToLocal(j['pe_' + side].getWorldPosition(V(0, 0, 0)));
+      this.legIK(side, ankle.lerp(V(sign * 0.42, 0.22, 1.05), e), 0);
+    }
+    body.root.updateMatrixWorld(true);
+    for (const [side, sign] of SIDES) {
+      const knee = body.root.worldToLocal(j['canela_' + side].getWorldPosition(V(0, 0, 0)));
+      const wrist = body.root.worldToLocal(j['mao_' + side].getWorldPosition(V(0, 0, 0)));
+      this.armIK(side, wrist.lerp(knee.add(V(0, 0.15, 0.1)), e), V(sign * 1.5, 1.6, -0.4), 0);
+    }
   }
 
   // ===== Poses =====

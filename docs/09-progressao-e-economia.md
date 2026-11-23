@@ -124,6 +124,42 @@ de cada fruta chegam com o combate.
 
 Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `tests/mastery.test.js`.
 
+## 3.10 Treinamento físico com pesos (atualização 24; Prompt Mestre, seções 8 e 9)
+
+- **Onde.** Slot 4 da barra de equipar (TREINAMENTO, tecla 4). Abas: Físico, Estatísticas e
+  Descanso (Meditação e os Haki entram na atualização 25).
+- **Flexões e agachamentos.** Cada série tem exatamente 10 repetições; 1, 2, 3, 5, 10 ou
+  outro número de séries (até 50). Cada repetição precisa de um toque em Repetir (ou ataque /
+  Espaço) e da animação completa: na flexão o corpo vira prancha, as mãos ficam no chão sob os
+  ombros e os cotovelos dobram até o peito descer; no agachamento os pés ficam fixos, quadril
+  e joelhos dobram e os braços vão à frente. Toques durante a repetição são ignorados (sem
+  repetição automática). Descanso de 8 s entre séries. Dá para pausar, reduzir a carga ou
+  interromper; levar um golpe interrompe.
+- **Cargas.** Iniciante 5 kg, Aprendiz 10, Intermediário 20, Avançado 40, Especialista 80,
+  Mestre 160, Lendário 320, Sobre-humano 640, Titânico 1.280, Transcendente 2.560. Liberam
+  pela média de Força e Constituição (1, 5, 10, 20, 30, 45, 60, 75, 90, 100); liberar não
+  garante sustentar: acima de 1,5× a capacidade atual a carga não começa. Cargas menores
+  sempre podem ser usadas. Regras de jogo, não biomecânica real.
+- **Pesos 3D.** Pesos de pulso sempre; caneleiras a partir de 10 kg; colete a partir de 20 kg;
+  mochila de placas a partir de 40 kg; ombreiras a partir de 160 kg; metal mais nobre (e com
+  brilho a partir de 640 kg) conforme a carga. Presos às juntas, acompanham a animação.
+- **Fadiga e XP.** Cada repetição cansa mais com carga pesada e deixa a próxima mais lenta;
+  exausto, só depois de descansar. XP por repetição válida = carga relativa à capacidade ×
+  fadiga, com limite suave por sessão e por minuto. Flexão: Constituição, Força, Resistência
+  Física, Defesa e Fôlego. Agachamento: Constituição, Impulsão, Agilidade, Resistência e
+  Fôlego. Série completa: Fôlego (condicionamento). Nunca mexe na maestria da fruta.
+- **Descanso.** Sentado, recupera vida (mais rápido com Recuperação). A Recuperação só sobe
+  havendo o que recuperar, no máximo 30 por descanso; mexer-se ou levar dano levanta.
+- **Atributos novos por ação.** Constituição (treino com pesos; até +20% de vida),
+  Velocidade (correr rápido de verdade, saindo do lugar; até +10% de corrida), Impulsão
+  (agachamentos e saltos que levam a outro lugar; até +10% de salto), Precisão (acertar
+  inimigos em movimento; até +5% de dano corpo a corpo) e Recuperação (descanso).
+- **Correr é o padrão.** O botão Correr saiu da tela; correr gasta pouco fôlego (3/s) e, sem
+  fôlego, o personagem anda. Inclinar pouco o analógico anda; R alterna caminhar/correr no PC.
+
+Código: `src/progression/workout.js`, `src/ui/trainingUi.js`, `src/characters/weights.js`;
+poses em `src/animation/playerAnimator.js`; testes em `tests/workout.test.js`.
+
 ## 4. Mochila
 
 | Regra | Valor |

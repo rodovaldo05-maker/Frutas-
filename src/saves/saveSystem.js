@@ -1,5 +1,6 @@
 import { normalizeOutfit } from '../characters/outfits.js';
 import { normalizeWeather } from '../world/weather.js';
+import { normalizeWorkout } from '../progression/workout.js';
 import { newTraining, normalizeTraining } from '../progression/training.js';
 import { newStatus, normalizeStatus, pointsForLevel, STATUS_KEYS } from '../progression/status.js';
 import { normalizeDomain } from '../progression/domain.js';
@@ -182,6 +183,7 @@ export function migrate(save) {
   normalizeOutfit(out); // roupa vestida e roupas compradas (guarda-roupa)
   // clima e bestas marinhas (atualização 19)
   out.weather = normalizeWeather(out.weather);
+  out.workout = normalizeWorkout(out.workout); // treino com pesos (atualização 24)
   out.beasts = out.beasts && typeof out.beasts === 'object' && !Array.isArray(out.beasts)
     ? Object.fromEntries(Object.entries(out.beasts).filter(([, v]) => Number.isFinite(v) && v > 0).map(([k, v]) => [k, Math.floor(v)]))
     : {};

@@ -1,4 +1,4 @@
-// Barra de equipar (1 Fruta · 2 Arma · 3 Estilo · 4 livre · Mochila) e lista de habilidades
+// Barra de equipar (1 Fruta · 2 Arma · 3 Estilo · 4 Treinamento · Mochila) e lista de habilidades
 // do item equipado, à direita: "Usar" · tecla (Z X C V) · nome, com custo de energia,
 // recarga correndo por cima do nome e cadeado com o domínio necessário. Também cuida da
 // barra de Energia do status.
@@ -35,7 +35,7 @@ export class SkillBar {
     fill(this.slots[0], fruit ? { img: fruitThumb, label: fruit.name, color: fruitColor } : { label: 'Fruta', empty: true });
     fill(this.slots[1], weapon ? { icon: 'sword', label: weapon.nome.split(' ').slice(-1)[0], color: weapon.corRaridade } : { label: 'Arma', empty: true });
     fill(this.slots[2], { icon: 'fist', label: styleName });
-    fill(this.slots[3], { label: '', empty: true });
+    fill(this.slots[3], { icon: 'weight', label: 'Treino' }); // Treinamento (atualização 24)
     this.highlight();
   }
 
@@ -82,7 +82,7 @@ export class SkillBar {
     if (!this.energyBox.classList.contains('hidden')) {
       const e = energy.energy;
       this.energyBar.style.transform = `scaleX(${Math.max(0, e / energy.energyMax)})`;
-      const text = `Energia ${Math.floor(e)} / ${energy.energyMax}`;
+      const text = `${Math.floor(e)}/${energy.energyMax}`; // ícone de fruta = Energia
       if (this.energyText.textContent !== text) this.energyText.textContent = text;
     }
     if (!active || !this.rowEls) return;

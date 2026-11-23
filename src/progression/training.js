@@ -67,6 +67,37 @@ export const ATTRS = {
     marcos: { 25: 'Curvas Fechadas', 50: 'Pouso Preciso', 100: 'Senhor do Céu' },
     bonus: (L) => `+${Math.min(20, 2 * steps10(L))}% de velocidade planando · −${Math.min(15, 1.5 * steps10(L)).toLocaleString('pt-BR')}% de queda`,
   },
+  // atualização 24 (Prompt Mestre, seção 9): atributos por ação verificável
+  constituicao: {
+    nome: 'Constituição', icone: 'vital', ativo: true,
+    treino: 'Faça flexões e agachamentos com pesos (menu Treinamento, slot 4).',
+    marcos: { 10: 'Corpo Firme', 25: 'Ossos de Ferro', 50: 'Tronco Sólido', 75: 'Fortaleza', 100: 'Corpo Inquebrável' },
+    bonus: (L) => `+${Math.min(20, 2 * steps10(L))}% de vida máxima`,
+  },
+  velocidade: {
+    nome: 'Velocidade', icone: 'run', ativo: true,
+    treino: 'Corra de verdade por caminhos longos (vaivém curto não conta).',
+    marcos: { 10: 'Passada Longa', 25: 'Arranque', 50: 'Corredor', 75: 'Vento nos Pés', 100: 'Relâmpago' },
+    bonus: (L) => `+${Math.min(10, steps10(L))}% de velocidade de corrida`,
+  },
+  impulsao: {
+    nome: 'Impulsão', icone: 'jump', ativo: true,
+    treino: 'Faça agachamentos com pesos e saltos que levam a outro lugar.',
+    marcos: { 10: 'Mola', 25: 'Salto Alto', 50: 'Pernas de Aço', 75: 'Voo Curto', 100: 'Salto Lendário' },
+    bonus: (L) => `+${Math.min(10, steps10(L))}% de altura de salto`,
+  },
+  precisao: {
+    nome: 'Precisão', icone: 'fist', ativo: true,
+    treino: 'Acerte inimigos em movimento (alvos parados não contam).',
+    marcos: { 10: 'Olho Firme', 25: 'Golpe Certeiro', 50: 'Leitura de Passo', 75: 'Ponto Fraco', 100: 'Precisão Absoluta' },
+    bonus: (L) => `+${Math.min(5, 0.5 * steps10(L)).toLocaleString('pt-BR')}% de dano corpo a corpo`,
+  },
+  recuperacao: {
+    nome: 'Recuperação', icone: 'vital', ativo: true,
+    treino: 'Descanse depois de treinar ou lutar (menu Treinamento → Descanso).',
+    marcos: { 10: 'Fôlego Curto', 25: 'Descanso Eficiente', 50: 'Sono Reparador', 75: 'Regeneração', 100: 'Corpo Renovado' },
+    bonus: (L) => `+${Math.min(30, 3 * steps10(L))}% de recuperação no descanso`,
+  },
 };
 export const ATTR_KEYS = Object.keys(ATTRS);
 
@@ -116,6 +147,12 @@ export function bonuses(t, staminaBase = 100) {
     condDuration: 1 - Math.min(0.2, 0.02 * s('elemental')),
     glideSpeed: 1 + Math.min(0.2, 0.02 * s('voo')),
     glideFall: 1 - Math.min(0.15, 0.015 * s('voo')),
+    // atualização 24
+    healthMult: 1 + Math.min(0.2, 0.02 * s('constituicao')),
+    runSpeed: 1 + Math.min(0.1, 0.01 * s('velocidade')),
+    jumpMult: 1 + Math.min(0.1, 0.01 * s('impulsao')),
+    precision: 1 + Math.min(0.05, 0.005 * s('precisao')),
+    recovery: 1 + Math.min(0.3, 0.03 * s('recuperacao')),
   };
 }
 
@@ -236,6 +273,8 @@ export class TrainingTracker {
       const running = ctl.speed > 4.3;
       const uphill = dy > 0 && horiz > 0 ? Math.min(1, dy / horiz / 0.5) : 0;
       this.acc.folego += m * (running ? 0.04 : 0.02) * (1 + 0.3 * uphill) * spread;
+      // Velocidade (atualização 24): só correndo rápido e saindo do lugar de verdade
+      if (ctl.speed > 6.5) this.acc.velocidade = (this.acc.velocidade || 0) + m * 0.03 * spread;
     } else if ((s === 'swim' || s === 'dive') && m > 0) {
       this.acc.natacao += m * 0.06 * (s === 'dive' ? 1.3 : 1) * spread;
     } else if (s === 'climb' && dy > 0) {
@@ -245,7 +284,7 @@ export class TrainingTracker {
       // Voo: só com deslocamento útil planando (asa-delta conta como item de voo)
       this.acc.voo = (this.acc.voo || 0) + m * 0.05 * spread;
     }
-    for (const attr of ['folego', 'natacao', 'forca', 'agilidade', 'voo']) {
+    for (const attr of ['folego', 'natacao', 'forca', 'agilidade', 'voo', 'velocidade']) {
       if ((this.acc[attr] || 0) >= 1) {
         const chunk = Math.floor(this.acc[attr]);
         this.acc[attr] -= chunk;
@@ -265,12 +304,21 @@ export class TrainingTracker {
         } else this.grant('agilidade', 3, 'transpor', p);
         break;
       case 'wallJump': this.grant('agilidade', 2, 'saltoParede', p); break;
+      // Impulsão (atualização 24): salto que leva a outro lugar (pular parado no mesmo ponto
+      // rende cada vez menos pela repetição)
+      case 'jump':
+        if (!data.water && !data.climb) {
+          this.jumpFrom = { x: p.x, z: p.z, t: this.now };
+        }
+        break;
       case 'grab': if (data.kind === 'wallrun') this.grant('agilidade', 3, 'corridaParede', p); break;
       case 'slide': this.grant('agilidade', 1, 'deslize', p); break;
       case 'roll': this.grant('agilidade', 4, 'rolamento', p); break;
       case 'land':
         // aterrissagem correta de altura (sem dano e sem rolar)
         if (!data.hard && data.fall > 3 * METER) this.grant('agilidade', 2, 'aterrissagem', p);
+        if (this.jumpFrom && this.now - this.jumpFrom.t < 3 && Math.hypot(p.x - this.jumpFrom.x, p.z - this.jumpFrom.z) > 1.5 * METER) this.grant('impulsao', 1, 'salto', p);
+        this.jumpFrom = null;
         break;
       default:
     }

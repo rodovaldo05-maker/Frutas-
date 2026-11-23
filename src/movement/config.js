@@ -94,7 +94,7 @@ export const STAMINA = {
   max: 100, // base; cada ponto de Força soma 1 e de Vitalidade soma 4 (src/progression/status.js)
   regen: 25,
   regenDelay: 1,
-  sprint: 12, // por segundo
+  sprint: 3, // por segundo (atualização 24: correr é o modo padrão, gasto leve; sem fôlego, anda)
   climb: 9,
   climbMoving: 13,
   hang: 3,

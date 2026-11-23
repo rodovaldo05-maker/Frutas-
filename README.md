@@ -128,6 +128,12 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Treino com pesos (atualização 24): o slot 4 da barra abre o TREINAMENTO — flexões e
+agachamentos com pesos 3D (5 a 2.560 kg), séries de 10 repetições (cada uma com um toque e a
+animação completa), descanso, fadiga e os atributos novos Constituição, Velocidade,
+Impulsão, Precisão e Recuperação. Correr virou o padrão (sem botão de correr) e os botões
+secundários da tela (Raça, Forma, Armadura, Percepção) ficam numa fileira sem sobreposição.
+
 Maestria 1–1000 (atualização 23): a maestria de cada fruta vai de 1 a 1000 em seis estágios
 (Iniciação a Despertar), com trilhas de afinidade, técnica e sincronia, multiplicador de
 ambiente (favorável 1,5x a extremo 2,5x, raro até 4x, teto 4x), Batismo do Trovão para a

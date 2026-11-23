@@ -41,7 +41,7 @@
         <div class="dock-sub">
           <div class="bar stamina" id="box-stamina"><i id="bar-stamina"></i><em data-icon="bolt"><span id="txt-stamina">Fôlego 100 / 100</span></em></div>
           <div class="bar energy hidden" id="box-energy"><i id="bar-energy"></i><em data-icon="fruit"><span id="txt-energy">Energia</span></em></div>
-          <div class="bar will hidden" id="box-will"><i id="bar-will"></i><em><span id="txt-will">Vontade</span></em></div>
+          <div class="bar will hidden" id="box-will"><i id="bar-will"></i><em data-icon="shield"><span id="txt-will">Vontade</span></em></div>
         </div>
         <div class="dock-xp">
           <button data-btn id="btn-home" class="mini-btn" data-icon="home" aria-label="Voltar ao início da ilha"></button>
@@ -52,7 +52,7 @@
           <button data-btn class="slot equip" id="eq-1" data-equip="0" aria-label="Fruta"><i>1</i></button>
           <button data-btn class="slot equip" id="eq-2" data-equip="1" aria-label="Arma"><i>2</i></button>
           <button data-btn class="slot equip" id="eq-3" data-equip="2" aria-label="Estilo de luta"><i>3</i></button>
-          <button data-btn class="slot equip" id="eq-4" data-equip="3" aria-label="Espaço livre"><i>4</i></button>
+          <button data-btn class="slot equip" id="eq-4" data-equip="3" aria-label="Treinamento"><i>4</i></button>
           <button data-btn class="slot bag-slot" id="eq-bag" data-icon="bag" aria-label="Mochila"></button>
         </div>
       </div>
@@ -96,20 +96,36 @@
       <pre id="stats" class="stats"></pre>
       <div id="state" class="state">Parado</div>
       <div id="m1-step" class="m1-step" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1/4</b></div>
+      <div id="treino-hud" class="treino-hud hidden">
+        <div class="w-head"><b id="w-title">Flexões</b><span id="w-set">Série 1/1</span></div>
+        <div class="w-count" id="w-reps">0/10</div>
+        <div class="w-state" id="w-state">Toque em Repetir</div>
+        <div class="w-fat"><span>Fadiga</span><div class="bar"><i id="w-fatigue"></i></div></div>
+        <div class="w-attrs" id="w-attrs"></div>
+        <div class="w-btns">
+          <button data-btn data-w="rep" class="btn gold w-rep">Repetir</button>
+          <button data-btn data-w="pause" class="btn" id="w-pause">Pausar</button>
+          <button data-btn data-w="lower" class="btn">− Carga</button>
+          <button data-btn data-w="cancel" class="btn bad">Interromper</button>
+        </div>
+      </div>
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · G Armadura · H Percepção · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · G Armadura · H Percepção · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R caminhar/correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
-        <button data-btn id="btn-sprint" class="act sprint" data-icon="run" aria-label="Correr"></button>
+        <button data-btn id="btn-sprint" class="act sprint hidden" data-icon="run" aria-label="Correr"></button>
         <button data-btn id="btn-crouch" class="act crouch" data-icon="crouch" aria-label="Agachar"></button>
         <button data-btn id="btn-dash" class="act dash" data-icon="dash" aria-label="Esquiva"></button>
         <button data-btn id="btn-jump" class="act jump" data-icon="jump" aria-label="Pular"></button>
         <button data-btn id="btn-block" class="act block" data-icon="shield" aria-label="Defender (segurar)"></button>
-        <button data-btn id="btn-race" class="act race hidden" data-icon="person" aria-label="Habilidade da raça"><span class="cdr"></span></button>
-        <button data-btn id="btn-form" class="act form hidden" aria-label="Forma híbrida"><span>Forma</span></button>
-        <button data-btn id="btn-armor" class="act will-btn armor hidden" aria-label="Vontade de Armadura (liga/desliga)">🛡</button>
-        <button data-btn id="btn-sense" class="act will-btn sense hidden" aria-label="Vontade de Percepção (liga/desliga)">👁</button>
+        <!-- botões secundários numa fileira só, embaixo dos ícones do topo (atualização 24) -->
+        <div class="act-row" id="act-row">
+          <button data-btn id="btn-race" class="act race hidden" data-icon="person" aria-label="Habilidade da raça"><span class="cdr"></span></button>
+          <button data-btn id="btn-form" class="act form hidden" aria-label="Forma híbrida"><span>Forma</span></button>
+          <button data-btn id="btn-armor" class="act will-btn armor hidden" aria-label="Vontade de Armadura (liga/desliga)">🛡</button>
+          <button data-btn id="btn-sense" class="act will-btn sense hidden" aria-label="Vontade de Percepção (liga/desliga)">👁</button>
+        </div>
       </div>
     </div>
 
@@ -414,6 +430,16 @@
           <span id="fg-prof" class="store-restock"></span>
         </div>
         <div id="fg-list" class="forge-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== Treinamento (slot 4; atualização 24) ===== -->
+    <div id="treino" class="overlay hidden">
+      <div class="frame window wide">
+        <div class="frame-title" data-icon="fist">Treinamento</div>
+        <button class="close" data-close="treino" data-icon="close" aria-label="Fechar"></button>
+        <div class="store-top"><div class="top-tabs" id="treino-tabs"><button data-wtab="fisico" class="active">Físico</button><button data-wtab="stats">Estatísticas</button><button data-wtab="descanso">Descanso</button></div></div>
+        <div id="treino-body" class="treino-body"></div>
       </div>
     </div>
 

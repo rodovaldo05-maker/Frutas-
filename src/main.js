@@ -27,6 +27,9 @@ import { ForgeUi } from './ui/forgeUi.js';
 import { AWAKEN, awakenState, trialHit, trialProgress } from './fruits/awakening.js';
 import { FORM_TIME, formMods, formBlock, hasForm, formInfo, nextShape, createFormRig, showForm, disposeFormRig, WINGED, dressHybrid, undressHybrid } from './transformations/forms.js';
 import { Face } from './characters/face.js';
+import { TrainingUi } from './ui/trainingUi.js';
+import { newSession, requestRep, stepSession, repDepth, pauseSession, lowerLoad, repAttrs, normalizeWorkout, EXERCISES, canLift } from './progression/workout.js';
+import { buildWeights, removeWeights } from './characters/weights.js';
 import { SPECS, SPEC_LEVEL, SPEC_CHANGE_COST } from './races/races.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
@@ -281,11 +284,11 @@ async function boot() {
     const rm = raceSys.mods;
     const fm = formModsNow();
     ctl.mods = { response: b.response, airControl: b.airControl * rm.airControl, swimSpeed: b.swimSpeed * rm.swimSpeed * (1 + g.nado), breath: b.breath, dodgeTime: b.dodgeTime, glideSpeed: b.glideSpeed * rm.glideSpeed * fm.glide, glideFall: b.glideFall * rm.glideFall };
-    ctl.race = { extraJumps: rm.extraJumps + fm.extraJumps, jumpMult: rm.jumpMult, fallMult: rm.fallMult * (1 - g.queda) * fm.fall, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
-    ctl.speedMult = fm.speed;
+    ctl.race = { extraJumps: rm.extraJumps + fm.extraJumps, jumpMult: rm.jumpMult * b.jumpMult, fallMult: rm.fallMult * (1 - g.queda) * fm.fall, noWaterDamage: rm.noWaterDamage, breathesWater: rm.breathesWater };
+    ctl.speedMult = fm.speed * b.runSpeed; // Velocidade treinada: até +10% (atualização 24)
     raceSys.cdMult = 1 - g.adaptCd;
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
-    ctl.maxHealth = maxHealth(save.status) + g.vida;
+    ctl.maxHealth = Math.round((maxHealth(save.status) + g.vida) * b.healthMult); // Constituição: até +20%
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
     powers?.setEnergyMax(maxEnergy(save.status) + g.energia);
     if (powers) {
@@ -378,7 +381,7 @@ async function boot() {
       const g = gearTotals(save);
       const fm = formModsNow();
       const wake = powers?.awakened && save.equipped === 'fruta' ? AWAKEN.damage : 1; // combo da fruta desperta
-      return { melee: m.melee * rm.meleeMult * fm.melee * wake, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      return { melee: m.melee * rm.meleeMult * fm.melee * wake * b.precision, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -436,6 +439,8 @@ async function boot() {
             shake = Math.max(shake, d.attack.heavy ? 0.22 : 0.12);
           }
           if (t.hostile) raceSys.onHostileHit(d.attack.weapon ? 'espada' : d.attack.fruit ? 'fruta' : 'soco');
+          // Precisão (atualização 24): só acertos em inimigos que estavam se movendo
+          if (t.hostile && t.vel && Math.hypot(t.vel.x, t.vel.z) > 1.2) tracker.grant('precisao', 2, `precisao:${t.id}:${t.life}`, p);
           if (d.attack.style) grantStyle(d.attack.style, t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
           if (vontade.armor && t.hostile) grantMastery('vontade:armadura', 'Vontade de Armadura', 1, 'arm', true, t);
           if (d.attack.chain && t.hostile) {
@@ -480,6 +485,8 @@ async function boot() {
           break;
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
+          if (workout) endWorkout('Treino interrompido pelo golpe.', 'bad');
+          if (resting) endRest('Descanso interrompido.');
           floats.add(head, `−${d.damage}`, 'jogador');
           vibrate(d.damage >= 20 ? 60 : 25);
           audio.play('impacto', 'acerto', 0.5);
@@ -794,6 +801,121 @@ async function boot() {
     refreshEquip();
     saveNow(true);
   }
+  // ===== Treinamento (atualização 24; Prompt Mestre, seções 8 e 9) =====
+  save.workout = normalizeWorkout(save.workout);
+  let workout = null; // { s, weights, enter }
+  let resting = null; // { t, gained, tick }
+  const trainingUi = new TrainingUi({
+    save,
+    handlers: {
+      start: (ex, kg, sets) => startWorkout(ex, kg, sets),
+      rest: () => startRest(),
+      rep: () => workoutRep(),
+      pause: () => workout && pauseSession(workout.s, workout.s.phase !== 'pausa'),
+      lower: () => {
+        if (!workout || !lowerLoad(workout.s, save.training)) return hud.toast('Já está na menor carga liberada.');
+        removeWeights(workout.weights);
+        workout.weights = buildWeights(player.body, workout.s.kg);
+      },
+      cancel: () => {
+        if (workout) endWorkout('Treino interrompido.');
+        if (resting) endRest('Descanso encerrado.');
+      },
+    },
+  });
+  function openTraining() {
+    if (workout || resting) return;
+    trainingUi.render();
+    openModal('treino');
+  }
+  function trainBlock() {
+    if (ctl.state !== 'ground') return 'Treine em terra firme, parado.';
+    if (boat.aboard) return 'Desça do bote para treinar.';
+    if (combat.runner.busy || powers.busy) return 'Termine o golpe antes.';
+    return null;
+  }
+  function startWorkout(ex, kg, sets) {
+    const why = trainBlock();
+    if (why) return hud.toast(why);
+    if (!canLift(kg, save.training)) return hud.toast('Carga acima da sua capacidade agora. Escolha uma menor.', 'bad');
+    if (form) setForm(null, true);
+    closeModal('treino');
+    save.workout.lastKg = kg;
+    save.workout.lastSets = sets;
+    workout = { s: newSession(ex, kg, sets), weights: buildWeights(player.body, kg), enter: 0 };
+    trainingUi.showHud(true);
+    animator.workout = { kind: ex, depth: 0, enter: 0 };
+    cam.sizeMult = 1.35; // câmera afasta para mostrar o corpo inteiro no exercício
+    cam.pitch = Math.max(cam.pitch, 0.42);
+    hud.toast(`${EXERCISES[ex].nome}: toque em Repetir (ou ataque) para cada repetição.`);
+  }
+  function workoutRep() {
+    if (!workout) return;
+    if (workout.enter < 0.9) return; // ainda entrando na posição
+    if (!requestRep(workout.s, save.training) && workout.s.fatigue >= 1) hud.toast('Exausto: espere a fadiga baixar ou reduza a carga.', 'bad');
+  }
+  function workoutStep(dt) {
+    const w = workout;
+    w.enter = Math.min(1, w.enter + dt / 0.6);
+    const r = stepSession(w.s, dt, save.training);
+    if (r.rep) {
+      save.workout.reps[w.s.exercise] += 1;
+      for (const [attr, xp] of repAttrs(w.s.exercise, r.xp)) tracker.grant(attr, xp, `peso:${w.s.exercise}:${attr}`, ctl.pos, { repeat: false });
+      audio.play('base', 'step', 0.5);
+    }
+    if (r.setDone) {
+      tracker.grant('folego', 3, 'serie', ctl.pos, { repeat: false }); // condicionamento
+      if (!r.done) hud.toast(`Série ${w.s.set} concluída! Descanso de alguns segundos.`, 'good');
+    }
+    if (r.done) return endWorkout(`Treino concluído: ${w.s.total} repetições.`, 'gold');
+    animator.workout = { kind: w.s.exercise, depth: repDepth(w.s), enter: w.enter };
+    trainingUi.updateHud(w.s, Object.keys(EXERCISES[w.s.exercise].attrs));
+  }
+  function endWorkout(msg, kind = 'good') {
+    if (!workout) return;
+    removeWeights(workout.weights);
+    workout = null;
+    animator.workout = null;
+    cam.sizeMult = 1;
+    trainingUi.showHud(false);
+    hud.toast(msg, kind);
+    saveNow(true);
+  }
+  // Descanso: recupera vida e fôlego; Recuperação só sobe se havia o que recuperar
+  function startRest() {
+    const why = trainBlock();
+    if (why) return hud.toast(why);
+    closeModal('treino');
+    resting = { t: 0, gained: 0, tick: 0 };
+    animator.rest = { enter: 0 };
+    cam.sizeMult = 1.2;
+    cam.pitch = Math.max(cam.pitch, 0.35);
+    hud.toast('Descansando… mexa-se para levantar.');
+  }
+  function restStep(dt) {
+    const r = resting;
+    r.t += dt;
+    animator.rest = { enter: Math.min(1, r.t / 0.6) };
+    const rec = bonuses(save.training).recovery;
+    const hurt = ctl.health < ctl.maxHealth * 0.95;
+    ctl.health = Math.min(ctl.maxHealth, ctl.health + ctl.maxHealth * 0.04 * rec * dt);
+    r.tick += dt;
+    if (r.tick >= 2) {
+      r.tick = 0;
+      // anti-AFK: só com o que recuperar, e no máximo 30 por descanso
+      if (hurt && r.gained < 30) {
+        tracker.grant('recuperacao', 2, 'descanso', ctl.pos, { repeat: false });
+        r.gained += 2;
+      }
+    }
+  }
+  function endRest(msg) {
+    if (!resting) return;
+    resting = null;
+    animator.rest = null;
+    cam.sizeMult = 1;
+    hud.toast(msg);
+  }
   const domainBudget = new Map();
   let deniedAt = -9;
   function grantDomain(fruitId, xp, key, hostile, foe) {
@@ -1025,7 +1147,7 @@ async function boot() {
     let name = index === 9 ? order[(order.indexOf(save.equipped) + 1) % order.length] : EQUIP_SLOTS[index];
     if (name === 'fruta' && !eatenFruit()) return hud.toast('Coma uma fruta para equipar os poderes (fale com o Mercador).');
     if (name === 'arma' && !WEAPONS[save.weapon]) return hud.toast('Sem arma: compre uma espada com o Mestre de Armas (barraca ao lado do Trocador).');
-    if (name === 'livre') return;
+    if (name === 'livre') return openTraining(); // slot 4: Treinamento (atualização 24)
     if (name === save.equipped) return;
     if (powers.busy || blade.busy || art.busy) return; // não troca no meio de uma técnica
     if (combat.runner.busy) {
@@ -2275,6 +2397,22 @@ async function boot() {
         inp.jumpPressed = inp.dashPressed = false;
       }
       gatherWorld.update(dt, ocean);
+      // treino com pesos e descanso (atualização 24): o corpo fica no exercício
+      if (workout || resting) {
+        const wantsRep = inp.attackPressed || inp.jumpPressed;
+        const moved = Math.hypot(inp.moveX, inp.moveY) > 0.3 || inp.dashPressed;
+        inp.moveX = inp.moveY = 0;
+        inp.attackPressed = inp.jumpPressed = inp.jump = inp.dashPressed = inp.block = false;
+        inp.skill = -1;
+        inp.racePressed = inp.formPressed = false;
+        if (workout) {
+          if (wantsRep) workoutRep();
+          workoutStep(dt);
+        } else {
+          if (moved) endRest('Descanso interrompido.');
+          else restStep(dt);
+        }
+      }
       if (boat.aboard) {
         // no bote: sem luta, habilidades nem esquiva; Pular desce; Atacar atira com o canhão
         if (inp.attackPressed) fleet.playerFire(boat, inp.camYaw);
@@ -2455,7 +2593,7 @@ async function boot() {
         $('box-will').classList.toggle('hidden', !learned);
         if (learned) {
           $('bar-will').style.transform = `scaleX(${vontade.value / 100})`;
-          $('txt-will').textContent = `Vontade ${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`;
+          $('txt-will').textContent = `${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`; // ícone de escudo = Vontade
         }
         $('btn-armor').classList.toggle('hidden', !save.vontade.armadura);
         $('btn-sense').classList.toggle('hidden', !save.vontade.percepcao);

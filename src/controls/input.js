@@ -14,7 +14,7 @@ export class Input {
     this.held = { jump: false, crouch: false, block: false };
     this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false, armor: false, sense: false, form: false };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
-    this.sprint = false;
+    this.sprint = true; // correr é o padrão (atualização 24; Prompt Mestre, seção 9); R alterna para caminhar
     this.stillTime = 0;
     this.touchMove = { x: 0, y: 0, active: false };
     this.padMove = { x: 0, y: 0 };
@@ -311,7 +311,7 @@ export class Input {
     // o Correr desliga sozinho depois de parar um tempo
     if (len < 0.1) {
       this.stillTime += dt;
-      if (this.sprint && this.stillTime > 0.9) this.toggleSprint(false);
+      // (antes o Correr desligava sozinho parado; agora correr é o padrão)
     } else this.stillTime = 0;
     const look = { ...this.lookDelta };
     this.lookDelta.x = this.lookDelta.y = 0;

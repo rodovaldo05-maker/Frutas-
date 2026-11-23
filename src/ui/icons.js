@@ -40,6 +40,7 @@ export const ICONS = {
   shield: svg('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M12 7v10" opacity=".6"/>'),
   fruit: svg('<circle cx="12" cy="14" r="6.5"/><path d="M12 7.5V4M12 5c1.5-1.8 4-2 5.5-1-1 1.8-3.5 2.6-5.5 2"/>'),
   sword: svg('<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="M6 12l6 6M4 20l3-3"/>'),
+  weight: svg('<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>'),
   vital: svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M12 9.5v5M9.5 12h5"/>'),
   pad: svg('<rect x="3" y="8" width="18" height="10" rx="4"/><path d="M8 11v4M6 13h4M15.5 12h.01M17.5 14h.01"/>'),
 };

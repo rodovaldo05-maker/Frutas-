@@ -27,7 +27,8 @@ const MYTH = new Set(['fenix', 'besta', 'oriental', 'ocidental']);
 export class LabFx {
   // glow: efeitos de brilho do jogo (PowerFx) usados como reforço onde o desenho do
   // laboratório fica fino demais na distância da câmera do jogo (raios, pistão, penas)
-  constructor({ scene, ground, fruits, emit, glow = null, mobile = true, level = () => 1, calm = () => false, shake = () => {} }) {
+  constructor({ scene, ground, fruits, emit, glow = null, mobile = true, level = () => 1, calm = () => false, shake = () => {}, shape = () => 'humana' }) {
+    this.shape = shape; // forma atual do jogador (as marcas e os efeitos da Besta crescem com o corpo)
     this.glow = glow;
     this.fruits = new Map(fruits.map((f) => [f.id, f]));
     this.scene = scene;
@@ -53,7 +54,7 @@ export class LabFx {
   }
 
   myth(f, event, point, dir, index = 0) {
-    if (f && MYTH.has(f.id)) FRUTOMythFX.emit(this.fx, f, event, point, dir, 'humana', index);
+    if (f && MYTH.has(f.id)) FRUTOMythFX.emit(this.fx, f, event, point, dir, this.shape?.() ?? 'humana', index);
   }
 
   // zona visual (fogueira, sombra, muralha) com vida e fechamento do laboratório
@@ -536,7 +537,7 @@ export class LabFx {
         case 'placas': fx.sparks(P, '#c8d8e8', 8, 2.4, { gravity: 4, life: 0.3, size: 0.07 }); break;
         case 'sucata': fx.sparks(P, '#a0a8b0', 14, 3.2, { gravity: 7, life: 0.45, size: 0.08 }); fx.cracks(floor, '#8bc2e7', 1, 0.6); break;
         // Besta: poeira, riscos, choque de massa (sem magia genérica)
-        case 'poeira': case 'cauda': case 'chifres': case 'massa': this.besta.m1(attack.vfx, P, D, step); break;
+        case 'poeira': case 'cauda': case 'chifres': case 'massa': this.besta.m1(attack.vfx, P, D, step, form); break;
         // Fênix: penas luminosas e fogo azul com partículas limitadas
         case 'penas': fx.feathers(P, D, 0.6); break;
         case 'fogo_azul': fx.fire(P, 0.25, 0.45, 0.3, '#53d9ff'); break;

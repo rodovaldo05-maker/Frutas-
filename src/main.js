@@ -702,6 +702,7 @@ async function boot() {
     shake: (amount) => {
       if (!settings.reduceMotion) shake = Math.max(shake, amount * 3);
     },
+    shape: () => form?.shape ?? 'humana',
   });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);

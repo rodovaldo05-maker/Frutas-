@@ -339,6 +339,13 @@ Criatura de juba branca e dois chifres rubros. **Combo:** Garras de Marfim (11 /
 - **Formas:** a híbrida e a completa usam as animações da Besta do laboratório (Presa de Marfim,
   Rugido Carmesim e Pisão da Besta), com o tempo ajustado para o golpe cair junto do efeito. O
   modelo da forma completa não mudou.
+- **Forma híbrida (0.27.7):** o corpo do personagem fica igual, no mesmo tamanho, com as mesmas
+  roupas, rosto e animações; a forma só acrescenta **dois chifres rubros** com pontas de marfim
+  (saem das têmporas e curvam para cima), uma juba branca curta na nuca e a **cauda** de pelagem
+  branca com anel e tufo carmesim. A cauda balança parada, acompanha a corrida, estala no Golpe
+  de Cauda do M1 e sobe no Rugido e no Pisão. Câmera, alcance e efeitos ficam no tamanho humano;
+  os bônus da forma híbrida continuam valendo. A forma completa não mudou.
+  ![Besta híbrida](besta-hibrida-v277.png)
 - **Tamanho (0.27.6):** os efeitos crescem com o corpo: forma híbrida 1,2× e completa 1,7× (colunas,
   espinhos, anéis, clarões, pedras e poeira; o alcance visual cresce √ disso). As marcas míticas
   de todas as frutas míticas também usam a escala da forma atual. ![Besta completa](besta-completa-v276.png)

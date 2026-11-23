@@ -86,6 +86,7 @@ import { addRaceParts, removeRaceParts, flapWings } from './races/raceParts.js';
 import { SEA, PORTO_CAMP, buildSeaIsland, levelsFor, seaSpots } from './islands/firstSea.js';
 import { SEA2, GATES, ARRIVALS, CROSSING, seaOf, crossingUnlocked, SEA_NAMES } from './islands/secondSea.js';
 import { IslandEvents } from './world/islandEvents.js';
+import { buildBeastTraits } from './characters/beastTraits.js';
 import { CULTIVO, cultivoRate, newCultivo, cultivoStep, cultivoTap, cultivoPhase, cultivoPeak, inOpportunity, liftAt, meditationBonus, FRUIT_MEDITATION } from './progression/cultivation.js';
 import { MeditationAura } from './vfx/meditationAura.js';
 import { normalizeIslands } from './islands/islandRules.js';
@@ -326,7 +327,7 @@ async function boot() {
   // Visual do personagem: roupa (cores dos segmentos + peças) e armadura; tudo entra na
   // malha única do corpo de novo (as peças da roupa no encaixe de uma armadura somem)
   function refreshLook() {
-    if (form?.shape === 'hibrida') dressHybrid(form.rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
+    if (form?.shape === 'hibrida' && !form.light) dressHybrid(form.rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
     const pal = outfitPalette(save.outfit?.id, save.outfit?.cor);
     for (const [id, mesh] of Object.entries(player.body.meshes)) {
       const part = SEGMENT_PART[id] || 'skin';
@@ -424,7 +425,7 @@ async function boot() {
           const dir = { x: Math.sin(ctl.yaw), y: 0, z: Math.cos(ctl.yaw) };
           const at = m1Point(a, d.target);
           islandEvents.strike(at, vontade.sense); // ecos ilusórios do Bosque Noturno
-          if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir, form?.shape);
+          if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir, form && !form.light ? form.shape : 'humana');
           audio.play(d.landed ? 'impacto' : 'base', d.landed ? 'acerto' : 'swing', a.heavy ? 1 : 0.55 + a.m1 * 0.08);
           if (d.landed) shake = Math.max(shake, [0.08, 0.1, 0.14, 0.22][a.m1 - 1]);
           if (d.landed && a.heavy) vibrate(30);
@@ -553,7 +554,7 @@ async function boot() {
   });
   // forma híbrida ativa: o M1 usa a variante híbrida dos golpes (mesmo quadro de impacto)
   combat.formShape = () => form?.shape ?? null;
-  combat.formReach = () => (form?.shape === 'completa' ? 1.35 : form ? 1.1 : 1) * (1 + (form ? formModsNow().reach : 0));
+  combat.formReach = () => (form?.shape === 'completa' ? 1.35 : form && !form.light ? 1.1 : 1) * (1 + (form ? formModsNow().reach : 0));
   // Ponto do impacto do M1: o encaixe do golpe (punho, palma, pé, boca) no corpo animado;
   // com alvo atingido, entre o encaixe e o peito do alvo
   const m1Tmp = new THREE.Vector3();
@@ -702,7 +703,7 @@ async function boot() {
     shake: (amount) => {
       if (!settings.reduceMotion) shake = Math.max(shake, amount * 3);
     },
-    shape: () => form?.shape ?? 'humana',
+    shape: () => (form && !form.light ? form.shape : 'humana'),
   });
   const skillBar = new SkillBar();
   const eatenFruit = () => (save.eaten ? DATA.fruits[DATA.fruits.findIndex((f) => f.id === save.eaten.fruit)] ?? null : null);
@@ -733,8 +734,11 @@ async function boot() {
     combat.runner.reset(); // transformar é ação incompatível: a sequência do M1 recomeça
     ctl.action = null;
     if (form) {
-      undressHybrid(form.rig);
-      disposeFormRig(form.rig);
+      if (form.rig.light) form.rig.dispose();
+      else {
+        undressHybrid(form.rig);
+        disposeFormRig(form.rig);
+      }
     }
     if (!shape) {
       const had = !!form;
@@ -751,12 +755,16 @@ async function boot() {
       }
       return;
     }
-    const rig = rigFor(f.id, shape);
+    // Besta híbrida (0.27.7): o corpo do personagem fica igual, no mesmo tamanho; só ganha os
+    // chifres e a cauda (sem trocar de modelo nem de animação)
+    const light = f.id === 'besta' && shape === 'hibrida';
+    const rig = light ? buildBeastTraits(player.body) : rigFor(f.id, shape);
     // híbrida: a pele cinza do laboratório vira o corpo do personagem (cores, roupa, armadura, rosto)
-    if (shape === 'hibrida') dressHybrid(rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
-    form = { id: f.id, shape, rig };
-    showForm(player.body, rig);
-    animator.form = rig;
+    if (shape === 'hibrida' && !light) dressHybrid(rig, hybridLook(), renderer.quality === 'leve' ? 2 : 1);
+    form = { id: f.id, shape, rig, light };
+    if (light) showForm(player.body, null);
+    else showForm(player.body, rig);
+    animator.form = light ? null : rig;
     ctl.invulnerable = Math.max(ctl.invulnerable, FORM_TIME * formModsNow().transform); // invulnerável durante a troca (o marco Controle inicial encurta)
     fx.burst({ x: ctl.pos.x, y: ctl.pos.y + 1.5, z: ctl.pos.z }, f.color, { count: shape === 'completa' ? 48 : 32, speed: 6, up: 4 });
     fx.ring(ctl.pos, f.color, shape === 'completa' ? 5 : 3.5, FORM_TIME);
@@ -766,7 +774,7 @@ async function boot() {
     $('btn-form').classList.add('on');
     $('btn-form').classList.toggle('full', shape === 'completa');
     $('btn-form').querySelector('span').textContent = shape === 'completa' ? 'Completa' : 'Híbrida';
-    cam.sizeMult = shape === 'completa' ? 1.45 : 1.12;
+    cam.sizeMult = shape === 'completa' ? 1.45 : light ? 1 : 1.12;
     applyStatus();
   }
   function toggleForm(off = false) {
@@ -3033,7 +3041,8 @@ async function boot() {
       // aura da fruta do laboratório: com o slot da fruta equipado; mais forte no despertar
       // na meditação da fruta a aura fica forte e envolve o corpo (casca, lótus e faíscas)
       const cultivating = haki?.kind === 'cultivo' ? haki : null;
-      lab.aura(mode === 'game' && (save.equipped === 'fruta' || cultivating) && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened || !!cultivating, animDt, form?.shape);
+      lab.aura(mode === 'game' && (save.equipped === 'fruta' || cultivating) && eatenFruit() ? eatenFruit().id : null, player.body, powers.awakened || !!cultivating, animDt, form && !form.light ? form.shape : null);
+      if (form?.light) form.rig.update({ clock: time, speed: Math.hypot(ctl.vel.x, ctl.vel.z) / 9, action: ctl.action });
       meditationAura.update(animDt, { on: !!cultivating, root: player.body.root.position, enter: cultivating?.enter ?? 0, breath: cultivating ? animator.meditate?.breath ?? 0 : 0, lift: cultivating?.lv ?? 0, height: CULTIVO.height });
       if (mode === 'game') {
         skillBar.update(powers, true, save.equipped === 'arma' ? blade : save.equipped === 'estilo' ? art : powers);

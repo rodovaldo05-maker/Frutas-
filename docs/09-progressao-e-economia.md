@@ -148,20 +148,25 @@ Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `t
   fadiga, com limite suave por sessão e por minuto. Flexão: Constituição, Força, Resistência
   Física, Defesa e Fôlego. Agachamento: Constituição, Impulsão, Agilidade, Resistência e
   Fôlego. Série completa: Fôlego (condicionamento). Nunca mexe na maestria da fruta.
-- **Meditação da fruta (substitui o Descanso, atualização 27.1).** Aba **Meditação** do
-  TREINAMENTO. O personagem senta em **flor de lótus** (cada pé sobre a coxa do outro lado,
+- **Meditação da fruta (substitui o Descanso; automática desde a 0.27.2).** Aba **Meditação**
+  do TREINAMENTO. O personagem senta em **flor de lótus** (cada pé sobre a coxa do outro lado,
   mãos nos joelhos com as palmas para cima) e a **aura da fruta envolve o corpo**: casca de
-  energia na cor da fruta que pulsa com a respiração, chamas de energia subindo, uma flor de
-  lótus de energia aberta no chão e a aura própria da fruta (forte, como no despertar). Tocar
-  em **Cultivar** quando o círculo fica dourado cultiva a energia: cada respiração no ritmo dá
-  4% do nível atual de maestria da fruta (com o multiplicador de ambiente da fruta), um pouco
-  de Sincronia e Concentração, e +8 de energia; até 25 respirações por sessão (no máximo ~1
-  nível). Sem tocar por 3 ciclos a sessão acaba (nada de XP parado). Continua recuperando vida
-  como o descanso fazia (a Recuperação só sobe havendo o que recuperar, até 30 por sessão).
-  **Ao subir um nível de maestria** o corpo levita 1,3 de altura abrindo os braços e, no alto,
-  solta uma **explosão de energia na cor da aura** (clarão, estilhaços, anel e coluna no chão,
-  tremor e vibração); depois desce de volta para a lótus. Sem fruta comida, só recupera o corpo.
-  Mexer-se ou levar dano interrompe. A antiga meditação da Vontade virou a aba **Respiração**.
+  energia na cor da fruta, chamas de energia subindo, uma flor de lótus de energia no chão e a
+  aura própria da fruta (forte, como no despertar).
+  - **Automática:** a maestria da fruta sobe sozinha, sem tocar na tela — 1% do nível atual
+    por segundo (~100 s por nível, com o multiplicador de ambiente da fruta) — até o nível
+    máximo (1000) ou até o jogador cancelar (Interromper, mexer-se ou levar dano). Sem limite
+    por sessão (escolha do jogador: aqui a regra "sem XP parado" do Prompt Mestre não vale).
+    Também recupera vida, fôlego e energia (+2/s) e um pouco de Sincronia.
+  - **Oportunidade de respiração:** a primeira em 8 s, depois a cada 18 a 30 s, por 12 s (três
+    ciclos de 4 s). O círculo aparece e o botão **Respirar** acende; tocar quando o círculo fica
+    dourado deixa o progresso **×2** por 6 s (renovando a cada respiração certa, dá para manter o
+    dobro a oportunidade toda). Um toque por ciclo; tocar fora da hora não tira nada.
+  - **Ao subir um nível de maestria** o corpo levita 1,3 de altura abrindo os braços e, no alto,
+    solta uma **explosão de energia na cor da aura** (clarão, estilhaços, anel e coluna no chão,
+    tremor e vibração); depois desce de volta para a lótus e continua cultivando.
+  - Sem fruta comida, só recupera o corpo. A antiga meditação da Vontade virou a aba
+    **Respiração**.
 - **Atributos novos por ação.** Constituição (treino com pesos; até +20% de vida),
   Velocidade (correr rápido de verdade, saindo do lugar; até +10% de corrida), Impulsão
   (agachamentos e saltos que levam a outro lugar; até +10% de salto), Precisão (acertar

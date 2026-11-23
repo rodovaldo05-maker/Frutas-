@@ -14,7 +14,7 @@ que falta descrito.
 | 6 | Animações distintas humano/híbrido/completo, sem membros fantasma | Feito | `tests/awakening.test.js` (golpe `_h` e `_c`; 12 corpos animam sem valores inválidos); golpes da forma completa só com o corpo do animal (`src/transformations/formM1.js`); regressão das 12 formas no navegador |
 | 7 | Habilidades especiais e controles preservados | Feito | `tests/m1.test.js` (teste 7) |
 | 8 | Pesos 3D, 10 repetições por série, descanso | Feito | `tests/workout.test.js` (teste 8); sessão real no navegador (pesos visíveis, contador 3/10) |
-| 9 | XP só por ação válida (sem AFK, paredes, dano próprio) | Feito | `tests/workout.test.js` (teste 9), antifarm do treino (`AntiFarm`), meditação anti-AFK (`tests/haki.test.js`) |
+| 9 | XP só por ação válida (sem AFK, paredes, dano próprio) | Feito (exceção pedida pelo jogador: a Meditação da fruta cultiva maestria parada, 0.27.2) | `tests/workout.test.js` (teste 9), antifarm do treino (`AntiFarm`), meditação anti-AFK (`tests/haki.test.js`) |
 | 10 | Evolução independente: fruta, atributos, Observação, Armamento, Rei | Feito | `tests/mastery.test.js` e `tests/haki.test.js` (teste 10) |
 | 11 | Multiplicadores de ambiente e teto de 4x | Feito | `tests/mastery.test.js` (teste 11) |
 | 12 | Batismo do Trovão natural, um nível só | Feito | `tests/mastery.test.js` (teste 12) |

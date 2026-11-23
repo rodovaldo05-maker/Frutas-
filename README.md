@@ -128,8 +128,9 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
-Meditação da fruta (0.27.1): o Descanso virou meditação em flor de lótus — a aura da fruta
-envolve o corpo, cada respiração no ritmo cultiva maestria da fruta e, ao subir de nível, o
+Meditação da fruta (0.27.1, automática na 0.27.2): o Descanso virou meditação em flor de
+lótus — a aura da fruta envolve o corpo e a maestria sobe sozinha até o máximo ou até cancelar;
+nas oportunidades de respiração, tocar no dourado dobra o progresso. Ao subir de nível, o
 personagem levita e solta uma explosão de energia na cor da aura. O analógico agora fica
 parado onde o dedo toca.
 

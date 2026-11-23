@@ -69,3 +69,42 @@
   barras de inimigos visíveis de longe; tela levemente dessaturada.
 - Maestria (1 a 100) de cada uma: Armadura sobe acertando inimigos com ela ligada; Percepção
   sobe com as esquivas automáticas (teto por oponente).
+
+
+## Situação: meditação e os três Haki (atualização 25; Prompt Mestre, seções 10 a 13)
+
+A Vontade continua sendo a barra e o controle; cada uso virou uma trilha de Haki (1 a 100),
+independente da fruta, dos atributos e das outras trilhas. Nada foi duplicado: a Observação é a
+evolução da Vontade de Percepção, o Armamento a da Vontade de Armadura e o Rei é a Vontade
+Soberana, que antes ficava bloqueada "por missão especial (futuro)".
+
+- **Meditação** (Treinamento → Meditação). Senta de pernas cruzadas, coluna reta, mãos nos
+  joelhos e tórax que expande na inspiração. Tocar em Respirar quando o círculo fica dourado
+  (pico do ciclo de 4 s) treina Concentração (+energia máxima, +recuperação da Vontade) e
+  Resistência Mental (−tempo atordoado) e devolve um pouco de Vontade e energia. Sem respirar
+  por 3 ciclos a meditação acaba (anti-AFK); limite de XP por sessão; mexer-se ou levar dano
+  interrompe. Lugares só ajudam com a sessão ativa: montanha e o templo da Fenda Celeste 1,5x,
+  floresta 1,3x, perto da água 1,25x. Não dá maestria de fruta.
+- **Haki da Observação.** Estágios: Percepção inicial (1), Detecção de presença (15), Leitura
+  de intenção (30), Esquiva antecipada (45), Percepção sem visão (60), Alcance expandido (75),
+  Previsão breve (90). Com a Percepção ligada, os inimigos aparecem no minimapa (25 → 40 → 60
+  de alcance). Na Previsão breve, depois das esquivas automáticas, mais uma a cada 20 s (não
+  é invulnerabilidade). Treino: 10 projéteis vindos de direções e curvas variadas; com a
+  Percepção os avisos aparecem; sem ela a tela escurece e a esquiva rende 50% mais; ser
+  atingido não dá XP.
+- **Haki do Armamento.** Estágios: Revestimento localizado (1), Revestimento estável (15),
+  Defesa (30), Golpes reforçados (45), Armas reforçadas (60), Emissão curta (75), Penetração
+  avançada (90). O revestimento fica mais barato (6/s → 3/s), defende mais (−10% → −18%),
+  reforça armas (+5% a partir de 60), o 4º golpe do M1 revestido solta uma onda curta que
+  atinge quem está logo atrás (75+) e atravessa 25% da defesa (90+), nunca toda. Treino de
+  60 s: golpes revestidos no boneco e defesas perfeitas revestidas, com limite por sessão.
+- **Haki do Rei.** Não se compra nem vem de meditar: com nível de aventureiro 30 e Observação
+  e Armamento 20, o Desafio da Vontade pede aguentar 20 s de pressão crescente respirando no
+  ritmo para empurrá-la de volta; falhar deixa atordoado por pouco tempo. Desperto, libera o
+  Pulso de Vontade (Y ou 👑; 40 de Vontade, recarga 30 s, raio 7 a 12): inimigos fracos ficam
+  intimidados por pouco tempo, os outros perdem postura, chefes e bestas resistem; só atinge
+  inimigos (nunca moradores). Não é dano em área. Estágios: Despertar, Presença, Controle de
+  intensidade, Seleção de alvos, Resistência a pressão, Emissão controlada, Revestimento
+  avançado.
+
+Código: `src/haki/haki.js`, `src/styles/vontade.js`; testes em `tests/haki.test.js`.

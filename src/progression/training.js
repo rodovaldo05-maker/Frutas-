@@ -98,6 +98,19 @@ export const ATTRS = {
     marcos: { 10: 'Fôlego Curto', 25: 'Descanso Eficiente', 50: 'Sono Reparador', 75: 'Regeneração', 100: 'Corpo Renovado' },
     bonus: (L) => `+${Math.min(30, 3 * steps10(L))}% de recuperação no descanso`,
   },
+  // atualização 25 (Prompt Mestre, seção 10): meditação
+  concentracao: {
+    nome: 'Concentração', icone: 'star', ativo: true,
+    treino: 'Medite respirando no ritmo (menu Treinamento → Meditação). Montanhas e templos ajudam.',
+    marcos: { 10: 'Foco', 25: 'Calma', 50: 'Mente Clara', 75: 'Serenidade', 100: 'Vazio Interior' },
+    bonus: (L) => `+${Math.min(20, 2 * steps10(L))}% de energia máxima · +${Math.min(20, 2 * steps10(L))}% de recuperação da Vontade`,
+  },
+  mental: {
+    nome: 'Resistência Mental', icone: 'shield', ativo: true,
+    treino: 'Medite e vença desafios de vontade.',
+    marcos: { 10: 'Firmeza', 25: 'Disciplina', 50: 'Mente de Aço', 75: 'Inabalável', 100: 'Vontade Indomável' },
+    bonus: (L) => `−${Math.min(15, 1.5 * steps10(L)).toLocaleString('pt-BR')}% de tempo atordoado`,
+  },
 };
 export const ATTR_KEYS = Object.keys(ATTRS);
 
@@ -153,6 +166,10 @@ export function bonuses(t, staminaBase = 100) {
     jumpMult: 1 + Math.min(0.1, 0.01 * s('impulsao')),
     precision: 1 + Math.min(0.05, 0.005 * s('precisao')),
     recovery: 1 + Math.min(0.3, 0.03 * s('recuperacao')),
+    // atualização 25
+    energyMult: 1 + Math.min(0.2, 0.02 * s('concentracao')),
+    willRegen: 1 + Math.min(0.2, 0.02 * s('concentracao')),
+    stunMult: 1 - Math.min(0.15, 0.015 * s('mental')),
   };
 }
 

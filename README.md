@@ -128,6 +128,11 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Meditação e Haki (atualização 25): no Treinamento, Meditação (respirar no ritmo; treina
+Concentração e Resistência Mental) e os três Haki — Observação (presença no minimapa,
+previsão breve, treino com projéteis "sem visão"), Armamento (revestimento mais barato e
+forte, onda curta, penetração parcial) e Rei (Desafio da Vontade e Pulso de Vontade, Y ou 👑).
+
 Treino com pesos (atualização 24): o slot 4 da barra abre o TREINAMENTO — flexões e
 agachamentos com pesos 3D (5 a 2.560 kg), séries de 10 repetições (cada uma com um toque e a
 animação completa), descanso, fadiga e os atributos novos Constituição, Velocidade,

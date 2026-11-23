@@ -12,7 +12,7 @@ export class Input {
     this.lookDelta = { x: 0, y: 0 };
     this.zoomDelta = 0;
     this.held = { jump: false, crouch: false, block: false };
-    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false, armor: false, sense: false, form: false };
+    this.pressed = { jump: false, crouch: false, dash: false, attack: false, skill: -1, equip: -1, race: false, armor: false, sense: false, form: false, king: false };
     this.blockSources = new Set(); // teclado, mouse, botão de toque e controle
     this.sprint = true; // correr é o padrão (atualização 24; Prompt Mestre, seção 9); R alterna para caminhar
     this.stillTime = 0;
@@ -52,6 +52,7 @@ export class Input {
       if (c === 'KeyH') this.pressed.form = true; // forma híbrida (frutas de fera)
       if (c === 'KeyG') this.pressed.armor = true;
       if (c === 'KeyH') this.pressed.sense = true;
+      if (c === 'KeyY') this.pressed.king = true; // Haki do Rei: Pulso de Vontade (atualização 25)
       if (/^Digit[1-4]$/.test(c)) this.pressed.equip = Number(c.slice(-1)) - 1;
       const skill = { KeyZ: 0, KeyX: 1, KeyC: 2, KeyV: 3 }[c];
       if (skill !== undefined) this.pressed.skill = skill;
@@ -226,6 +227,7 @@ export class Input {
     if (buttons.armor) hold(buttons.armor, () => (this.pressed.armor = true));
     if (buttons.form) hold(buttons.form, () => (this.pressed.form = true));
     if (buttons.sense) hold(buttons.sense, () => (this.pressed.sense = true));
+    if (buttons.king) hold(buttons.king, () => (this.pressed.king = true));
     (buttons.equip || []).forEach((el, i) => el && hold(el, () => (this.pressed.equip = i)));
     // linhas de habilidade mudam com o item equipado: escuta no contêiner
     if (buttons.skillRows) {
@@ -338,6 +340,7 @@ export class Input {
       formPressed: this.pressed.form,
       armorPressed: this.pressed.armor,
       sensePressed: this.pressed.sense,
+      kingPressed: this.pressed.king,
       block: this.held.block,
       sprint: this.sprint,
     };
@@ -346,7 +349,7 @@ export class Input {
     this.pressed.equip = -1;
     this.pressed.race = false;
     this.pressed.form = false;
-    this.pressed.armor = this.pressed.sense = false;
+    this.pressed.armor = this.pressed.sense = this.pressed.king = false;
     return out;
   }
 

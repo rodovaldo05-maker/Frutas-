@@ -30,6 +30,7 @@ import { Face } from './characters/face.js';
 import { TrainingUi } from './ui/trainingUi.js';
 import { newSession, requestRep, stepSession, repDepth, pauseSession, lowerLoad, repAttrs, normalizeWorkout, EXERCISES, canLift } from './progression/workout.js';
 import { buildWeights, removeWeights } from './characters/weights.js';
+import { HAKI, stagesOf, reiBlock, REI, pulseRadius, pulseEffect, newMeditation, meditationTap, meditationStep, meditationXp, meditationPlace, breathPhase, breathValid, newChallenge, challengeTap, challengeStep, OBS_TRAINING, dodgeXp, senseRange, armorEmission, armorPenetration, armorWeaponBonus } from './haki/haki.js';
 import { SPECS, SPEC_LEVEL, SPEC_CHANGE_COST } from './races/races.js';
 import { hourOf, daylight, fmtClock, GAME_MINUTES_PER_SECOND } from './world/clock.js';
 import { Ocean } from './ocean/ocean.js';
@@ -275,6 +276,7 @@ async function boot() {
   // vida, fôlego e bônus de movimento: pontos distribuídos + treino pela prática
   // (cada ponto de Força e cada nível de treino de Força: +1 de fôlego)
   // + equipamento (atualização 8): defesa, vida, fôlego, energia, elemental, peso e sinergias
+  let vontadeRef = null; // a Vontade é criada depois (evita acesso antes da criação)
   const applyStatus = () => {
     const b = bonuses(save.training);
     const g = gearTotals(save);
@@ -290,7 +292,8 @@ async function boot() {
     const ratio = ctl.maxHealth > 0 ? ctl.health / ctl.maxHealth : 1;
     ctl.maxHealth = Math.round((maxHealth(save.status) + g.vida) * b.healthMult); // Constituição: até +20%
     ctl.health = Math.max(1, Math.min(ctl.maxHealth, ratio * ctl.maxHealth));
-    powers?.setEnergyMax(maxEnergy(save.status) + g.energia);
+    powers?.setEnergyMax(Math.round((maxEnergy(save.status) + g.energia) * b.energyMult)); // Concentração: até +20%
+    if (vontadeRef) vontadeRef.regenMult = b.willRegen; // Concentração: Vontade volta mais rápido
     if (powers) {
       powers.regenMult = raceSys.mods.energyRegen * (1 + g.energiaRegen) * (1 + (form ? formModsNow().energy : 0));
       powers.dmgMult = fm.fruit;
@@ -367,11 +370,13 @@ async function boot() {
       }
       if (name === 'toggle') {
         audio.play('base', d.on ? 'wing' : 'step', 0.6);
-        hud.toast(`${d.kind === 'armor' ? 'Vontade de Armadura' : 'Vontade de Percepção'} ${d.on ? 'ligada' : 'desligada'}`, d.on ? 'good' : '');
+        hud.toast(`${d.kind === 'armor' ? 'Haki do Armamento' : 'Haki da Observação'} ${d.on ? 'ligado' : 'desligado'}`, d.on ? 'good' : '');
       }
       if (name === 'empty') hud.toast('Vontade esgotada: espere recuperar.', 'bad');
     },
   });
+  vontadeRef = vontade;
+  vontade.regenMult = bonuses(save.training).willRegen;
   const combat = new PlayerCombat({
     ctl,
     stats: () => {
@@ -381,7 +386,8 @@ async function boot() {
       const g = gearTotals(save);
       const fm = formModsNow();
       const wake = powers?.awakened && save.equipped === 'fruta' ? AWAKEN.damage : 1; // combo da fruta desperta
-      return { melee: m.melee * rm.meleeMult * fm.melee * wake * b.precision, weapon: m.weapon * rm.meleeMult, prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
+      const armLv = profOf(save, 'vontade:armadura').level;
+      return { armorPen: vontade.armor ? armorPenetration(armLv) : 0, melee: m.melee * rm.meleeMult * fm.melee * wake * b.precision, weapon: m.weapon * rm.meleeMult * (vontade.armor ? armorWeaponBonus(armLv) : 1), prof: profBonus(profOf(save, 'espada').level), defense: m.defense + g.defesa, mitigation: b.mitigation + rm.physicalMitigation + vontade.mitigation + fm.mitigation, elementalMit: b.elementalMit + g.elemental + rm.elementalMit, stunMult: rm.stunMult * b.stunMult, armor: vontade.damageMult, perfectWindow: b.perfectWindow, blockReduce: b.blockReduce, postureMult: b.postureMult };
     },
     onEvent: (name, d) => {
       const p = ctl.pos;
@@ -442,7 +448,22 @@ async function boot() {
           // Precisão (atualização 24): só acertos em inimigos que estavam se movendo
           if (t.hostile && t.vel && Math.hypot(t.vel.x, t.vel.z) > 1.2) tracker.grant('precisao', 2, `precisao:${t.id}:${t.life}`, p);
           if (d.attack.style) grantStyle(d.attack.style, t.hostile ? 1.5 : 0.5, `${t.id}:${d.attack.id}`, t.hostile, t);
-          if (vontade.armor && t.hostile) grantMastery('vontade:armadura', 'Vontade de Armadura', 1, 'arm', true, t);
+          if (vontade.armor && t.hostile) grantMastery('vontade:armadura', 'Haki do Armamento', 1, 'arm', true, t);
+          // treino de Armamento: golpes revestidos no alvo de treino (limite por sessão)
+          if (haki?.kind === 'armamento' && vontade.armor && !t.hostile && haki.xp < 40) {
+            haki.hits += 1;
+            haki.xp += 1.5;
+            grantMastery('vontade:armadura', 'Haki do Armamento', 1.5, `armTreino:${haki.hits}`, false, t);
+          }
+          // Armamento 75+: o M1-4 revestido solta uma onda curta que atinge quem está atrás
+          if (d.attack.m1 === 4 && vontade.armor && t.hostile && armorEmission(profOf(save, 'vontade:armadura').level)) {
+            const other = arena.targets.find((o) => o !== t && o.alive && o.hostile && Math.hypot(o.pos.x - t.pos.x, o.pos.z - t.pos.z) < 3.2);
+            fx.ring({ x: t.pos.x, y: t.pos.y + 1, z: t.pos.z }, '#2a1a3a', 2.6, 0.35);
+            if (other) {
+              const r2 = other.receiveHit({ attacker: { x: t.pos.x, y: t.pos.y, z: t.pos.z, yaw: 0 }, attack: { id: 'emissao', posture: 8, knock: 2, reaction: 'leve' }, damage: Math.max(1, Math.round(d.damage * 0.3)) });
+              if (r2) floats.add({ x: other.pos.x, y: other.pos.y + 3.2, z: other.pos.z }, String(r2.damage), 'dano');
+            }
+          }
           if (d.attack.chain && t.hostile) {
             // Corpo Voltaico: o 3º golpe salta um raio para outro inimigo
             const other = arena.targets.find((o) => o !== t && o.alive && o.hostile && Math.hypot(o.pos.x - t.pos.x, o.pos.z - t.pos.z) < 8);
@@ -466,6 +487,11 @@ async function boot() {
           break;
         case 'perfect':
           raceSys.onDefend();
+          if (haki?.kind === 'armamento' && vontade.armor && haki.xp < 40) {
+            haki.blocks += 1;
+            haki.xp += 3;
+            grantMastery('vontade:armadura', 'Haki do Armamento', 3, `armBloq:${haki.blocks}`, false, { id: 'treino', life: 0 });
+          }
           floats.add(head, 'Defesa perfeita!', 'perfeita');
           audio.play('base', 'wing', 1);
           shake = Math.max(shake, 0.15);
@@ -486,6 +512,7 @@ async function boot() {
         case 'guardBreak': hud.toast('Guarda quebrada! Afaste-se e recupere a postura.', 'bad'); break;
         case 'hurt':
           if (workout) endWorkout('Treino interrompido pelo golpe.', 'bad');
+          if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio')) endHaki('Concentração quebrada pelo golpe.');
           if (resting) endRest('Descanso interrompido.');
           floats.add(head, `−${d.damage}`, 'jogador');
           vibrate(d.damage >= 20 ? 60 : 25);
@@ -821,6 +848,8 @@ async function boot() {
         if (workout) endWorkout('Treino interrompido.');
         if (resting) endRest('Descanso encerrado.');
       },
+      extraTabs: (tab) => hakiTabHtml(tab),
+      action: (go) => startHaki(go),
     },
   });
   function openTraining() {
@@ -915,6 +944,231 @@ async function boot() {
     animator.rest = null;
     cam.sizeMult = 1;
     hud.toast(msg);
+  }
+  // ===== Meditação e Haki (atualização 25; Prompt Mestre, seções 10 a 13) =====
+  let haki = null; // sessão: meditacao | desafio | observacao | armamento
+  const hakiLevel = (kind) => profOf(save, HAKI[kind].prof).level;
+  function hakiTabHtml(tab) {
+    if (tab === 'meditacao') {
+      const place = meditationPlace(envContext());
+      return `<p class="muted small">Sente, alinhe a coluna e respire: toque em <b>Respirar</b> quando o círculo estiver cheio (dourado). Cada respiração no ritmo treina Concentração (energia e Vontade) e Resistência Mental; sem respirar por 3 ciclos, a meditação acaba. Mexer-se ou levar dano interrompe. Não dá maestria de fruta.</p>
+        <p>Lugar agora: <b>${place.label}</b> ×${String(place.mult).replace('.', ',')} <span class="muted small">(montanhas e o templo da Fenda Celeste 1,5x; florestas 1,3x; perto da água 1,25x)</span></p>
+        <button class="btn gold w-start" data-go="meditacao">Meditar</button>`;
+    }
+    const kind = tab;
+    const h = HAKI[kind];
+    if (!h) return '';
+    const lv = hakiLevel(kind);
+    const learned = save.vontade?.[h.aprende];
+    const stages = `<ul class="haki-stages">${h.estagios.map(([n, nome]) => `<li class="${lv >= n ? 'on' : ''}"><i>${n}</i>${nome}</li>`).join('')}</ul>`;
+    const head = `<h4>${h.nome} · maestria <b>${lv}</b>/100</h4>${stages}`;
+    if (kind === 'observacao') {
+      if (!learned) return `${head}<p class="muted">Aprenda a Vontade de Percepção com o Mestre de Luta para treinar a Observação.</p>`;
+      return `${head}<p class="muted small">Treino: 10 projéteis vindos de direções e curvas variadas. Saia do ponto marcado (ou esquive) antes de chegarem. Com a Percepção ligada você vê os avisos; desligada ("sem visão"), rende 50% mais. Ser atingido não dá XP.</p><button class="btn gold w-start" data-go="observacao">Começar treino de Observação</button>`;
+    }
+    if (kind === 'armamento') {
+      if (!learned) return `${head}<p class="muted">Aprenda a Vontade de Armadura com o Mestre de Luta para treinar o Armamento.</p>`;
+      return `${head}<p class="muted small">Treino de 60 s: ligue a Armadura (G ou 🛡) e acerte um boneco de treino com os braços revestidos; defesas perfeitas revestidas rendem mais. Em combate real ele também sobe. A Armadura fica mais barata, defende mais (30+), reforça armas (60+), solta uma onda curta no 4º golpe (75+) e atravessa parte da defesa (90+).</p><button class="btn gold w-start" data-go="armamento">Começar treino de Armamento</button>`;
+    }
+    if (!learned) {
+      const why = reiBlock(save, (k) => profOf(save, k).level);
+      return `${head}<p class="muted small">O Haki do Rei não se compra nem vem de meditar: é preciso vencer o <b>Desafio da Vontade</b> — aguentar 20 s de pressão crescente respirando no ritmo para empurrá-la de volta.</p>${why ? `<p class="muted">${why}</p>` : ''}<button class="btn gold w-start" data-go="desafio" ${why ? 'disabled' : ''}>Enfrentar o Desafio da Vontade</button>`;
+    }
+    return `${head}<p class="muted small">Pulso de Vontade (Y ou 👑): ${REI.cost} de Vontade, recarga ${REI.cooldown} s, raio ${Math.round(pulseRadius(lv))}. Inimigos fracos ficam intimidados por pouco tempo; os outros perdem postura; chefes e bestas resistem. Sobe ao atingir inimigos com o pulso e ao vencer desafios. Não é dano em área.</p><button class="btn gold w-start" data-go="desafio">Repetir o Desafio da Vontade (treino)</button>`;
+  }
+  function startHaki(kind) {
+    if (haki || workout || resting) return;
+    const why = trainBlock();
+    if (why && kind !== 'observacao' && kind !== 'armamento') return hud.toast(why);
+    if (kind === 'desafio' && !save.vontade?.soberana) {
+      const block = reiBlock(save, (k) => profOf(save, k).level);
+      if (block) return hud.toast(block);
+    }
+    closeModal('treino');
+    if (kind === 'meditacao' || kind === 'desafio') {
+      if (form) setForm(null, true);
+      haki = kind === 'meditacao' ? { kind, m: newMeditation(), place: meditationPlace(envContext()), enter: 0 } : { kind, c: newChallenge(), enter: 0 };
+      animator.meditate = { enter: 0, breath: 0 };
+      cam.sizeMult = 1.2;
+      cam.pitch = Math.max(cam.pitch, 0.32);
+      $('h-tap').textContent = kind === 'meditacao' ? 'Respirar' : 'Resistir';
+      $('h-title').textContent = kind === 'meditacao' ? `Meditação · ${haki.place.label} ×${String(haki.place.mult).replace('.', ',')}` : 'Desafio da Vontade';
+      $('h-barlabel').textContent = kind === 'meditacao' ? 'Sessão' : 'Pressão';
+    } else if (kind === 'observacao') {
+      haki = { kind, shots: 0, next: 1.2, list: [], dodged: 0, hit: 0 };
+      $('h-tap').textContent = 'Percepção';
+      $('h-title').textContent = 'Treino de Observação';
+      $('h-barlabel').textContent = 'Projéteis';
+    } else if (kind === 'armamento') {
+      haki = { kind, t: 60, hits: 0, blocks: 0, xp: 0 };
+      $('h-tap').textContent = 'Armadura';
+      $('h-title').textContent = 'Treino de Armamento';
+      $('h-barlabel').textContent = 'Tempo';
+    }
+    $('haki-hud').classList.remove('hidden');
+  }
+  function hakiTap() {
+    if (!haki) return;
+    if (haki.kind === 'meditacao') {
+      if (meditationTap(haki.m)) {
+        const xp = meditationXp(haki.m, haki.place.mult);
+        haki.m.xp += xp;
+        if (xp > 0) {
+          tracker.grant('concentracao', xp, `meditar:${haki.m.good}`, ctl.pos, { repeat: false });
+          tracker.grant('mental', xp * 0.5, `meditar:${haki.m.good}`, ctl.pos, { repeat: false });
+        }
+        vontade.value = Math.min(100, vontade.value + 8);
+        if (powers) powers.energy = Math.min(powers.energyMax ?? 100, (powers.energy ?? 0) + 6);
+        fx.ring(ctl.pos, '#9fe8ff', 1.6, 0.6);
+      }
+    } else if (haki.kind === 'desafio') {
+      if (challengeTap(haki.c)) fx.ring(ctl.pos, '#ffd36b', 2, 0.4);
+    } else if (haki.kind === 'observacao') vontade.toggle('sense');
+    else if (haki.kind === 'armamento') vontade.toggle('armor');
+  }
+  function hakiStep(dt) {
+    const h = haki;
+    const set = (id, v) => {
+      const el = $(id);
+      if (el && el.textContent !== v) el.textContent = v;
+    };
+    const bar = (k) => ($('h-bar').style.transform = `scaleX(${Math.max(0, Math.min(1, k))})`);
+    if (h.kind === 'meditacao' || h.kind === 'desafio') {
+      h.enter = Math.min(1, h.enter + dt / 0.7);
+      const t = h.kind === 'meditacao' ? h.m.t : h.c.t;
+      const phase = breathPhase(t);
+      animator.meditate = { enter: h.enter, breath: phase };
+      const ring = $('h-ring');
+      ring.style.transform = `scale(${0.55 + 0.45 * Math.sin(Math.PI * phase)})`;
+      ring.classList.toggle('peak', breathValid(t));
+      set('h-big', breathValid(t) ? 'Agora!' : phase < 0.5 ? 'Inspire…' : 'Expire…');
+      if (h.kind === 'meditacao') {
+        if (meditationStep(h.m, dt) === 'fim') return endHaki('Meditação encerrada: sem respirar no ritmo.');
+        set('h-sub', `${h.m.good} respirações`);
+        set('h-state', h.m.xp >= 80 ? 'Limite da sessão: descanse a mente' : 'Toque quando o círculo ficar dourado');
+        bar(h.m.xp / 80);
+      } else {
+        const r = challengeStep(h.c, dt);
+        set('h-sub', `${Math.max(0, Math.ceil(20 - h.c.t))} s`);
+        set('h-state', 'Empurre a pressão respirando no ritmo');
+        bar(h.c.pressure / 100);
+        if (r === 'venceu') {
+          const first = !save.vontade.soberana;
+          save.vontade.soberana = true;
+          grantMastery('vontade:rei', 'Haki do Rei', first ? 6 : 3, `desafio:${Math.floor(save.clock)}`, false, { id: 'desafio', life: 0 });
+          tracker.grant('mental', 12, 'desafio', ctl.pos, { repeat: false });
+          fx.ring(ctl.pos, '#c084fc', 6, 1);
+          endHaki(first ? 'Haki do Rei despertou! Pulso de Vontade: Y ou 👑.' : 'Desafio vencido.', 'gold');
+        } else if (r === 'falhou') {
+          ctl.stunned = Math.max(ctl.stunned, 1.2);
+          endHaki('A pressão venceu. Treine a Observação e o Armamento e tente de novo.', 'bad');
+        }
+      }
+      return;
+    }
+    if (h.kind === 'observacao') {
+      document.body.classList.toggle('blind', !vontade.sense);
+      set('h-sub', `esquivas ${h.dodged} · atingido ${h.hit}`);
+      set('h-big', vontade.sense ? 'Percepção ligada' : 'Sem visão (×1,5)');
+      set('h-state', `Projétil ${Math.min(h.shots, OBS_TRAINING.shots)}/${OBS_TRAINING.shots}`);
+      bar(h.shots / OBS_TRAINING.shots);
+      h.next -= dt;
+      if (h.next <= 0 && h.shots < OBS_TRAINING.shots) {
+        const [a, b] = OBS_TRAINING.every;
+        h.next = a + Math.random() * (b - a) - h.shots * 0.06;
+        h.shots += 1;
+        const ang = Math.random() * Math.PI * 2;
+        const target = { x: ctl.pos.x + (Math.random() - 0.5) * 0.8, y: ctl.pos.y, z: ctl.pos.z + (Math.random() - 0.5) * 0.8 };
+        const from = { x: target.x + Math.sin(ang) * 12, y: target.y + 2 + Math.random() * 3, z: target.z + Math.cos(ang) * 12 };
+        const tel = OBS_TRAINING.telegraph * (1 - 0.3 * (h.shots / OBS_TRAINING.shots));
+        const orb = fx.orb('#c084fc', 0.35);
+        orb.position.set(from.x, from.y, from.z);
+        if (vontade.sense) fx.mark(target, '#c084fc', OBS_TRAINING.radius, tel);
+        h.list.push({ from, target, t: 0, tel, orb, arc: 1 + Math.random() * 3, blind: !vontade.sense, diff: h.shots / OBS_TRAINING.shots });
+      }
+      for (let i = h.list.length - 1; i >= 0; i--) {
+        const p = h.list[i];
+        p.t += dt;
+        const u = Math.min(1, p.t / p.tel);
+        p.orb.position.set(p.from.x + (p.target.x - p.from.x) * u, p.from.y + (p.target.y + 1.5 - p.from.y) * u + p.arc * Math.sin(Math.PI * u), p.from.z + (p.target.z - p.from.z) * u);
+        if (u < 1) continue;
+        p.orb.removeFromParent();
+        h.list.splice(i, 1);
+        fx.burst({ x: p.target.x, y: p.target.y + 1, z: p.target.z }, '#c084fc', { count: 10, speed: 3, up: 2 });
+        const near = Math.hypot(ctl.pos.x - p.target.x, ctl.pos.z - p.target.z) < OBS_TRAINING.radius;
+        if (near && ctl.invulnerable <= 0) {
+          h.hit += 1;
+          ctl.damage(ctl.maxHealth * 0.03, 'treino');
+          floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Atingido', 'jogador');
+        } else {
+          h.dodged += 1;
+          const xp = dodgeXp(p.diff, p.blind);
+          grantMastery('vontade:percepcao', 'Haki da Observação', xp, `obs:${h.dodged}:${Math.floor(tracker.now)}`, false, { id: 'treino', life: 0 });
+          tracker.grant('reflexos', 2, `obsReflexo:${h.dodged}`, ctl.pos, { repeat: false });
+          floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Leu o golpe!', 'esquiva');
+        }
+      }
+      if (h.shots >= OBS_TRAINING.shots && !h.list.length) endHaki(`Treino de Observação: ${h.dodged} esquivas, ${h.hit} acertos.`, 'good');
+      return;
+    }
+    if (h.kind === 'armamento') {
+      h.t -= dt;
+      set('h-sub', `golpes ${h.hits} · defesas ${h.blocks}`);
+      set('h-big', vontade.armor ? 'Braços revestidos' : 'Ligue a Armadura');
+      set('h-state', h.xp >= 40 ? 'Limite da sessão alcançado' : 'Acerte o boneco revestido; defesa perfeita rende mais');
+      bar(h.t / 60);
+      if (h.t <= 0) endHaki(`Treino de Armamento: ${h.hits} golpes revestidos, ${h.blocks} defesas.`, 'good');
+    }
+  }
+  function endHaki(msg, kind = 'good') {
+    if (!haki) return;
+    for (const p of haki.list ?? []) p.orb.removeFromParent();
+    document.body.classList.remove('blind');
+    haki = null;
+    animator.meditate = null;
+    cam.sizeMult = 1;
+    $('haki-hud').classList.add('hidden');
+    hud.toast(msg, kind);
+    saveNow(true);
+  }
+  $('haki-hud').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-h]');
+    if (!b) return;
+    if (b.dataset.h === 'tap') hakiTap();
+    else endHaki('Sessão encerrada.');
+  });
+  // Haki do Rei: Pulso de Vontade
+  function kingPulse() {
+    const why = vontade.pulse();
+    if (why) return hud.toast(why);
+    const lv = profOf(save, 'vontade:rei').level;
+    const radius = pulseRadius(lv);
+    const p = ctl.pos;
+    fx.ring(p, '#3a1a5a', radius, 0.7);
+    fx.ring(p, '#c084fc', radius * 0.6, 0.5);
+    fx.flash({ x: p.x, y: p.y + 2, z: p.z }, '#6a2aa0', 3, 0.3);
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + Math.random();
+      fx.bolt({ x: p.x, y: p.y + 2.5, z: p.z }, { x: p.x + Math.sin(a) * radius * 0.7, y: p.y + 0.3, z: p.z + Math.cos(a) * radius * 0.7 }, '#c084fc', 0.25);
+    }
+    shake = Math.max(shake, 0.25);
+    audio.play('base', 'wing', 1);
+    let affected = 0;
+    for (const t of arena.targets) {
+      if (!t.alive || !t.hostile) continue; // seleção de alvos: nunca aliados nem moradores
+      if (Math.hypot(t.pos.x - p.x, t.pos.z - p.z) > radius) continue;
+      const e = pulseEffect(t, save.level, lv);
+      if (t.guard) t.guard.posture = Math.max(0, t.guard.posture - e.posture);
+      if (e.stun > 0 && t.set) {
+        t.set('stun');
+        t.stunTime = e.stun;
+        t.attack = null;
+      }
+      floats.add({ x: t.pos.x, y: t.pos.y + 3.4, z: t.pos.z }, e.kind === 'intimidado' ? 'Intimidado!' : e.kind === 'abalado' ? 'Abalado' : 'Resiste', e.kind === 'intimidado' ? 'perfeita' : 'bloqueio');
+      affected += 1;
+      grantMastery('vontade:rei', 'Haki do Rei', 2, 'pulso', true, t);
+    }
+    if (!affected) hud.toast('O pulso não encontrou inimigos.');
   }
   const domainBudget = new Map();
   let deniedAt = -9;
@@ -2026,7 +2280,7 @@ async function boot() {
     canvas: $('game'),
     touchRoot: $('touch'),
     stick: { base: $('stick'), knob: $('stick').firstElementChild },
-    buttons: { form: $('btn-form'), jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), armor: $('btn-armor'), sense: $('btn-sense'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
+    buttons: { king: $('btn-king'), form: $('btn-form'), jump: $('btn-jump'), dash: $('btn-dash'), crouch: $('btn-crouch'), sprint: $('btn-sprint'), menu: $('btn-menu'), glider: $('btn-glider'), attack: $('btn-attack'), block: $('btn-block'), race: $('btn-race'), armor: $('btn-armor'), sense: $('btn-sense'), equip: [$('eq-1'), $('eq-2'), $('eq-3'), $('eq-4')], skillRows: $('skill-rows') },
   });
   input.onToggleGlider = () => {
     settings.gliderOn = !settings.gliderOn;
@@ -2397,6 +2651,20 @@ async function boot() {
         inp.jumpPressed = inp.dashPressed = false;
       }
       gatherWorld.update(dt, ocean);
+      // meditação e desafio da vontade (atualização 25): sentado, respirando no ritmo
+      if (haki && (haki.kind === 'meditacao' || haki.kind === 'desafio')) {
+        const tap = inp.attackPressed || inp.jumpPressed;
+        const moved = Math.hypot(inp.moveX, inp.moveY) > 0.3 || inp.dashPressed;
+        inp.moveX = inp.moveY = 0;
+        inp.attackPressed = inp.jumpPressed = inp.jump = inp.dashPressed = inp.block = false;
+        inp.skill = -1;
+        inp.racePressed = inp.formPressed = false;
+        if (moved) endHaki(haki.kind === 'meditacao' ? 'Meditação interrompida.' : 'Desafio abandonado.');
+        else {
+          if (tap) hakiTap();
+          hakiStep(dt);
+        }
+      } else if (haki) hakiStep(dt);
       // treino com pesos e descanso (atualização 24): o corpo fica no exercício
       if (workout || resting) {
         const wantsRep = inp.attackPressed || inp.jumpPressed;
@@ -2453,6 +2721,7 @@ async function boot() {
       art.update(dt, arena.targets, combat.canFight());
       if (inp.armorPressed) vontade.toggle('armor');
       if (inp.sensePressed) vontade.toggle('sense');
+      if (inp.kingPressed) kingPulse();
       vontade.update(dt);
       arena.tagRange = vontade.sense ? 70 : 26;
       if (boat.aboard && ctl.faint > 0) {
@@ -2596,6 +2865,8 @@ async function boot() {
           $('txt-will').textContent = `${Math.floor(vontade.value)}${vontade.sense ? ` · 👁 ${vontade.dodgesLeft}` : ''}`; // ícone de escudo = Vontade
         }
         $('btn-armor').classList.toggle('hidden', !save.vontade.armadura);
+        $('btn-king').classList.toggle('hidden', !save.vontade.soberana);
+        $('btn-king').style.setProperty('--cd', vontade.pulseCd / REI.cooldown);
         $('btn-sense').classList.toggle('hidden', !save.vontade.percepcao);
         $('btn-armor').classList.toggle('on', vontade.armor);
         $('btn-sense').classList.toggle('on', vontade.sense);
@@ -2737,6 +3008,11 @@ async function boot() {
         }
         for (const g of Object.values(GATES)) {
           if (Math.hypot(g.x - ctl.pos.x, g.z - ctl.pos.z) < 260) minimap.markers.push({ x: g.x, z: g.z, label: g.nome, color: '#ffb040' });
+        }
+        // Haki da Observação: presença dos inimigos no minimapa (alcance cresce com a maestria)
+        if (vontade.sense) {
+          const range = senseRange(profOf(save, 'vontade:percepcao').level);
+          for (const t of arena.targets) if (t.alive && t.hostile && Math.hypot(t.pos.x - ctl.pos.x, t.pos.z - ctl.pos.z) < range) minimap.markers.push({ x: t.pos.x, z: t.pos.z, label: '', color: '#e8604a' });
         }
         if (beasts.beast) minimap.markers.push({ x: beasts.beast.s.x, z: beasts.beast.s.z, label: beasts.beast.def.nome, color: '#4a0a14' });
         if (wreck) minimap.markers.push({ x: wreck.x, z: wreck.z, label: 'Destroços', color: '#ffd36b' });

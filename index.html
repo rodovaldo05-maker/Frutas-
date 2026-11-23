@@ -109,9 +109,19 @@
           <button data-btn data-w="cancel" class="btn bad">Interromper</button>
         </div>
       </div>
+      <div id="haki-hud" class="treino-hud haki-hud hidden">
+        <div class="w-head"><b id="h-title">Meditação</b><span id="h-sub"></span></div>
+        <div class="breath"><i id="h-ring"></i><span id="h-big">Respire</span></div>
+        <div class="w-state" id="h-state"></div>
+        <div class="w-fat"><span id="h-barlabel">Foco</span><div class="bar"><i id="h-bar"></i></div></div>
+        <div class="w-btns">
+          <button data-btn data-h="tap" class="btn gold w-rep" id="h-tap">Respirar</button>
+          <button data-btn data-h="cancel" class="btn bad">Interromper</button>
+        </div>
+      </div>
       <button data-btn id="btn-interact" class="interact hidden"><kbd>E</kbd><span id="interact-text">Falar</span></button>
 
-      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · G Armadura · H Percepção · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R caminhar/correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
+      <div class="keys" id="keys">WASD mover · Espaço pular (segure caindo para planar) · Clique/J atacar · Botão direito/K defender · F habilidade da raça · G Armadura · H Percepção · Y Pulso do Rei · 1–4 equipar · Z X C V habilidades · Shift esquiva · Ctrl agachar · R caminhar/correr · U asa-delta · E falar · B mochila · P personagem · L missões · M mapa · Esc pausa</div>
 
       <div class="pad">
         <button data-btn id="btn-sprint" class="act sprint hidden" data-icon="run" aria-label="Correr"></button>
@@ -125,6 +135,7 @@
           <button data-btn id="btn-form" class="act form hidden" aria-label="Forma híbrida"><span>Forma</span></button>
           <button data-btn id="btn-armor" class="act will-btn armor hidden" aria-label="Vontade de Armadura (liga/desliga)">🛡</button>
           <button data-btn id="btn-sense" class="act will-btn sense hidden" aria-label="Vontade de Percepção (liga/desliga)">👁</button>
+          <button data-btn id="btn-king" class="act will-btn king hidden" aria-label="Haki do Rei: Pulso de Vontade">👑<span class="cdr"></span></button>
         </div>
       </div>
     </div>
@@ -438,7 +449,7 @@
       <div class="frame window wide">
         <div class="frame-title" data-icon="fist">Treinamento</div>
         <button class="close" data-close="treino" data-icon="close" aria-label="Fechar"></button>
-        <div class="store-top"><div class="top-tabs" id="treino-tabs"><button data-wtab="fisico" class="active">Físico</button><button data-wtab="stats">Estatísticas</button><button data-wtab="descanso">Descanso</button></div></div>
+        <div class="store-top"><div class="top-tabs" id="treino-tabs"><button data-wtab="fisico" class="active">Físico</button><button data-wtab="meditacao">Meditação</button><button data-wtab="observacao">Observação</button><button data-wtab="armamento">Armamento</button><button data-wtab="rei">Rei</button><button data-wtab="stats">Estatísticas</button><button data-wtab="descanso">Descanso</button></div></div>
         <div id="treino-body" class="treino-body"></div>
       </div>
     </div>

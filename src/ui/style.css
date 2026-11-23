@@ -1309,3 +1309,16 @@ body.touch .toasts { left: calc(50px + 50vw + (var(--safe-l) - var(--safe-r)) / 
 @media (max-width: 760px) { .treino-hud .w-btns { gap: 4px; } .treino-hud .w-btns .btn { padding: 0 6px; } }
 .treino-hud { left: calc(30px + 50vw + (var(--safe-l) - var(--safe-r)) / 2); width: min(360px, calc(100vw - 500px - var(--safe-l) - var(--safe-r))); }
 @media (max-width: 800px) { .treino-hud { width: calc(100vw - 470px - var(--safe-l) - var(--safe-r)); } .treino-hud .w-btns .btn { font-size: 11px; } }
+
+/* ===== Meditação e Haki (atualização 25) ===== */
+.haki-hud .breath { position: relative; height: 64px; display: grid; place-items: center; }
+.haki-hud .breath i { position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 3px solid #9fe8ff; box-shadow: 0 0 14px rgba(159, 232, 255, 0.6); transform: scale(0.55); }
+.haki-hud .breath i.peak { border-color: #ffd36b; box-shadow: 0 0 18px rgba(255, 211, 107, 0.9); }
+.haki-hud .breath span { position: relative; font: 900 15px var(--body-font); color: #fff1cf; text-shadow: 0 1px 2px #000; }
+.haki-hud .w-fat .bar i { transform: scaleX(0); }
+.act.will-btn.king .cdr { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(10, 6, 20, 0.7) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; }
+.haki-stages { list-style: none; padding: 0; margin: 6px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 4px; }
+.haki-stages li { padding: 4px 8px; border-radius: 6px; background: rgba(20, 16, 26, 0.6); color: rgba(255, 241, 207, 0.55); font-size: 12px; }
+.haki-stages li.on { color: #b9f2a8; border: 1px solid rgba(185, 242, 168, 0.4); }
+.haki-stages li i { font-style: normal; color: var(--gold-hi); font-weight: 800; margin-right: 4px; }
+body.blind #game { filter: brightness(0.35) saturate(0.4); }

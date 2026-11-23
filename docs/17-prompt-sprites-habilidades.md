@@ -1,5 +1,8 @@
 # 17 — Prompts de sprites, parte 2: botões de habilidade e da tela
 
+(Lotes 4 a 9. O 8 e o 9 cobrem todos os botões da tela: Haki, forma, raça, hotbar, esquiva,
+defesa, agachar, inventário, mapa e menus.)
+
 Hoje os botões de habilidade e de ação usam símbolos simples desenhados no código (linhas
 brancas). Estes lotes trocam todos por ícones ilustrados no mesmo estilo dos materiais e
 equipamentos que você já gerou (`docs/16-prompt-sprites.md`).
@@ -193,47 +196,112 @@ As 3 células que sobram (linha 6, colunas 2 a 4) ficam vazias e transparentes.
 
 ---
 
-## Lote 8 — Botões de ação, Haki, raças e menus (24 ícones)
+## Lote 8 — Botões de combate, movimento, Haki, formas, raças e hotbar (30 ícones)
+
+Estes são os botões redondos que ficam na tela durante o jogo e os 4 espaços da barra de
+equipar (hotbar).
 
 ```
-Crie UMA folha de sprites PNG com FUNDO TRANSPARENTE (canal alfa de verdade), para os botões da
-tela de um jogo mobile de RPG pirata 3D em estilo voxel. Grade de 6 colunas × 4 linhas, células
-de 256×256 px (imagem final 1536×1024 px), um ícone por célula ocupando cerca de 82% dela. Sem
-texto, sem moldura, sem círculo de fundo.
+Crie UMA folha de sprites PNG com FUNDO TRANSPARENTE (canal alfa de verdade, sem xadrez
+desenhado), para os BOTÕES DE AÇÃO da tela de um jogo mobile de RPG pirata 3D em estilo voxel.
+Grade de 6 colunas × 5 linhas, células quadradas de 256×256 px (imagem final 1536×1280 px), um
+ícone centralizado por célula ocupando cerca de 80% dela. Sem texto, sem letras, sem moldura,
+sem círculo de fundo, sem sombra no chão.
 
-Estilo de TODOS: voxel/low-poly com cantos de blocos visíveis, contorno escuro de 3 px
-(#1a1222), luz de cima à esquerda, cores saturadas, vista em 3/4, MUITO legível em 48 px (formas
-grandes e simples, poucos detalhes). Mesma escala em todos.
+Estilo de TODOS (igual para todos): ícones de botão de habilidade em voxel/low-poly com cantos
+de blocos visíveis, contorno escuro de 3 px (#1a1222), luz de cima à esquerda, cores saturadas
+com um brilho suave, vista em 3/4. Formas GRANDES e SIMPLES, muito legíveis em 48 px no celular.
+Mesma escala e mesmo peso de contorno em todos.
 
 Ordem (da esquerda para a direita, de cima para baixo):
-Linha 1 — ações:
-1. Pular — seta grossa para cima saindo de uma bota.
-2. Esquiva — silhueta em movimento com rastro curvo de velocidade.
-3. Defender — escudo de madeira com borda de ferro.
-4. Agachar — seta para baixo sobre uma linha de chão.
-5. Asa-delta — asa-delta de tecido colorido.
-6. Interagir/Falar — balão de fala com reticências.
-Linha 2 — Haki e Vontade:
-7. Haki do Armamento — braço/punho revestido de preto brilhante com reflexo roxo.
-8. Haki da Observação — olho estilizado com ondas de percepção em volta.
-9. Haki do Rei — coroa dourada soltando ondas e pequenos raios roxos.
-10. Meditação — flor de lótus de energia dourada.
-11. Treino com pesos — haltere voxel de ferro.
-12. Respiração — pulmões/ar em espiral azul-claro.
-Linha 3 — habilidade ativa de cada raça:
-13. Humano: Adaptação Tática — engrenagem dourada com seta circular.
-14. Aquático: Impulso Abissal — onda com seta de impulso para a frente, bolhas.
-15. Ghoul: Sifão de Essência — mão com garras puxando energia roxa em espiral.
-16. Homem do Céu: Passo Celeste — asas pequenas brancas com rastro de nuvem.
-17. Forma (transformar) — pegada de fera com brilho mágico.
-18. Despertar — fruta rachada com luz dourada.
-Linha 4 — menus:
-19. Mapa — mapa de pergaminho dobrado com um X vermelho.
-20. Mochila — mochila de couro de aventureiro.
-21. Missões — pergaminho com selo de cera.
-22. Personagem — busto de pirata com chapéu tricórnio.
-23. Menu/Configurações — engrenagem de ferro.
-24. Roleta de Frutas — roleta dourada com uma fruta no centro.
+
+Linha 1 — movimento e defesa:
+1. Pular — bota com uma seta grossa dourada para cima.
+2. Esquiva (dash) — silhueta correndo com rastro curvo de velocidade branco-azulado.
+3. Defender — escudo redondo de madeira com borda e rebites de ferro.
+4. Agachar / engatinhar — silhueta agachada de quatro apoios com seta para baixo.
+5. Correr — tênis/bota com linhas de velocidade.
+6. Asa-delta — asa-delta de tecido listrado laranja e azul.
+
+Linha 2 — interação, ataque e Haki:
+7. Interagir / falar — balão de fala branco com três pontinhos.
+8. Atacar — punho fechado com estrela de impacto.
+9. Haki do Armamento — antebraço e punho revestidos de preto brilhante com reflexo roxo.
+10. Haki da Observação — olho estilizado dourado com ondas de percepção em volta.
+11. Haki do Rei (Pulso de Vontade) — coroa dourada soltando anéis de pressão e raiozinhos roxos.
+12. Despertar da fruta — fruta mágica rachando, com luz dourada saindo das rachaduras.
+
+Linha 3 — transformação e raças:
+13. Forma híbrida — pegada de fera grande com um meio-círculo de brilho mágico.
+14. Forma completa — cabeça de fera com chifres e olhos brilhando.
+15. Voltar à forma humana — silhueta humana simples com seta circular em volta.
+16. Raça Humano (Adaptação Tática) — engrenagem dourada com seta circular.
+17. Raça Aquático (Impulso Abissal) — onda azul com seta de impulso e bolhas.
+18. Raça Ghoul (Sifão de Essência) — mão com garras puxando energia roxa em espiral.
+
+Linha 4 — raça e barra de equipar (hotbar):
+19. Raça Homem do Céu (Passo Celeste) — duas asinhas brancas com rastro de nuvem.
+20. Espaço da Fruta — fruta mágica genérica com folha e brilho (sem cara).
+21. Espaço da Arma — duas espadas cruzadas.
+22. Espaço do Estilo de Luta — punho com faixa de pano enrolada (bandagem).
+23. Espaço do Treinamento — haltere de ferro voxel.
+24. Mochila (espaço da bolsa) — mochila de couro de aventureiro com fivela.
+
+Linha 5 — treino, profissões e barco:
+25. Meditação — flor de lótus de energia dourada.
+26. Respiração — espiral de ar azul-claro saindo de pulmões estilizados.
+27. Pescar — vara de pesca com peixe fisgado.
+28. Minerar — picareta batendo numa pedra com faíscas.
+29. Canhão do bote — canhão de ferro disparando com fumaça.
+30. Embarcar / desembarcar — pequeno bote de madeira com seta.
+```
+
+---
+
+## Lote 9 — Menus, janelas e indicadores (24 ícones)
+
+Os botões pequenos do topo e das janelas (mochila, mapa, missões, configurações...) e os
+símbolos dos indicadores.
+
+```
+Crie UMA folha de sprites PNG com FUNDO TRANSPARENTE (canal alfa de verdade, sem xadrez
+desenhado), para os ÍCONES DE MENU de um jogo mobile de RPG pirata 3D em estilo voxel. Grade de
+6 colunas × 4 linhas, células de 256×256 px (imagem final 1536×1024 px), um ícone centralizado
+por célula ocupando cerca de 80% dela. Sem texto, sem letras, sem moldura, sem círculo de fundo.
+
+Estilo de TODOS: voxel/low-poly com cantos de blocos visíveis, contorno escuro de 3 px
+(#1a1222), luz de cima à esquerda, cores saturadas, vista em 3/4, formas grandes e simples,
+legíveis em 32 px. Mesma escala em todos.
+
+Ordem (da esquerda para a direita, de cima para baixo):
+Linha 1 — menus principais:
+1. Inventário / mochila — mochila de couro aberta com itens aparecendo.
+2. Mapa — mapa de pergaminho dobrado com um X vermelho.
+3. Missões — pergaminho enrolado com selo de cera vermelho.
+4. Personagem — busto de pirata com chapéu tricórnio.
+5. Configurações / pausa — engrenagem de ferro.
+6. Voltar ao início — casinha de madeira com telhado vermelho.
+Linha 2 — lojas e sistemas:
+7. Roleta de frutas — roleta dourada com uma fruta no centro.
+8. Catálogo de frutas — livro aberto com uma fruta desenhada.
+9. Forja — bigorna com martelo.
+10. Loja / mercador — barraca com toldo listrado.
+11. Treinamento — haltere cruzado com uma faixa de bandagem.
+12. Navegação / bote — timão de navio de madeira.
+Linha 3 — moedas e itens de conta:
+13. Moedas — pilha de moedas de ouro.
+14. Fragmentos / gemas — gema roxa facetada.
+15. Chave da roleta — chave dourada antiga.
+16. Rastrear missão — bandeira vermelha num mastro.
+17. Salvar — baú pequeno com seta para dentro.
+18. Favorito — estrela dourada.
+Linha 4 — controles e indicadores:
+19. Fechar — X vermelho grosso.
+20. Confirmar — visto (✓) verde grosso.
+21. Descartar — lixeira de metal.
+22. Vida — coração vermelho.
+23. Energia — raio amarelo.
+24. Fôlego / natação — três bolhas de ar azuis.
 ```
 
 ---

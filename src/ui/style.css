@@ -1347,3 +1347,18 @@ body.blind #game { filter: brightness(0.35) saturate(0.4); }
 .iq-dots i.on { background: #7ee06a; }
 .iq-dots i.now { background: #ffd040; }
 .iq-row b { color: #fff1cf; font: 700 15px var(--title-font); }
+
+/* diárias e conquistas (atualização 30) */
+.dq { display: grid; gap: 6px; }
+.dq-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 8px; background: rgba(20, 16, 26, 0.6); border: 1px solid rgba(255, 241, 207, 0.1); }
+.dq-row > div { display: grid; gap: 3px; flex: 1; }
+.dq-row b { color: #fff1cf; font: 700 15px var(--title-font); }
+.dq-row small { color: rgba(255, 241, 207, 0.72); font-size: 12px; }
+.dq-row.dq-done { border-color: rgba(126, 224, 106, 0.55); }
+.dq-bar { height: 6px; border-radius: 3px; background: rgba(255, 241, 207, 0.12); overflow: hidden; }
+.dq-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd040, #ff9a2b); }
+.dq-state { font: 800 12px var(--body-font); color: var(--gold-hi); white-space: nowrap; }
+.dq-streak { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; background: rgba(60, 40, 10, 0.35); border: 1px solid rgba(255, 208, 64, 0.35); }
+.dq-dots { display: inline-flex; gap: 5px; }
+.dq-dots i { width: 14px; height: 14px; border-radius: 4px; background: rgba(255, 241, 207, 0.15); }
+.dq-dots i.on { background: #ffd040; box-shadow: 0 0 6px rgba(255, 208, 64, 0.7); }

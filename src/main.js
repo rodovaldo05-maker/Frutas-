@@ -89,6 +89,9 @@ import { IslandEvents } from './world/islandEvents.js';
 import { buildBeastTraits } from './characters/beastTraits.js';
 import { SEA3 } from './islands/thirdSea.js';
 import { IslandQuestUi } from './ui/islandQuestUi.js';
+import { dayKey, rollDay, dailyEvent, dailyReward, chestReward, normalizeDailies } from './progression/dailies.js';
+import { checkAchievements, normalizeStats, ACHIEVEMENTS } from './progression/achievements.js';
+import { dailiesHtml, achievementsHtml } from './ui/goalsUi.js';
 import { QUEST_NPCS, islandQuestEvent, normalizeIslandQuests } from './quests/islandQuests.js';
 import { ThirdSeaEvents } from './world/thirdSeaEvents.js';
 import { SeaEvents, EVENTS3 } from './world/seaEvents.js';
@@ -459,6 +462,7 @@ async function boot() {
           if (f && save.equipped === 'fruta') lab.m1(f.id, a, at, dir, form && !form.light ? form.shape : 'humana');
           audio.play(d.landed ? 'impacto' : 'base', d.landed ? 'acerto' : 'swing', a.heavy ? 1 : 0.55 + a.m1 * 0.08);
           if (d.landed) shake = Math.max(shake, [0.08, 0.1, 0.14, 0.22][a.m1 - 1]);
+          if (d.landed && a.m1 === 4) goal('combo');
           if (d.landed && a.heavy) vibrate(30);
           break;
         }
@@ -694,6 +698,8 @@ async function boot() {
       floats.add({ x: foe.pos.x, y: foe.pos.y + 4, z: foe.pos.z }, `+${xpGain} exp · +${coinGain} moedas`, 'info');
       hud.toast(`${foe.def.nome} derrotado! +${xpGain} exp · +${coinGain} moedas${blood ? ' (Lua de Sangue)' : ''}`, 'good');
       villageUi.defeat(foe.def);
+      goal('defeat');
+      if (foe.boss) goal('boss');
       islandQuest({ kind: 'defeat', id: foe.id });
       raceSys.onTrialKill(foe.def);
       for (const [id, n] of materialDrop(foe.def)) {
@@ -957,6 +963,7 @@ async function boot() {
     const r = stepSession(w.s, dt, save.training);
     if (r.rep) {
       save.workout.reps[w.s.exercise] += 1;
+      goal('rep');
       for (const [attr, xp] of repAttrs(w.s.exercise, r.xp)) tracker.grant(attr, xp, `peso:${w.s.exercise}:${attr}`, ctl.pos, { repeat: false });
       audio.play('base', 'step', 0.5);
     }
@@ -1366,6 +1373,7 @@ async function boot() {
     const before = domainOf(save, fruitId).level;
     const levels = addDomainXp(save, fruitId, amount);
     if (!levels) return;
+    goal('mastery', levels);
     const d = domainOf(save, fruitId);
     const f = DATA.fruits.find((x) => x.id === fruitId);
     const opened = powers.powers.filter((p) => p.unlock > before && p.unlock <= d.level).map((p) => p.nome);
@@ -1386,7 +1394,7 @@ async function boot() {
     onEvent: (name, d) => {
       const p = ctl.pos;
       switch (name) {
-        case 'cast': audio.play(d.power.weapon ? 'base' : d.power.fruit, d.power.weapon ? 'swing' : 'preparar', 0.7); break;
+        case 'cast': goal('power'); audio.play(d.power.weapon ? 'base' : d.power.fruit, d.power.weapon ? 'swing' : 'preparar', 0.7); break;
         case 'release': audio.play(d.power.weapon ? 'base' : d.power.fruit, d.power.weapon ? 'dash' : 'liberar', d.power.slot === 2 ? 1.1 : 0.9); break;
         case 'impact': shake = Math.max(shake, 0.12); break;
         case 'denied':
@@ -1970,6 +1978,7 @@ async function boot() {
         floats.add({ x: ctl.pos.x, y: ctl.pos.y + 3, z: ctl.pos.z }, 'Desviou!', 'esquiva');
         break;
       case 'down': {
+        goal('beast');
         const loot = beastLoot(b.level);
         save.coins += loot.coins;
         save.fragments = (save.fragments ?? 0) + loot.fragments;
@@ -2120,6 +2129,7 @@ async function boot() {
         break;
       case 'shipSunk': {
         const s = d.ship;
+        goal('ship');
         const loot = shipLoot(s.level);
         save.coins += loot.coins;
         hud.toast(`${s.def.nome} afundou! +${fmt(loot.xp)} exp · +${fmt(loot.coins)} moedas`, 'gold');
@@ -2387,6 +2397,67 @@ async function boot() {
       ctl.stamina.value = ctl.stamina.max;
     },
   });
+  // ===== Diárias, contadores e conquistas (atualização 30) =====
+  save.dailies = normalizeDailies(save.dailies);
+  save.stats = normalizeStats(save.stats);
+  const STAT_OF = { defeat: 'kills', fish: 'fish', ore: 'ore', power: 'powers', combo: 'combos', distance: 'distance', ship: 'ships', beast: 'beasts', mastery: 'masteryUps', rep: 'reps' };
+  function newDay() {
+    if (!rollDay(save.dailies, dayKey(), { tools: save.tools ?? [] })) return;
+    hud.toast('Novas missões diárias! Veja em Missões › Diárias.', 'good');
+    if (missionTab === 'diarias') renderMissionList();
+  }
+  // um acontecimento do jogo: conta nas estatísticas, nas diárias e nas conquistas
+  function goal(kind, n = 1) {
+    if (STAT_OF[kind]) save.stats[STAT_OF[kind]] += n;
+    newDay();
+    const r = dailyEvent(save.dailies, { kind, n });
+    if (r.done.length) {
+      const rw = dailyReward(save.level);
+      for (const d of r.done) {
+        save.coins += rw.coins;
+        grantXp(rw.xp);
+        hud.toast(`Diária concluída: ${d.titulo} · +${fmt(rw.coins)} moedas · +${fmt(rw.xp)} exp`, 'gold');
+      }
+      audio.play('base', 'wing', 0.8);
+    }
+    if (r.chest) {
+      const st = save.dailies;
+      const week = st.streak > 0 && st.streak % 7 === 0;
+      const c = chestReward(save.level, week);
+      save.coins += c.coins;
+      save.keys = (save.keys ?? 0) + c.keys;
+      hud.toast(`Baú Diário! +${fmt(c.coins)} moedas · +${c.keys} chave${c.keys > 1 ? 's' : ''} · sequência de ${st.streak} dia${st.streak > 1 ? 's' : ''}${week ? ' (semana completa: baú dobrado!)' : ''}`, 'gold');
+      if (c.fruitChance && Math.random() < c.fruitChance && save.bag.length < 60) {
+        const f = drawFruit('npc');
+        if (f) {
+          save.bag.push({ uid: save.nextUid++, fruit: f.fruit, fav: false, at: Date.now(), origem: 'diaria' });
+          hud.toast(`O Baú Diário trouxe uma fruta: ${fruitName(f.fruit)}!`, 'gold');
+        }
+      }
+      refreshProfile();
+    }
+    if (r.done.length || r.chest) {
+      if (modals.includes('missions')) renderMissionList();
+      saveNow(true);
+    }
+    achievementsCheck();
+  }
+  function achievementsCheck() {
+    const fresh = checkAchievements(save);
+    for (const a of fresh) {
+      save.coins += a.reward.coins;
+      save.keys = (save.keys ?? 0) + a.reward.keys;
+      hud.toast(`Conquista: ${a.titulo}! +${fmt(a.reward.coins)} moedas${a.reward.keys ? ` · +${a.reward.keys} chave${a.reward.keys > 1 ? 's' : ''}` : ''} · título liberado`, 'gold');
+      audio.play('base', 'wing', 1);
+    }
+    if (fresh.length) {
+      refreshProfile();
+      saveNow(true);
+    }
+  }
+  let goalT = 0;
+  let walked = 0;
+
   // ===== Missões das ilhas (atualização 29) =====
   save.islandQuests = normalizeIslandQuests(save.islandQuests);
   const questDefs = ALL_SEA.filter((d) => QUEST_NPCS[d.id]);
@@ -2417,6 +2488,7 @@ async function boot() {
         grantXp(r.xp);
         hud.toast(`Missão concluída: ${q.titulo} (${def.nome}) · +${fmt(r.coins)} moedas · +${fmt(r.xp)} exp${r.keys ? ` · +${r.keys} chave` : ''}${extra}`, 'gold');
         if (last) hud.toast(`${def.nome}: todas as missões da ilha concluídas!`, 'gold');
+        goal('islandQuest');
         audio.play('base', 'wing', 0.9);
         refreshProfile();
       },
@@ -2496,12 +2568,16 @@ async function boot() {
         if (d.levels) hud.toast(`Mineração Nv. ${d.level}!`, 'gold');
         const ores = Object.entries(d.got).filter(([id]) => id !== 'pedra').reduce((sum, [, n]) => sum + n, 0) || 1;
         villageUi.gather('minerio', ores);
+        goal('ore', ores);
         saveNow(true);
       }
       if (name === 'caught') {
         hud.toast(`Pescou: ${d.nome} · Pesca +${d.xp}`, 'good');
         if (d.levels) hud.toast(`Pesca Nv. ${d.level}!`, 'gold');
-        if (d.peixe) villageUi.gather('peixe', 1);
+        if (d.peixe) {
+          villageUi.gather('peixe', 1);
+          goal('fish');
+        }
         saveNow(true);
       }
     },
@@ -2881,6 +2957,26 @@ async function boot() {
   }
   function renderMissionList() {
     const list = $('mission-list');
+    if (missionTab === 'diarias') {
+      newDay();
+      list.innerHTML = dailiesHtml(save);
+      return;
+    }
+    if (missionTab === 'conquistas') {
+      achievementsCheck();
+      list.innerHTML = achievementsHtml(save);
+      list.querySelectorAll('[data-title]').forEach((b) => b.addEventListener('click', () => {
+        const a = ACHIEVEMENTS.find((x) => x.id === b.dataset.title);
+        const using = save.achievements.title === a.id;
+        save.achievements.title = using ? null : a.id;
+        save.title = using ? null : a.titulo; // aparece na janela do personagem
+        hud.toast(using ? 'Título removido' : `Título: ${a.titulo}`, 'good');
+        statusScreen.render();
+        renderMissionList();
+        saveNow(true);
+      }));
+      return;
+    }
     if (missionTab === 'ilhas') {
       list.innerHTML = islandQuestUi.listHtml();
       islandQuestUi.bindList(list);
@@ -3103,6 +3199,18 @@ async function boot() {
       beastStep(dt);
       wreckStep(dt);
       crossingStep(dt);
+      // distância a pé (no chão ou nadando, sem bote) para as diárias e conquistas
+      if (!boat.aboard && (ctl.state === 'ground' || ctl.state === 'swim')) walked += Math.hypot(ctl.pos.x - prev.x, ctl.pos.z - prev.z) / 2.2; // 1 m ≈ 2,2 unidades
+      goalT -= dt;
+      if (goalT <= 0) {
+        goalT = 2;
+        if (walked >= 1) {
+          const m = Math.floor(walked);
+          walked -= m;
+          goal('distance', m);
+        } else newDay();
+        achievementsCheck();
+      }
       questScanT -= dt;
       if (questScanT <= 0) {
         questScanT = 0.5;
@@ -3625,6 +3733,7 @@ async function boot() {
     thirdEvents,
     islandQuestUi,
     islandQuest: (ev) => islandQuest(ev),
+    goal: (k, n) => goal(k, n),
     get seaEvents() { return seaEvents; },
     get haki() { return haki; },
     startHaki: (k) => startHaki(k),

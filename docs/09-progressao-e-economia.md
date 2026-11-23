@@ -148,6 +148,21 @@ Código: `src/progression/mastery.js`, `src/progression/domain.js`; testes em `t
   fadiga, com limite suave por sessão e por minuto. Flexão: Constituição, Força, Resistência
   Física, Defesa e Fôlego. Agachamento: Constituição, Impulsão, Agilidade, Resistência e
   Fôlego. Série completa: Fôlego (condicionamento). Nunca mexe na maestria da fruta.
+- **Missões diárias (atualização 30).** Aba **Diárias** da janela de Missões. Três missões por dia
+  do calendário do aparelho, sorteadas pela data entre 12 tipos (derrotar inimigos, um chefe,
+  pescar, minerar — só com a vara/picareta —, repetições com pesos, subir maestria, afundar um
+  navio, derrotar uma besta marinha, usar habilidades, acertar finalizadores do M1, andar a pé,
+  concluir uma missão de ilha). Cada uma paga na hora (300 + 10 × nível moedas e experiência
+  pelo nível). Fechar as três abre o **Baú Diário** (1.500 + 30 × nível moedas e 1 chave) e
+  soma 1 na **sequência**; a cada 7 dias seguidos o baú vem dobrado, com 2 chaves e 35% de
+  chance de fruta. Pular um dia zera a sequência.
+- **Conquistas (atualização 30).** Aba **Conquistas**: 28 metas em 8 grupos (combate, fruta,
+  Vontade, mar, profissões, treino, missões e aventura), lidas do salvo (contadores novos em
+  `stats`: inimigos, peixes, minérios, habilidades, finalizadores, distância, navios, bestas,
+  níveis de maestria e repetições; e o que o jogo já guarda: chefes diferentes, mares, Ilha
+  Oculta, Haki do Rei, missões de ilha, diárias e nível). Cada uma paga moedas e chaves uma vez e
+  libera um **título** ("Lutador", "Terror dos Mares", "Herói dos Três Mares"…) que aparece na
+  janela do personagem no lugar de "Aprendiz".
 - **Meditação da fruta (substitui o Descanso; automática desde a 0.27.2).** Aba **Meditação**
   do TREINAMENTO. O personagem senta em **flor de lótus** (cada pé sobre a coxa do outro lado,
   mãos nos joelhos com as palmas para cima) e a **aura da fruta envolve o corpo**: casca de

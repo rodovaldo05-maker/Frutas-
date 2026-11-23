@@ -1,3 +1,5 @@
+import { normalizeDailies } from '../progression/dailies.js';
+import { normalizeStats, normalizeAchievements, ACHIEVEMENT_IDS } from '../progression/achievements.js';
 import { normalizeIslandQuests } from '../quests/islandQuests.js';
 import { normalizeIslands } from '../islands/islandRules.js';
 import { normalizeOutfit } from '../characters/outfits.js';
@@ -196,7 +198,11 @@ export function migrate(save) {
   // terceiro = já atravessou o Portão do Abismo (atualização 27)
   out.seas = { segundo: out.seas?.segundo === true, terceiro: out.seas?.terceiro === true };
   out.islands = normalizeIslands(out.islands);
-  out.islandQuests = normalizeIslandQuests(out.islandQuests); // missões dos NPCs das ilhas (atualização 29) // espelhos das Ruínas e chaves da Masmorra (atualização 27)
+  out.islandQuests = normalizeIslandQuests(out.islandQuests);
+  // diárias, contadores e conquistas (atualização 30)
+  out.dailies = normalizeDailies(out.dailies);
+  out.stats = normalizeStats(out.stats);
+  out.achievements = normalizeAchievements(out.achievements, ACHIEVEMENT_IDS); // missões dos NPCs das ilhas (atualização 29) // espelhos das Ruínas e chaves da Masmorra (atualização 27)
   // combate naval (atualização 16): casco do bote (null = inteiro) e navios afundados por id
   out.boatHull = Number.isFinite(out.boatHull) && out.boatHull >= 0 ? Math.round(out.boatHull) : null;
   out.ships = out.ships && typeof out.ships === 'object' && !Array.isArray(out.ships)

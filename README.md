@@ -128,6 +128,9 @@ efeito da fruta disparado pelo evento de impacto, variante na forma híbrida (ca
 acompanham o golpe) e um indicador discreto 1/4 a 4/4. Fichas em
 [docs/14-m1-fichas.md](docs/14-m1-fichas.md).
 
+Diárias e conquistas (atualização 30): três missões diárias pelo calendário, com Baú Diário e
+sequência de dias, e 28 conquistas com recompensas e títulos para usar.
+
 NPCs com missões (atualização 29): cada uma das 24 ilhas dos três mares tem um NPC com três
 missões (caçar o acampamento, o desafio próprio da ilha e o chefe), com "!" e "?" sobre a cabeça,
 aba Ilhas na janela de Missões, rastreador e marcas na carta.

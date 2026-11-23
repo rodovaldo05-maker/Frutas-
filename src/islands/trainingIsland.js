@@ -178,11 +178,8 @@ export function buildTrainingIsland({ scene, physics }) {
 
   sb.finish();
 
-  // Limites invisíveis do mundo (o mar continua visível além)
-  const lim = ISLAND.half - 2;
-  for (const [x, z, w, d] of [[0, lim, 2 * lim, 1], [0, -lim, 2 * lim, 1], [lim, 0, 1, 2 * lim], [-lim, 0, 1, 2 * lim]]) {
-    physics.addBox({ x, y: 0, z }, { x: w / 2, y: 60, z: d / 2 }, 0, { climbable: false, material: 'limite', invisible: true });
-  }
+  // (sem paredes invisíveis em volta: eram do tempo em que o mundo era só esta ilha e
+  // seguravam o bote e quem nadava para as outras ilhas)
 
   return { field, signs: sb.signs, triangles: terrain.triangles, nature };
 }
